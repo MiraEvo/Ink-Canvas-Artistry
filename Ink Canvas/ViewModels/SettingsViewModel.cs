@@ -4,6 +4,7 @@ using Ink_Canvas.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 
@@ -12,6 +13,16 @@ namespace Ink_Canvas.ViewModels
     public sealed partial class SettingsViewModel : ObservableObject
     {
         private static readonly int[] AutoDeleteDaysOptions = [1, 3, 5, 7, 15, 30, 60, 100, 365];
+        private static readonly string[] AllPropertyNames =
+        [
+            .. typeof(SettingsViewModel)
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .Where(property => property.GetIndexParameters().Length == 0)
+                .Select(property => property.Name)
+        ];
+        private static readonly string[] AutoUpdateVisibilityProperties = [nameof(IsAutoUpdateWithSilenceBlockVisibility)];
+        private static readonly string[] AutoUpdateTimePeriodProperties = [nameof(AutoUpdateTimePeriodVisibility)];
+        private static readonly string[] TouchMultiplierVisibilityProperties = [nameof(TouchMultiplierVisibility)];
 
         private readonly ISettingsService settingsService;
         private readonly IPathPickerService pathPickerService;
@@ -44,35 +55,41 @@ namespace Ink_Canvas.ViewModels
             ArgumentNullException.ThrowIfNull(loadedSettings);
 
             isHydrating = true;
-            settings = SettingsDefaults.Normalize(loadedSettings);
-            runAtStartup = isRunAtStartup;
-            settingsModelChanged(settings);
-            RaiseAllPropertiesChanged();
-            isHydrating = false;
+            try
+            {
+                settings = SettingsDefaults.Normalize(loadedSettings);
+                runAtStartup = isRunAtStartup;
+                settingsModelChanged(settings);
+                RaiseAllPropertiesChanged();
+            }
+            finally
+            {
+                isHydrating = false;
+            }
         }
 
         public bool IsAutoUpdate
         {
             get => settings.Startup.IsAutoUpdate;
-            set => SetSetting(settings.Startup.IsAutoUpdate, value, v => settings.Startup.IsAutoUpdate = v, nameof(IsAutoUpdate), nameof(IsAutoUpdateWithSilenceBlockVisibility));
+            set => SetSetting(settings.Startup.IsAutoUpdate, value, v => settings.Startup.IsAutoUpdate = v, nameof(IsAutoUpdate), AutoUpdateVisibilityProperties);
         }
 
         public bool IsAutoUpdateWithSilence
         {
             get => settings.Startup.IsAutoUpdateWithSilence;
-            set => SetSetting(settings.Startup.IsAutoUpdateWithSilence, value, v => settings.Startup.IsAutoUpdateWithSilence = v, nameof(IsAutoUpdateWithSilence), nameof(AutoUpdateTimePeriodVisibility));
+            set => SetSetting(settings.Startup.IsAutoUpdateWithSilence, value, v => settings.Startup.IsAutoUpdateWithSilence = v, nameof(IsAutoUpdateWithSilence), AutoUpdateTimePeriodProperties);
         }
 
         public string AutoUpdateWithSilenceStartTime
         {
             get => settings.Startup.AutoUpdateWithSilenceStartTime;
-            set => SetSetting(settings.Startup.AutoUpdateWithSilenceStartTime, value, v => settings.Startup.AutoUpdateWithSilenceStartTime = v, nameof(AutoUpdateWithSilenceStartTime));
+            set => SetStringSetting(settings.Startup.AutoUpdateWithSilenceStartTime, value, v => settings.Startup.AutoUpdateWithSilenceStartTime = v, nameof(AutoUpdateWithSilenceStartTime));
         }
 
         public string AutoUpdateWithSilenceEndTime
         {
             get => settings.Startup.AutoUpdateWithSilenceEndTime;
-            set => SetSetting(settings.Startup.AutoUpdateWithSilenceEndTime, value, v => settings.Startup.AutoUpdateWithSilenceEndTime = v, nameof(AutoUpdateWithSilenceEndTime));
+            set => SetStringSetting(settings.Startup.AutoUpdateWithSilenceEndTime, value, v => settings.Startup.AutoUpdateWithSilenceEndTime = v, nameof(AutoUpdateWithSilenceEndTime));
         }
 
         public bool RunAtStartup
@@ -246,7 +263,7 @@ namespace Ink_Canvas.ViewModels
         public int HyperbolaAsymptoteOption
         {
             get => (int)settings.Canvas.HyperbolaAsymptoteOption;
-            set => SetSetting((int)settings.Canvas.HyperbolaAsymptoteOption, value, v => settings.Canvas.HyperbolaAsymptoteOption = (OptionalOperation)v, nameof(HyperbolaAsymptoteOption));
+            set => SetProjectedSetting((int)settings.Canvas.HyperbolaAsymptoteOption, value, static v => (OptionalOperation)v, v => settings.Canvas.HyperbolaAsymptoteOption = v, nameof(HyperbolaAsymptoteOption));
         }
 
         public bool HideStrokeWhenSelecting
@@ -258,7 +275,7 @@ namespace Ink_Canvas.ViewModels
         public int MatrixTransformCenterPoint
         {
             get => (int)settings.Gesture.MatrixTransformCenterPoint;
-            set => SetSetting((int)settings.Gesture.MatrixTransformCenterPoint, value, v => settings.Gesture.MatrixTransformCenterPoint = (MatrixTransformCenterPointOptions)v, nameof(MatrixTransformCenterPoint));
+            set => SetProjectedSetting((int)settings.Gesture.MatrixTransformCenterPoint, value, static v => (MatrixTransformCenterPointOptions)v, v => settings.Gesture.MatrixTransformCenterPoint = v, nameof(MatrixTransformCenterPoint));
         }
 
         public bool AutoSwitchTwoFingerGesture
@@ -306,7 +323,7 @@ namespace Ink_Canvas.ViewModels
         public bool IsSpecialScreen
         {
             get => settings.Advanced.IsSpecialScreen;
-            set => SetSetting(settings.Advanced.IsSpecialScreen, value, v => settings.Advanced.IsSpecialScreen = v, nameof(IsSpecialScreen), nameof(TouchMultiplierVisibility));
+            set => SetSetting(settings.Advanced.IsSpecialScreen, value, v => settings.Advanced.IsSpecialScreen = v, nameof(IsSpecialScreen), TouchMultiplierVisibilityProperties);
         }
 
         public double TouchMultiplier
@@ -318,13 +335,13 @@ namespace Ink_Canvas.ViewModels
         public double NibModeBoundsWidth
         {
             get => settings.Advanced.NibModeBoundsWidth;
-            set => SetSetting((double)settings.Advanced.NibModeBoundsWidth, value, v => settings.Advanced.NibModeBoundsWidth = (int)v, nameof(NibModeBoundsWidth));
+            set => SetProjectedSetting((double)settings.Advanced.NibModeBoundsWidth, value, static v => (int)v, v => settings.Advanced.NibModeBoundsWidth = v, nameof(NibModeBoundsWidth));
         }
 
         public double FingerModeBoundsWidth
         {
             get => settings.Advanced.FingerModeBoundsWidth;
-            set => SetSetting((double)settings.Advanced.FingerModeBoundsWidth, value, v => settings.Advanced.FingerModeBoundsWidth = (int)v, nameof(FingerModeBoundsWidth));
+            set => SetProjectedSetting((double)settings.Advanced.FingerModeBoundsWidth, value, static v => (int)v, v => settings.Advanced.FingerModeBoundsWidth = v, nameof(FingerModeBoundsWidth));
         }
 
         public double NibModeBoundsWidthThresholdValue
@@ -480,13 +497,13 @@ namespace Ink_Canvas.ViewModels
         public double MinimumAutomationStrokeNumber
         {
             get => settings.Automation.MinimumAutomationStrokeNumber;
-            set => SetSetting((double)settings.Automation.MinimumAutomationStrokeNumber, value, v => settings.Automation.MinimumAutomationStrokeNumber = (int)v, nameof(MinimumAutomationStrokeNumber));
+            set => SetProjectedSetting((double)settings.Automation.MinimumAutomationStrokeNumber, value, static v => (int)v, v => settings.Automation.MinimumAutomationStrokeNumber = v, nameof(MinimumAutomationStrokeNumber));
         }
 
         public string AutoSavedStrokesLocation
         {
             get => settings.Automation.AutoSavedStrokesLocation;
-            set => SetSetting(settings.Automation.AutoSavedStrokesLocation, value, v => settings.Automation.AutoSavedStrokesLocation = v, nameof(AutoSavedStrokesLocation));
+            set => SetStringSetting(settings.Automation.AutoSavedStrokesLocation, value, v => settings.Automation.AutoSavedStrokesLocation = v, nameof(AutoSavedStrokesLocation));
         }
 
         public bool AutoDelSavedFiles
@@ -524,12 +541,9 @@ namespace Ink_Canvas.ViewModels
 
         private void RaiseAllPropertiesChanged()
         {
-            foreach (PropertyInfo property in GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            foreach (string propertyName in AllPropertyNames)
             {
-                if (property.GetIndexParameters().Length == 0)
-                {
-                    OnPropertyChanged(property.Name);
-                }
+                OnPropertyChanged(propertyName);
             }
         }
 
@@ -553,6 +567,8 @@ namespace Ink_Canvas.ViewModels
 
         private void ApplyDoublePreset(string? rawValue, Action<double> apply)
         {
+            ArgumentNullException.ThrowIfNull(apply);
+
             if (TryParseDouble(rawValue, out double value))
             {
                 apply(value);
@@ -606,17 +622,23 @@ namespace Ink_Canvas.ViewModels
         private void ReplaceSettings(Settings newSettings, bool? newRunAtStartup)
         {
             isHydrating = true;
-            settings = SettingsDefaults.Normalize(newSettings);
-            if (newRunAtStartup.HasValue)
+            try
             {
-                runAtStartup = newRunAtStartup.Value;
+                settings = SettingsDefaults.Normalize(newSettings);
+                if (newRunAtStartup.HasValue)
+                {
+                    runAtStartup = newRunAtStartup.Value;
+                }
+
+                settingsModelChanged(settings);
+                RaiseAllPropertiesChanged();
+            }
+            finally
+            {
+                isHydrating = false;
             }
 
-            settingsModelChanged(settings);
-            RaiseAllPropertiesChanged();
-
-            isHydrating = false;
-            settingsService.Save(settings);
+            PersistSettings();
         }
 
         private static bool TryParseDouble(string? rawValue, out double value)
@@ -638,7 +660,7 @@ namespace Ink_Canvas.ViewModels
                 return;
             }
 
-            settingsService.Save(settings);
+            PersistSettings();
         }
 
         private void SetSetting<T>(T currentValue, T newValue, Action<T> setter, string propertyName, params string[] dependentProperties)
@@ -655,15 +677,42 @@ namespace Ink_Canvas.ViewModels
 
             setter(newValue);
             OnPropertyChanged(propertyName);
-            foreach (string dependentProperty in dependentProperties)
-            {
-                OnPropertyChanged(dependentProperty);
-            }
+            OnDependentPropertiesChanged(dependentProperties);
 
             if (persist)
             {
                 PersistIfNeeded();
             }
         }
+
+        private void SetStringSetting(string currentValue, string? newValue, Action<string> setter, string propertyName, bool persist = true, params string[] dependentProperties)
+        {
+            SetSetting(currentValue, newValue ?? string.Empty, setter, propertyName, persist, dependentProperties);
+        }
+
+        private void SetProjectedSetting<TSource, TTarget>(
+            TSource currentValue,
+            TSource newValue,
+            Func<TSource, TTarget> projector,
+            Action<TTarget> setter,
+            string propertyName,
+            bool persist = true,
+            params string[] dependentProperties)
+        {
+            ArgumentNullException.ThrowIfNull(projector);
+            ArgumentNullException.ThrowIfNull(setter);
+
+            SetSetting(currentValue, newValue, value => setter(projector(value)), propertyName, persist, dependentProperties);
+        }
+
+        private void OnDependentPropertiesChanged(IEnumerable<string> dependentProperties)
+        {
+            foreach (string dependentProperty in dependentProperties)
+            {
+                OnPropertyChanged(dependentProperty);
+            }
+        }
+
+        private void PersistSettings() => settingsService.Save(settings);
     }
 }

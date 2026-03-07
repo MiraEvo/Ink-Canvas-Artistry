@@ -7,14 +7,13 @@ namespace Ink_Canvas
     {
         private async void AutoUpdate()
         {
-            string availableLatestVersion = await AutoUpdateHelper.CheckForUpdates();
+            string? availableLatestVersion = await AutoUpdateHelper.CheckForUpdates();
 
-            if (availableLatestVersion != null)
+            if (availableLatestVersion is not null)
             {
-                bool IsDownloadSuccessful = false;
-                IsDownloadSuccessful = await AutoUpdateHelper.DownloadSetupFileAndSaveStatus(availableLatestVersion);
+                bool isDownloadSuccessful = await AutoUpdateHelper.DownloadSetupFileAndSaveStatus(availableLatestVersion);
 
-                if (IsDownloadSuccessful)
+                if (isDownloadSuccessful)
                 {
                     if (!Settings.Startup.IsAutoUpdateWithSilence)
                     {

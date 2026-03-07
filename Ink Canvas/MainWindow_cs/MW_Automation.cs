@@ -16,7 +16,6 @@ namespace Ink_Canvas
         {
             automationController = new AutomationController(
                 SettingsViewModel,
-                ShellViewModel,
                 PresentationViewModel,
                 WorkspaceSessionViewModel,
                 AutomationViewModel,
@@ -67,7 +66,9 @@ namespace Ink_Canvas
         {
             try
             {
-                return Dispatcher.Invoke(() => Topmost && inkCanvas.Strokes.Count == 0);
+                return Dispatcher.CheckAccess()
+                    ? Topmost && inkCanvas.Strokes.Count == 0
+                    : Dispatcher.Invoke(() => Topmost && inkCanvas.Strokes.Count == 0);
             }
             catch (TaskCanceledException ex)
             {

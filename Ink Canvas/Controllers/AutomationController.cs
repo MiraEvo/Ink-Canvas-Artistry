@@ -1,8 +1,10 @@
 using Ink_Canvas.Helpers;
 using Ink_Canvas.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Timers;
 using Timer = System.Timers.Timer;
@@ -16,7 +18,6 @@ namespace Ink_Canvas.Controllers
         private const double SilentUpdateIntervalMs = 1000 * 60 * 60;
 
         private readonly SettingsViewModel settingsViewModel;
-        private readonly ShellViewModel shellViewModel;
         private readonly PresentationSessionViewModel presentationSessionViewModel;
         private readonly WorkspaceSessionViewModel workspaceSessionViewModel;
         private readonly AutomationStateViewModel automationStateViewModel;
@@ -37,7 +38,6 @@ namespace Ink_Canvas.Controllers
 
         public AutomationController(
             SettingsViewModel settingsViewModel,
-            ShellViewModel shellViewModel,
             PresentationSessionViewModel presentationSessionViewModel,
             WorkspaceSessionViewModel workspaceSessionViewModel,
             AutomationStateViewModel automationStateViewModel,
@@ -49,8 +49,19 @@ namespace Ink_Canvas.Controllers
             Action onAutoKilledEasiNote,
             Action<string> installSilentUpdate)
         {
+            ArgumentNullException.ThrowIfNull(settingsViewModel);
+            ArgumentNullException.ThrowIfNull(presentationSessionViewModel);
+            ArgumentNullException.ThrowIfNull(workspaceSessionViewModel);
+            ArgumentNullException.ThrowIfNull(automationStateViewModel);
+            ArgumentNullException.ThrowIfNull(isFloatingBarTransitioning);
+            ArgumentNullException.ThrowIfNull(isFloatingBarFolded);
+            ArgumentNullException.ThrowIfNull(canInstallSilentUpdate);
+            ArgumentNullException.ThrowIfNull(requestFoldFloatingBar);
+            ArgumentNullException.ThrowIfNull(requestUnfoldFloatingBar);
+            ArgumentNullException.ThrowIfNull(onAutoKilledEasiNote);
+            ArgumentNullException.ThrowIfNull(installSilentUpdate);
+
             this.settingsViewModel = settingsViewModel;
-            this.shellViewModel = shellViewModel;
             this.presentationSessionViewModel = presentationSessionViewModel;
             this.workspaceSessionViewModel = workspaceSessionViewModel;
             this.automationStateViewModel = automationStateViewModel;
@@ -62,14 +73,9 @@ namespace Ink_Canvas.Controllers
             this.onAutoKilledEasiNote = onAutoKilledEasiNote;
             this.installSilentUpdate = installSilentUpdate;
 
-            autoFoldTimer = new Timer(AutoFoldIntervalMs);
-            autoFoldTimer.Elapsed += AutoFoldTimer_Elapsed;
-
-            processKillTimer = new Timer(ProcessKillIntervalMs);
-            processKillTimer.Elapsed += ProcessKillTimer_Elapsed;
-
-            silentUpdateTimer = new Timer(SilentUpdateIntervalMs);
-            silentUpdateTimer.Elapsed += SilentUpdateTimer_Elapsed;
+            autoFoldTimer = CreateTimer(AutoFoldIntervalMs, AutoFoldTimer_Elapsed);
+            processKillTimer = CreateTimer(ProcessKillIntervalMs, ProcessKillTimer_Elapsed);
+            silentUpdateTimer = CreateTimer(SilentUpdateIntervalMs, SilentUpdateTimer_Elapsed);
         }
 
         public void Initialize()
@@ -80,16 +86,12 @@ namespace Ink_Canvas.Controllers
 
         public void RefreshAutoFoldMonitoring()
         {
-            bool enabled = settingsViewModel.Model?.Automation?.IsEnableAutoFold == true;
+            bool enabled = settingsViewModel.Model.Automation.IsEnableAutoFold;
             automationStateViewModel.SetAutoFoldMonitoring(enabled);
+            StartOrStopTimer(autoFoldTimer, enabled);
 
-            if (enabled)
+            if (!enabled)
             {
-                autoFoldTimer.Start();
-            }
-            else
-            {
-                autoFoldTimer.Stop();
                 automationStateViewModel.SetFloatingBarFoldRequestedByAutomation(false);
             }
         }
@@ -98,15 +100,7 @@ namespace Ink_Canvas.Controllers
         {
             bool enabled = settingsViewModel.IsAutoKillEasiNote || settingsViewModel.IsAutoKillPptService;
             automationStateViewModel.SetProcessKillMonitoring(enabled);
-
-            if (enabled)
-            {
-                processKillTimer.Start();
-            }
-            else
-            {
-                processKillTimer.Stop();
-            }
+            StartOrStopTimer(processKillTimer, enabled);
         }
 
         public void ScheduleSilentUpdate(string? version)
@@ -119,8 +113,7 @@ namespace Ink_Canvas.Controllers
 
             automationStateViewModel.SetPendingUpdateVersion(version);
             automationStateViewModel.SetSilentUpdateWaiting(true);
-            silentUpdateTimer.Stop();
-            silentUpdateTimer.Start();
+            RestartTimer(silentUpdateTimer);
         }
 
         public void CancelSilentUpdate()
@@ -132,30 +125,16 @@ namespace Ink_Canvas.Controllers
 
         public void Dispose()
         {
-            autoFoldTimer.Stop();
-            processKillTimer.Stop();
-            silentUpdateTimer.Stop();
-            autoFoldTimer.Dispose();
-            processKillTimer.Dispose();
-            silentUpdateTimer.Dispose();
+            DisposeTimer(autoFoldTimer);
+            DisposeTimer(processKillTimer);
+            DisposeTimer(silentUpdateTimer);
         }
 
-        private void AutoFoldTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            if (Interlocked.Exchange(ref isCheckingAutoFold, 1) == 1)
-            {
-                return;
-            }
+        private void AutoFoldTimer_Elapsed(object? sender, ElapsedEventArgs e) => RunGuarded(ref isCheckingAutoFold, EvaluateAutoFold);
 
-            try
-            {
-                EvaluateAutoFold();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref isCheckingAutoFold, 0);
-            }
-        }
+        private void ProcessKillTimer_Elapsed(object? sender, ElapsedEventArgs e) => RunGuarded(ref isKillingProcesses, EvaluateProcessKill);
+
+        private void SilentUpdateTimer_Elapsed(object? sender, ElapsedEventArgs e) => RunGuarded(ref isCheckingSilentUpdate, TryInstallSilentUpdate);
 
         private void EvaluateAutoFold()
         {
@@ -164,35 +143,16 @@ namespace Ink_Canvas.Controllers
                 return;
             }
 
-            string windowProcessName = ForegroundWindowInfo.ProcessName();
-            string windowTitle = ForegroundWindowInfo.WindowTitle();
-            ForegroundWindowInfo.RECT windowRect = ForegroundWindowInfo.WindowRect();
+            ForegroundWindowState foregroundWindow = ReadForegroundWindowState();
+            UpdateForegroundWindowState(foregroundWindow);
 
-            automationStateViewModel.SetForegroundProcessName(windowProcessName);
-            automationStateViewModel.SetForegroundWindowTitle(windowTitle);
-
-            bool shouldFoldForForegroundWindow =
-                settingsViewModel.IsAutoFoldInEasiNote
-                && windowProcessName == "EasiNote"
-                && (!(windowTitle.Length == 0 && windowRect.Height < 500) || !settingsViewModel.IsAutoFoldInEasiNoteIgnoreDesktopAnno)
-                || settingsViewModel.IsAutoFoldInEasiCamera && windowProcessName == "EasiCamera"
-                || settingsViewModel.IsAutoFoldInEasiNote3C && windowProcessName == "EasiNote"
-                || settingsViewModel.IsAutoFoldInSeewoPincoTeacher && (windowProcessName == "BoardService" || windowProcessName == "seewoPincoTeacher")
-                || settingsViewModel.IsAutoFoldInHiteCamera && windowProcessName == "HiteCamera"
-                || settingsViewModel.IsAutoFoldInHiteTouchPro && windowProcessName == "HiteTouchPro"
-                || settingsViewModel.IsAutoFoldInWxBoardMain && windowProcessName == "WxBoardMain"
-                || settingsViewModel.IsAutoFoldInMSWhiteboard && (windowProcessName == "MicrosoftWhiteboard" || windowProcessName == "msedgewebview2")
-                || settingsViewModel.IsAutoFoldInOldZyBoard
-                && (WinTabWindowsChecker.IsWindowExisted("WhiteBoard - DrawingWindow")
-                    || WinTabWindowsChecker.IsWindowExisted("InstantAnnotationWindow"));
-
-            if (shouldFoldForForegroundWindow)
+            if (ShouldFoldForForegroundWindow(foregroundWindow))
             {
                 automationStateViewModel.SetFloatingBarFoldRequestedByAutomation(true);
-                if (!automationStateViewModel.IsFloatingBarUnfoldedByUser && !isFloatingBarFolded())
-                {
-                    RunOnUiThread(requestFoldFloatingBar);
-                }
+                TryRequestFloatingBarTransition(
+                    !automationStateViewModel.IsFloatingBarUnfoldedByUser && !isFloatingBarFolded(),
+                    requestFoldFloatingBar,
+                    "Automation | Failed to fold floating bar on the UI thread");
                 return;
             }
 
@@ -200,41 +160,29 @@ namespace Ink_Canvas.Controllers
 
             if (presentationSessionViewModel.IsSlideShowRunning)
             {
-                if (!settingsViewModel.IsAutoFoldInPPTSlideShow
+                bool shouldUnfoldDuringSlideShow =
+                    !settingsViewModel.IsAutoFoldInPPTSlideShow
                     && isFloatingBarFolded()
-                    && !automationStateViewModel.IsFloatingBarFoldedByUser)
-                {
-                    RunOnUiThread(requestUnfoldFloatingBar);
-                }
+                    && !automationStateViewModel.IsFloatingBarFoldedByUser;
 
+                TryRequestFloatingBarTransition(
+                    shouldUnfoldDuringSlideShow,
+                    requestUnfoldFloatingBar,
+                    "Automation | Failed to unfold floating bar during slideshow");
                 return;
             }
 
-            if (workspaceSessionViewModel.IsDesktopSession
+            bool shouldUnfoldOnDesktop =
+                workspaceSessionViewModel.IsDesktopSession
                 && isFloatingBarFolded()
-                && !automationStateViewModel.IsFloatingBarFoldedByUser)
-            {
-                RunOnUiThread(requestUnfoldFloatingBar);
-            }
+                && !automationStateViewModel.IsFloatingBarFoldedByUser;
+
+            TryRequestFloatingBarTransition(
+                shouldUnfoldOnDesktop,
+                requestUnfoldFloatingBar,
+                "Automation | Failed to unfold floating bar on desktop");
 
             automationStateViewModel.SetFloatingBarUnfoldedByUser(false);
-        }
-
-        private void ProcessKillTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            if (Interlocked.Exchange(ref isKillingProcesses, 1) == 1)
-            {
-                return;
-            }
-
-            try
-            {
-                EvaluateProcessKill();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref isKillingProcesses, 0);
-            }
         }
 
         private void EvaluateProcessKill()
@@ -244,39 +192,39 @@ namespace Ink_Canvas.Controllers
                 return;
             }
 
-            string arguments = "/F";
+            List<string> imageNames = [];
             bool killedEasiNote = false;
 
             if (settingsViewModel.IsAutoKillPptService)
             {
-                if (Process.GetProcessesByName("PPTService").Length > 0)
-                {
-                    arguments += " /IM PPTService.exe";
-                }
+                AddProcessImageIfRunning(imageNames, "PPTService");
 
-                if (Process.GetProcessesByName("SeewoIwbAssistant").Length > 0)
+                if (IsProcessRunning("SeewoIwbAssistant"))
                 {
-                    arguments += " /IM SeewoIwbAssistant.exe /IM Sia.Guard.exe";
+                    imageNames.Add("SeewoIwbAssistant.exe");
+                    imageNames.Add("Sia.Guard.exe");
                 }
             }
 
-            if (settingsViewModel.IsAutoKillEasiNote && Process.GetProcessesByName("EasiNote").Length > 0)
+            if (settingsViewModel.IsAutoKillEasiNote && IsProcessRunning("EasiNote"))
             {
-                arguments += " /IM EasiNote.exe";
+                imageNames.Add("EasiNote.exe");
                 killedEasiNote = true;
             }
 
-            if (arguments == "/F")
+            if (imageNames.Count == 0)
             {
                 return;
             }
 
             try
             {
-                using Process process = new Process
+                using Process process = new()
                 {
-                    StartInfo = new ProcessStartInfo("taskkill", arguments)
+                    StartInfo = new ProcessStartInfo("taskkill", BuildTaskKillArguments(imageNames))
                     {
+                        CreateNoWindow = true,
+                        UseShellExecute = false,
                         WindowStyle = ProcessWindowStyle.Hidden
                     }
                 };
@@ -284,7 +232,7 @@ namespace Ink_Canvas.Controllers
 
                 if (killedEasiNote)
                 {
-                    RunOnUiThread(onAutoKilledEasiNote);
+                    RunOnUiThread(onAutoKilledEasiNote, "Automation | Failed to notify after auto-killing EasiNote");
                 }
             }
             catch (Win32Exception ex)
@@ -294,23 +242,6 @@ namespace Ink_Canvas.Controllers
             catch (InvalidOperationException ex)
             {
                 LogHelper.WriteLogToFile(ex, "Automation | Failed to execute process cleanup");
-            }
-        }
-
-        private void SilentUpdateTimer_Elapsed(object sender, ElapsedEventArgs e)
-        {
-            if (Interlocked.Exchange(ref isCheckingSilentUpdate, 1) == 1)
-            {
-                return;
-            }
-
-            try
-            {
-                TryInstallSilentUpdate();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref isCheckingSilentUpdate, 0);
             }
         }
 
@@ -336,24 +267,155 @@ namespace Ink_Canvas.Controllers
 
             string version = automationStateViewModel.PendingUpdateVersion;
             CancelSilentUpdate();
-            RunOnUiThread(() => installSilentUpdate?.Invoke(version));
+            RunOnUiThread(() => installSilentUpdate(version), "Automation | Failed to install silent update on the UI thread");
         }
 
-        private static void RunOnUiThread(Action action)
+        private bool ShouldFoldForForegroundWindow(ForegroundWindowState foregroundWindow)
         {
-            if (action == null)
+            return ShouldFoldInEasiNote(foregroundWindow)
+                || settingsViewModel.IsAutoFoldInEasiCamera && foregroundWindow.ProcessName == "EasiCamera"
+                || settingsViewModel.IsAutoFoldInEasiNote3C && foregroundWindow.ProcessName == "EasiNote"
+                || settingsViewModel.IsAutoFoldInSeewoPincoTeacher
+                    && (foregroundWindow.ProcessName == "BoardService" || foregroundWindow.ProcessName == "seewoPincoTeacher")
+                || settingsViewModel.IsAutoFoldInHiteCamera && foregroundWindow.ProcessName == "HiteCamera"
+                || settingsViewModel.IsAutoFoldInHiteTouchPro && foregroundWindow.ProcessName == "HiteTouchPro"
+                || settingsViewModel.IsAutoFoldInWxBoardMain && foregroundWindow.ProcessName == "WxBoardMain"
+                || settingsViewModel.IsAutoFoldInMSWhiteboard
+                    && (foregroundWindow.ProcessName == "MicrosoftWhiteboard" || foregroundWindow.ProcessName == "msedgewebview2")
+                || settingsViewModel.IsAutoFoldInOldZyBoard
+                    && (WinTabWindowsChecker.IsWindowExisted("WhiteBoard - DrawingWindow")
+                        || WinTabWindowsChecker.IsWindowExisted("InstantAnnotationWindow"));
+        }
+
+        private bool ShouldFoldInEasiNote(ForegroundWindowState foregroundWindow)
+        {
+            return settingsViewModel.IsAutoFoldInEasiNote
+                && foregroundWindow.ProcessName == "EasiNote"
+                && (!settingsViewModel.IsAutoFoldInEasiNoteIgnoreDesktopAnno || !IsCompactDesktopAnnotationWindow(foregroundWindow));
+        }
+
+        private static bool IsCompactDesktopAnnotationWindow(ForegroundWindowState foregroundWindow) =>
+            foregroundWindow.WindowTitle.Length == 0 && foregroundWindow.WindowRect.Height < 500;
+
+        private void UpdateForegroundWindowState(ForegroundWindowState foregroundWindow)
+        {
+            automationStateViewModel.SetForegroundProcessName(foregroundWindow.ProcessName);
+            automationStateViewModel.SetForegroundWindowTitle(foregroundWindow.WindowTitle);
+        }
+
+        private static ForegroundWindowState ReadForegroundWindowState() =>
+            new(
+                ForegroundWindowInfo.ProcessName(),
+                ForegroundWindowInfo.WindowTitle(),
+                ForegroundWindowInfo.WindowRect());
+
+        private static Timer CreateTimer(double interval, ElapsedEventHandler handler)
+        {
+            Timer timer = new(interval)
+            {
+                AutoReset = true
+            };
+            timer.Elapsed += handler;
+            return timer;
+        }
+
+        private static void RunGuarded(ref int guardFlag, Action action)
+        {
+            if (Interlocked.Exchange(ref guardFlag, 1) == 1)
             {
                 return;
             }
 
-            if (System.Windows.Application.Current?.Dispatcher == null
-                || System.Windows.Application.Current.Dispatcher.CheckAccess())
+            try
+            {
+                action();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref guardFlag, 0);
+            }
+        }
+
+        private static void StartOrStopTimer(Timer timer, bool enabled)
+        {
+            if (enabled)
+            {
+                timer.Start();
+            }
+            else
+            {
+                timer.Stop();
+            }
+        }
+
+        private static void RestartTimer(Timer timer)
+        {
+            timer.Stop();
+            timer.Start();
+        }
+
+        private static void DisposeTimer(Timer timer)
+        {
+            timer.Stop();
+            timer.Dispose();
+        }
+
+        private void TryRequestFloatingBarTransition(bool shouldRun, Action action, string failureContext)
+        {
+            if (!shouldRun)
+            {
+                return;
+            }
+
+            RunOnUiThread(action, failureContext);
+        }
+
+        private static string BuildTaskKillArguments(IEnumerable<string> imageNames) =>
+            $"/F {string.Join(" ", imageNames.Select(imageName => $"/IM {imageName}"))}";
+
+        private static void AddProcessImageIfRunning(ICollection<string> imageNames, string processName)
+        {
+            if (IsProcessRunning(processName))
+            {
+                imageNames.Add($"{processName}.exe");
+            }
+        }
+
+        private static bool IsProcessRunning(string processName) => Process.GetProcessesByName(processName).Length > 0;
+
+        private static void RunOnUiThread(Action action, string failureContext)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+
+            if (System.Windows.Application.Current?.Dispatcher is not { } dispatcher)
             {
                 action();
                 return;
             }
 
-            System.Windows.Application.Current.Dispatcher.Invoke(action);
+            try
+            {
+                if (dispatcher.CheckAccess())
+                {
+                    action();
+                    return;
+                }
+
+                dispatcher.Invoke(action);
+            }
+            catch (TaskCanceledException ex)
+            {
+                LogHelper.WriteLogToFile(ex, failureContext);
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, failureContext);
+            }
         }
+
+        private readonly record struct ForegroundWindowState(
+            string ProcessName,
+            string WindowTitle,
+            ForegroundWindowInfo.RECT WindowRect);
     }
 }
