@@ -3,7 +3,6 @@ using Microsoft.Office.Interop.PowerPoint;
 using Ink_Canvas.ViewModels;
 using System;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Ink;
@@ -11,8 +10,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Application = System.Windows.Application;
 using File = System.IO.File;
-using Microsoft.Office.Core;
 using System.Runtime.InteropServices;
+using System.Reflection;
 
 namespace Ink_Canvas
 {
@@ -77,7 +76,7 @@ namespace Ink_Canvas
                     bool isHaveHiddenSlide = false;
                     foreach (Slide slide in slides)
                     {
-                        if (slide.SlideShowTransition.Hidden == MsoTriState.msoTrue)
+                        if (IsSlideHidden(slide))
                         {
                             isHaveHiddenSlide = true;
                             break;
@@ -94,9 +93,9 @@ namespace Ink_Canvas
                                 {
                                     foreach (Slide slide in slides)
                                     {
-                                        if (slide.SlideShowTransition.Hidden == MsoTriState.msoTrue)
+                                        if (IsSlideHidden(slide))
                                         {
-                                            slide.SlideShowTransition.Hidden = MsoTriState.msoFalse;
+                                            SetSlideHidden(slide, false);
                                         }
                                     }
                                 }).ShowDialog();
@@ -109,7 +108,7 @@ namespace Ink_Canvas
                     bool hasSlideTimings = false;
                     foreach (Slide slide in presentation.Slides)
                     {
-                        if (slide.SlideShowTransition.AdvanceOnTime == MsoTriState.msoTrue && slide.SlideShowTransition.AdvanceTime > 0)
+                        if (HasAutomaticAdvance(slide))
                         {
                             hasSlideTimings = true;
                             break;
@@ -301,14 +300,7 @@ namespace Ink_Canvas
                 PptNavigationTextBlockBottom.Text = $"{Wn.View.CurrentShowPosition}/{Wn.Presentation.Slides.Count}";
                 LogHelper.NewLog("PowerPoint Slide Show Loading process complete");
 
-                new Thread(new ThreadStart(() =>
-                {
-                    Thread.Sleep(100);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ViewboxFloatingBarMarginAnimation();
-                    });
-                })).Start();
+                _ = ViewboxFloatingBarMarginAnimationAfterDelayAsync(TimeSpan.FromMilliseconds(100));
             });
         }
 
@@ -523,7 +515,12 @@ namespace Ink_Canvas
 
         private void RunSlideShowWindowAction(Action<SlideShowWindow> action, string actionName, LogHelper.LogType failureLogType = LogHelper.LogType.Error)
         {
-            new Thread(() =>
+            _ = RunSlideShowWindowActionAsync(action, actionName, failureLogType);
+        }
+
+        private async Task RunSlideShowWindowActionAsync(Action<SlideShowWindow> action, string actionName, LogHelper.LogType failureLogType)
+        {
+            await Task.Run(() =>
             {
                 SlideShowWindow slideShowWindow = TryGetActiveSlideShowWindow();
                 if (slideShowWindow == null)
@@ -557,7 +554,44 @@ namespace Ink_Canvas
                 {
                     LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to {actionName}", failureLogType);
                 }
-            }).Start();
+            });
+        }
+
+        private static bool IsSlideHidden(Slide slide)
+        {
+            return IsOfficeTrueState(GetSlideShowTransitionPropertyValue(slide, "Hidden"));
+        }
+
+        private static void SetSlideHidden(Slide slide, bool isHidden)
+        {
+            object transition = slide.SlideShowTransition;
+            PropertyInfo hiddenProperty = transition.GetType().GetProperty("Hidden");
+            if (hiddenProperty == null || !hiddenProperty.CanWrite)
+            {
+                return;
+            }
+
+            object hiddenValue = Enum.ToObject(hiddenProperty.PropertyType, isHidden ? -1 : 0);
+            hiddenProperty.SetValue(transition, hiddenValue);
+        }
+
+        private static bool HasAutomaticAdvance(Slide slide)
+        {
+            object advanceOnTime = GetSlideShowTransitionPropertyValue(slide, "AdvanceOnTime");
+            object advanceTime = GetSlideShowTransitionPropertyValue(slide, "AdvanceTime");
+            return IsOfficeTrueState(advanceOnTime) && Convert.ToDouble(advanceTime) > 0;
+        }
+
+        private static object GetSlideShowTransitionPropertyValue(Slide slide, string propertyName)
+        {
+            object transition = slide.SlideShowTransition;
+            PropertyInfo property = transition.GetType().GetProperty(propertyName);
+            return property?.GetValue(transition);
+        }
+
+        private static bool IsOfficeTrueState(object value)
+        {
+            return value != null && Convert.ToInt32(value) == -1;
         }
 
         private void PptApplication_SlideShowNextSlide(SlideShowWindow Wn)

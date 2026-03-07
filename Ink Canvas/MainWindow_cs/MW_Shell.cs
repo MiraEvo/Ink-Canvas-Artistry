@@ -2,7 +2,6 @@ using Ink_Canvas.Helpers;
 using Ink_Canvas.ViewModels;
 using iNKORE.UI.WPF.Modern;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -62,14 +61,7 @@ namespace Ink_Canvas
                 PPTNavigationSidesLeft.Visibility = Visibility.Collapsed;
                 PPTNavigationSidesRight.Visibility = Visibility.Collapsed;
 
-                new Thread(new ThreadStart(() =>
-                {
-                    Thread.Sleep(100);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ViewboxFloatingBarMarginAnimation();
-                    });
-                })).Start();
+                _ = ViewboxFloatingBarMarginAnimationAfterDelayAsync(TimeSpan.FromMilliseconds(100));
 
                 if (Pen_Icon.Background == null)
                 {
@@ -131,14 +123,7 @@ namespace Ink_Canvas
 
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
 
-            new Thread(new ThreadStart(() =>
-            {
-                Thread.Sleep(200);
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    isDisplayingOrHidingBlackboard = false;
-                });
-            })).Start();
+            _ = CompleteBlackboardTransitionAsync();
 
             CheckColorTheme(true);
         }
@@ -384,6 +369,15 @@ namespace Ink_Canvas
             {
                 AnimationsHelper.HideWithSlideAndFade(element, 0.5);
             }
+        }
+
+        private async Task CompleteBlackboardTransitionAsync()
+        {
+            await Task.Delay(200);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                isDisplayingOrHidingBlackboard = false;
+            });
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using iNKORE.UI.WPF.Modern;
@@ -14,59 +15,20 @@ namespace Ink_Canvas {
     /// Interaction logic for RandWindow.xaml
     /// </summary>
     public partial class RandWindow : Window {
+        private readonly CancellationTokenSource windowLifetimeCancellationTokenSource = new CancellationTokenSource();
+        private bool isRandomizing;
+
         public RandWindow() {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            Application application = Application.Current;
-            MainWindow mainWindow = application?.MainWindow as MainWindow;
-            if (mainWindow != null && application != null)
-            {
-                if (mainWindow.GetMainWindowTheme() == "Light")
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-                else
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-            }
+            ApplyThemeFromMainWindow();
         }
 
         public RandWindow(bool IsAutoClose) {
             InitializeComponent();
-            Application application = Application.Current;
-            MainWindow mainWindow = application?.MainWindow as MainWindow;
-            if (mainWindow != null && application != null)
-            {
-                if (mainWindow.GetMainWindowTheme() == "Light")
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-                else
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-            }
+            ApplyThemeFromMainWindow();
             isAutoClose = IsAutoClose;
-
-            new Thread(new ThreadStart(() => {
-                Thread.Sleep(100);
-                Application currentApplication = Application.Current;
-                if (currentApplication?.Dispatcher != null)
-                {
-                    currentApplication.Dispatcher.Invoke(() => {
-                        BorderBtnRand_MouseUp(BorderBtnRand, null);
-                    });
-                }
-            })).Start();
+            _ = TriggerInitialRandomizeAsync(windowLifetimeCancellationTokenSource.Token);
         }
 
         public static int randSeed = 0;
@@ -89,17 +51,25 @@ namespace Ink_Canvas {
             LabelNumberCount.Text = TotalCount.ToString();
         }
 
-        private void BorderBtnRand_MouseUp(object sender, MouseButtonEventArgs e) {
+        private async void BorderBtnRand_MouseUp(object sender, MouseButtonEventArgs e) {
+            if (isRandomizing)
+            {
+                return;
+            }
+
             Random random = new Random();// randSeed + DateTime.Now.Millisecond / 10 % 10);
             string outputString = "";
             List<string> outputs = new List<string>();
             List<int> rands = new List<int>();
+            CancellationToken cancellationToken = windowLifetimeCancellationTokenSource.Token;
 
             LabelOutput2.Visibility = Visibility.Collapsed;
             LabelOutput3.Visibility = Visibility.Collapsed;
             BorderBtnRandCover.Visibility = Visibility.Visible;
+            isRandomizing = true;
 
-            new Thread(new ThreadStart(() => {
+            try
+            {
                 for (int i = 0; i < 5; i++) {
                     int rand = random.Next(1, PeopleCount + 1);
                     while (rands.Contains(rand)) {
@@ -107,80 +77,75 @@ namespace Ink_Canvas {
                     }
                     rands.Add(rand);
                     if (rands.Count >= PeopleCount) rands = new List<int>();
-                    Dispatcher?.Invoke(() => {
-                        if (Names.Count != 0) {
-                            LabelOutput.Content = Names[rand - 1];
-                        } else {
-                            LabelOutput.Content = rand.ToString();
-                        }
-                    });
-
-                    Thread.Sleep(150);
+                    LabelOutput.Content = Names.Count != 0 ? Names[rand - 1] : rand.ToString();
+                    await Task.Delay(150, cancellationToken);
                 }
 
                 rands = new List<int>();
-                Dispatcher?.Invoke(() => {
-                    for (int i = 0; i < TotalCount; i++) {
-                        int rand = random.Next(1, PeopleCount + 1);
-                        while (rands.Contains(rand)) {
-                            rand = random.Next(1, PeopleCount + 1);
-                        }
-                        rands.Add(rand);
-                        if (rands.Count >= PeopleCount) rands = new List<int>();
-
-                        if (Names.Count != 0) {
-                            outputs.Add(Names[rand - 1]);
-                            outputString += Names[rand - 1] + Environment.NewLine;
-                        } else {
-                            outputs.Add(rand.ToString());
-                            outputString += rand.ToString() + Environment.NewLine;
-                        }
+                for (int i = 0; i < TotalCount; i++) {
+                    int rand = random.Next(1, PeopleCount + 1);
+                    while (rands.Contains(rand)) {
+                        rand = random.Next(1, PeopleCount + 1);
                     }
-                    if (TotalCount <= 5) {
-                        LabelOutput.Content = outputString.ToString().Trim();
-                    } else if (TotalCount <= 10) {
-                        LabelOutput2.Visibility = Visibility.Visible;
-                        outputString = "";
-                        for (int i = 0; i < (outputs.Count + 1) / 2; i++) {
-                            outputString += outputs[i].ToString() + Environment.NewLine;
-                        }
-                        LabelOutput.Content = outputString.ToString().Trim();
-                        outputString = "";
-                        for (int i = (outputs.Count + 1) / 2; i < outputs.Count; i++) {
-                            outputString += outputs[i].ToString() + Environment.NewLine;
-                        }
-                        LabelOutput2.Content = outputString.ToString().Trim();
+                    rands.Add(rand);
+                    if (rands.Count >= PeopleCount) rands = new List<int>();
+
+                    if (Names.Count != 0) {
+                        outputs.Add(Names[rand - 1]);
+                        outputString += Names[rand - 1] + Environment.NewLine;
                     } else {
-                        LabelOutput2.Visibility = Visibility.Visible;
-                        LabelOutput3.Visibility = Visibility.Visible;
-                        outputString = "";
-                        for (int i = 0; i < (outputs.Count + 1) / 3; i++) {
-                            outputString += outputs[i].ToString() + Environment.NewLine;
-                        }
-                        LabelOutput.Content = outputString.ToString().Trim();
-                        outputString = "";
-                        for (int i = (outputs.Count + 1) / 3; i < (outputs.Count + 1) * 2 / 3; i++) {
-                            outputString += outputs[i].ToString() + Environment.NewLine;
-                        }
-                        LabelOutput2.Content = outputString.ToString().Trim();
-                        outputString = "";
-                        for (int i = (outputs.Count + 1) * 2 / 3; i < outputs.Count; i++) {
-                            outputString += outputs[i].ToString() + Environment.NewLine;
-                        }
-                        LabelOutput3.Content = outputString.ToString().Trim();
+                        outputs.Add(rand.ToString());
+                        outputString += rand.ToString() + Environment.NewLine;
                     }
-                    BorderBtnRandCover.Visibility = Visibility.Collapsed;
+                }
 
-                    if (isAutoClose) {
-                        new Thread(new ThreadStart(() => {
-                            Thread.Sleep(1500);
-                            Dispatcher?.Invoke(() => {
-                                Close();
-                            });
-                        })).Start();
+                if (TotalCount <= 5) {
+                    LabelOutput.Content = outputString.Trim();
+                } else if (TotalCount <= 10) {
+                    LabelOutput2.Visibility = Visibility.Visible;
+                    outputString = "";
+                    for (int i = 0; i < (outputs.Count + 1) / 2; i++) {
+                        outputString += outputs[i] + Environment.NewLine;
                     }
-                });
-            })).Start();
+                    LabelOutput.Content = outputString.Trim();
+                    outputString = "";
+                    for (int i = (outputs.Count + 1) / 2; i < outputs.Count; i++) {
+                        outputString += outputs[i] + Environment.NewLine;
+                    }
+                    LabelOutput2.Content = outputString.Trim();
+                } else {
+                    LabelOutput2.Visibility = Visibility.Visible;
+                    LabelOutput3.Visibility = Visibility.Visible;
+                    outputString = "";
+                    for (int i = 0; i < (outputs.Count + 1) / 3; i++) {
+                        outputString += outputs[i] + Environment.NewLine;
+                    }
+                    LabelOutput.Content = outputString.Trim();
+                    outputString = "";
+                    for (int i = (outputs.Count + 1) / 3; i < (outputs.Count + 1) * 2 / 3; i++) {
+                        outputString += outputs[i] + Environment.NewLine;
+                    }
+                    LabelOutput2.Content = outputString.Trim();
+                    outputString = "";
+                    for (int i = (outputs.Count + 1) * 2 / 3; i < outputs.Count; i++) {
+                        outputString += outputs[i] + Environment.NewLine;
+                    }
+                    LabelOutput3.Content = outputString.Trim();
+                }
+
+                if (isAutoClose) {
+                    await Task.Delay(1500, cancellationToken);
+                    Close();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                BorderBtnRandCover.Visibility = Visibility.Collapsed;
+                isRandomizing = false;
+            }
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
@@ -223,6 +188,47 @@ namespace Ink_Canvas {
 
         private void BtnClose_MouseUp(object sender, MouseButtonEventArgs e) {
             Close();
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            windowLifetimeCancellationTokenSource.Cancel();
+            windowLifetimeCancellationTokenSource.Dispose();
+            base.OnClosed(e);
+        }
+
+        private void ApplyThemeFromMainWindow()
+        {
+            Application application = Application.Current;
+            MainWindow mainWindow = application?.MainWindow as MainWindow;
+            if (mainWindow == null || application == null)
+            {
+                return;
+            }
+
+            string resourcePath;
+            if (mainWindow.GetMainWindowTheme() == "Light")
+            {
+                ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
+                resourcePath = "Resources/Styles/Light-PopupWindow.xaml";
+            }
+            else
+            {
+                ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
+                resourcePath = "Resources/Styles/Dark-PopupWindow.xaml";
+            }
+
+            ResourceDictionary resourceDictionary = new ResourceDictionary
+            {
+                Source = new Uri(resourcePath, UriKind.Relative)
+            };
+            application.Resources.MergedDictionaries.Add(resourceDictionary);
+        }
+
+        private async Task TriggerInitialRandomizeAsync(CancellationToken cancellationToken)
+        {
+            await Task.Delay(100, cancellationToken);
+            BorderBtnRand_MouseUp(BorderBtnRand, null);
         }
     }
 }

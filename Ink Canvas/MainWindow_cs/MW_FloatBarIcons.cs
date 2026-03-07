@@ -7,7 +7,6 @@ using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using iNKORE.UI.WPF.Modern;
@@ -352,93 +351,120 @@ namespace Ink_Canvas
             new RandWindow(true).ShowDialog();
         }
 
-        private void GridInkReplayButton_Click(object sender, RoutedEventArgs e)
+        private async void GridInkReplayButton_Click(object sender, RoutedEventArgs e)
         {
             AnimationsHelper.HideWithSlideAndFade(BorderTools);
             AnimationsHelper.HideWithSlideAndFade(BoardBorderTools);
 
             CollapseBorderDrawShape();
 
+            CancelInkReplay(restoreCanvas: false);
             InkCanvasForInkReplay.Visibility = Visibility.Visible;
             inkCanvas.Visibility = Visibility.Collapsed;
-            isStopInkReplay = false;
             InkCanvasForInkReplay.Strokes.Clear();
             StrokeCollection strokes = inkCanvas.Strokes.Clone();
             if (inkCanvas.GetSelectedStrokes().Count != 0)
             {
                 strokes = inkCanvas.GetSelectedStrokes().Clone();
             }
-            int k = 1, i = 0;
-            new Thread(new ThreadStart(() =>
+
+            CancellationTokenSource replayCancellationTokenSource = BeginInkReplay();
+            try
             {
-                foreach (Stroke stroke in strokes)
-                {
-                    StylusPointCollection stylusPoints = new StylusPointCollection();
-                    if (stroke.StylusPoints.Count == 629) //圆或椭圆
-                    {
-                        Stroke s = null;
-                        foreach (StylusPoint stylusPoint in stroke.StylusPoints)
-                        {
-                            if (i++ >= 50)
-                            {
-                                i = 0;
-                                Thread.Sleep(10);
-                                if (isStopInkReplay) return;
-                            }
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                if (s != null && InkCanvasForInkReplay.Strokes.Contains(s))
-                                {
-                                    InkCanvasForInkReplay.Strokes.Remove(s);
-                                }
-                                stylusPoints.Add(stylusPoint);
-                                s = new Stroke(stylusPoints.Clone());
-                                s.DrawingAttributes = stroke.DrawingAttributes;
-                                InkCanvasForInkReplay.Strokes.Add(s);
-                            });
-                        }
-                    }
-                    else
-                    {
-                        Stroke s = null;
-                        foreach (StylusPoint stylusPoint in stroke.StylusPoints)
-                        {
-                            if (i++ >= k)
-                            {
-                                i = 0;
-                                Thread.Sleep(10);
-                                if (isStopInkReplay) return;
-                            }
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                if (s != null && InkCanvasForInkReplay.Strokes.Contains(s))
-                                {
-                                    InkCanvasForInkReplay.Strokes.Remove(s);
-                                }
-                                stylusPoints.Add(stylusPoint);
-                                s = new Stroke(stylusPoints.Clone());
-                                s.DrawingAttributes = stroke.DrawingAttributes;
-                                InkCanvasForInkReplay.Strokes.Add(s);
-                            });
-                        }
-                    }
-                }
-                Thread.Sleep(100);
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    InkCanvasForInkReplay.Visibility = Visibility.Collapsed;
-                    inkCanvas.Visibility = Visibility.Visible;
-                });
-            })).Start();
+                await ReplayStrokesAsync(strokes, replayCancellationTokenSource.Token);
+                await Task.Delay(100, replayCancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                CompleteInkReplay(replayCancellationTokenSource);
+            }
         }
-        bool isStopInkReplay = false;
+
+        private CancellationTokenSource inkReplayCancellationTokenSource;
+
+        private CancellationTokenSource BeginInkReplay()
+        {
+            inkReplayCancellationTokenSource?.Cancel();
+            inkReplayCancellationTokenSource?.Dispose();
+            inkReplayCancellationTokenSource = new CancellationTokenSource();
+            return inkReplayCancellationTokenSource;
+        }
+
+        private async Task ReplayStrokesAsync(StrokeCollection strokes, CancellationToken cancellationToken)
+        {
+            foreach (Stroke stroke in strokes)
+            {
+                int batchSize = stroke.StylusPoints.Count == 629 ? 50 : 1;
+                await ReplayStrokeAsync(stroke, batchSize, cancellationToken);
+            }
+        }
+
+        private async Task ReplayStrokeAsync(Stroke stroke, int batchSize, CancellationToken cancellationToken)
+        {
+            StylusPointCollection stylusPoints = new StylusPointCollection();
+            Stroke replayStroke = null;
+            int pointsSinceDelay = 0;
+
+            foreach (StylusPoint stylusPoint in stroke.StylusPoints)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (replayStroke != null && InkCanvasForInkReplay.Strokes.Contains(replayStroke))
+                {
+                    InkCanvasForInkReplay.Strokes.Remove(replayStroke);
+                }
+
+                stylusPoints.Add(stylusPoint);
+                replayStroke = new Stroke(stylusPoints.Clone())
+                {
+                    DrawingAttributes = stroke.DrawingAttributes.Clone()
+                };
+                InkCanvasForInkReplay.Strokes.Add(replayStroke);
+
+                if (++pointsSinceDelay >= batchSize)
+                {
+                    pointsSinceDelay = 0;
+                    await Task.Delay(10, cancellationToken);
+                }
+            }
+        }
+
+        private void CancelInkReplay(bool restoreCanvas)
+        {
+            inkReplayCancellationTokenSource?.Cancel();
+            if (restoreCanvas)
+            {
+                ResetInkReplayCanvasState();
+            }
+        }
+
+        private void CompleteInkReplay(CancellationTokenSource replayCancellationTokenSource)
+        {
+            if (!ReferenceEquals(inkReplayCancellationTokenSource, replayCancellationTokenSource))
+            {
+                replayCancellationTokenSource.Dispose();
+                return;
+            }
+
+            inkReplayCancellationTokenSource.Dispose();
+            inkReplayCancellationTokenSource = null;
+            ResetInkReplayCanvasState();
+        }
+
+        private void ResetInkReplayCanvasState()
+        {
+            InkCanvasForInkReplay.Visibility = Visibility.Collapsed;
+            inkCanvas.Visibility = Visibility.Visible;
+        }
+
         private void InkCanvasForInkReplay_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ClickCount == 2)
             {
-                InkCanvasForInkReplay.Visibility = Visibility.Collapsed;
-                inkCanvas.Visibility = Visibility.Visible;
-                isStopInkReplay = true;
+                CancelInkReplay(restoreCanvas: true);
             }
         }
 
@@ -449,7 +475,18 @@ namespace Ink_Canvas
 
         bool isViewboxFloatingBarMarginAnimationRunning = false;
 
-        private async void ViewboxFloatingBarMarginAnimation()
+        private void ViewboxFloatingBarMarginAnimation()
+        {
+            _ = ViewboxFloatingBarMarginAnimationAsync();
+        }
+
+        private async Task ViewboxFloatingBarMarginAnimationAfterDelayAsync(TimeSpan delay)
+        {
+            await Task.Delay(delay);
+            await ViewboxFloatingBarMarginAnimationAsync();
+        }
+
+        private async Task ViewboxFloatingBarMarginAnimationAsync()
         {
             double MarginFromEdge = Settings.Appearance.FloatingBarBottomMargin;
             if (isFloatingBarFolded)
