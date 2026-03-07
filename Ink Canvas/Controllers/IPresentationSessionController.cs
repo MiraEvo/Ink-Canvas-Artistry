@@ -5,15 +5,15 @@ namespace Ink_Canvas.Controllers
 {
     public interface IPresentationSessionController
     {
-        event Action<Presentation>? PresentationConnected;
+        event Action? PresentationConnected;
 
-        event Action<Presentation>? PresentationClosed;
+        event Action? PresentationClosed;
 
-        event Action<SlideShowWindow>? SlideShowBegin;
+        event Action? SlideShowBegin;
 
-        event Action<SlideShowWindow>? SlideShowNextSlide;
+        event Action? SlideShowNextSlide;
 
-        event Action<Presentation>? SlideShowEnd;
+        event Action? SlideShowEnd;
 
         Microsoft.Office.Interop.PowerPoint.Application? PowerPointApplication { get; }
 
@@ -22,6 +22,24 @@ namespace Ink_Canvas.Controllers
         Slides? Slides { get; }
 
         Slide? Slide { get; }
+
+        bool TryGoToSlide(int slideNumber);
+
+        bool TryGoToPreviousSlide();
+
+        bool TryGoToNextSlide();
+
+        bool TryExitSlideShow();
+
+        bool TryShowSlideNavigation();
+
+        bool HasHiddenSlides();
+
+        bool TryUnhideHiddenSlides();
+
+        bool HasAutomaticAdvance();
+
+        bool TryDisableAutomaticAdvance();
 
         void StartMonitoring();
 

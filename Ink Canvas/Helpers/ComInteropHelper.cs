@@ -43,5 +43,75 @@ namespace Ink_Canvas.Helpers
 
             return typedObject;
         }
+
+        public static void SafeRelease(object? comObject)
+        {
+            if (comObject == null || !Marshal.IsComObject(comObject))
+            {
+                return;
+            }
+
+            try
+            {
+                Marshal.ReleaseComObject(comObject);
+            }
+            catch
+            {
+            }
+        }
+
+        public static void SafeFinalRelease(object? comObject)
+        {
+            if (comObject == null || !Marshal.IsComObject(comObject))
+            {
+                return;
+            }
+
+            try
+            {
+                Marshal.FinalReleaseComObject(comObject);
+            }
+            catch
+            {
+            }
+        }
+
+        public static bool AreSameComObjects(object? left, object? right)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            IntPtr leftUnknown = IntPtr.Zero;
+            IntPtr rightUnknown = IntPtr.Zero;
+            try
+            {
+                leftUnknown = Marshal.GetIUnknownForObject(left);
+                rightUnknown = Marshal.GetIUnknownForObject(right);
+                return leftUnknown == rightUnknown;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (leftUnknown != IntPtr.Zero)
+                {
+                    Marshal.Release(leftUnknown);
+                }
+
+                if (rightUnknown != IntPtr.Zero)
+                {
+                    Marshal.Release(rightUnknown);
+                }
+            }
+        }
     }
 }
