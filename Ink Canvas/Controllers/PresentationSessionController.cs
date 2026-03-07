@@ -18,7 +18,10 @@ namespace Ink_Canvas.Controllers
         private readonly Func<bool> isWpsSupportEnabled;
         private readonly Func<bool> shouldSkipDetection;
         private readonly Timer monitorTimer;
-        private int isDetecting;
+
+        private int isMonitoring;
+        private int isDetectionQueued;
+        private int isDetectionWorkerRunning;
 
         private object? boundApplicationObject;
         private string boundPresentationIdentity = string.Empty;
@@ -30,12 +33,15 @@ namespace Ink_Canvas.Controllers
             Func<bool> isWpsSupportEnabled,
             Func<bool> shouldSkipDetection)
         {
+            ArgumentNullException.ThrowIfNull(presentationSessionViewModel);
+            ArgumentNullException.ThrowIfNull(isWpsSupportEnabled);
+            ArgumentNullException.ThrowIfNull(shouldSkipDetection);
+
             this.presentationSessionViewModel = presentationSessionViewModel;
             this.isWpsSupportEnabled = isWpsSupportEnabled;
             this.shouldSkipDetection = shouldSkipDetection;
 
-            monitorTimer = new Timer(MonitorIntervalMs);
-            monitorTimer.Elapsed += MonitorTimer_Elapsed;
+            monitorTimer = CreateTimer(MonitorIntervalMs, MonitorTimer_Elapsed);
         }
 
         public event Action? PresentationConnected;
@@ -58,80 +64,88 @@ namespace Ink_Canvas.Controllers
 
         public void StartMonitoring()
         {
+            Interlocked.Exchange(ref isMonitoring, 1);
             monitorTimer.Start();
             QueueImmediateDetection();
         }
 
         public void StopMonitoring()
         {
+            Interlocked.Exchange(ref isMonitoring, 0);
+            Interlocked.Exchange(ref isDetectionQueued, 0);
             monitorTimer.Stop();
             ClearBinding();
             PublishState(PresentationRuntimeState.Disconnected);
         }
 
-        public bool TryGoToSlide(int slideNumber)
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryGoToSlide(boundApplicationObject, slideNumber);
-        }
+        public bool TryGoToSlide(int slideNumber) =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryGoToSlide(boundApplicationObject, slideNumber);
 
-        public bool TryGoToPreviousSlide()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryGoToPreviousSlide(boundApplicationObject);
-        }
+        public bool TryGoToPreviousSlide() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryGoToPreviousSlide(boundApplicationObject);
 
-        public bool TryGoToNextSlide()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryGoToNextSlide(boundApplicationObject);
-        }
+        public bool TryGoToNextSlide() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryGoToNextSlide(boundApplicationObject);
 
-        public bool TryExitSlideShow()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryExitSlideShow(boundApplicationObject);
-        }
+        public bool TryExitSlideShow() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryExitSlideShow(boundApplicationObject);
 
-        public bool TryShowSlideNavigation()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryShowSlideNavigation(boundApplicationObject);
-        }
+        public bool TryShowSlideNavigation() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryShowSlideNavigation(boundApplicationObject);
 
-        public bool HasHiddenSlides()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.HasHiddenSlides(boundApplicationObject);
-        }
+        public bool HasHiddenSlides() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.HasHiddenSlides(boundApplicationObject);
 
-        public bool TryUnhideHiddenSlides()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryUnhideHiddenSlides(boundApplicationObject);
-        }
+        public bool TryUnhideHiddenSlides() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryUnhideHiddenSlides(boundApplicationObject);
 
-        public bool HasAutomaticAdvance()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.HasAutomaticAdvance(boundApplicationObject);
-        }
+        public bool HasAutomaticAdvance() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.HasAutomaticAdvance(boundApplicationObject);
 
-        public bool TryDisableAutomaticAdvance()
-        {
-            return boundApplicationObject != null && DynamicPresentationAccessor.TryDisableAutomaticAdvance(boundApplicationObject);
-        }
+        public bool TryDisableAutomaticAdvance() =>
+            boundApplicationObject != null && DynamicPresentationAccessor.TryDisableAutomaticAdvance(boundApplicationObject);
 
-        private void MonitorTimer_Elapsed(object? sender, ElapsedEventArgs e)
-        {
-            QueueImmediateDetection();
-        }
+        private void MonitorTimer_Elapsed(object? sender, ElapsedEventArgs e) => QueueImmediateDetection();
 
         private void QueueImmediateDetection()
         {
-            _ = Task.Run(TryMonitorSession);
-        }
-
-        private void TryMonitorSession()
-        {
-            if (shouldSkipDetection())
+            if (!IsMonitoringEnabled())
             {
                 return;
             }
 
-            if (Interlocked.Exchange(ref isDetecting, 1) == 1)
+            Interlocked.Exchange(ref isDetectionQueued, 1);
+            if (Interlocked.CompareExchange(ref isDetectionWorkerRunning, 1, 0) != 0)
+            {
+                return;
+            }
+
+            _ = Task.Run(ProcessDetectionQueue);
+        }
+
+        private void ProcessDetectionQueue()
+        {
+            try
+            {
+                while (IsMonitoringEnabled() && Interlocked.Exchange(ref isDetectionQueued, 0) == 1)
+                {
+                    TryMonitorSession();
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref isDetectionWorkerRunning, 0);
+
+                if (IsMonitoringEnabled() && Volatile.Read(ref isDetectionQueued) == 1)
+                {
+                    QueueImmediateDetection();
+                }
+            }
+        }
+
+        private void TryMonitorSession()
+        {
+            if (!IsMonitoringEnabled() || shouldSkipDetection())
             {
                 return;
             }
@@ -140,9 +154,17 @@ namespace Ink_Canvas.Controllers
             {
                 MonitorSession();
             }
-            finally
+            catch (COMException ex)
             {
-                Interlocked.Exchange(ref isDetecting, 0);
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Detection failed during COM access");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Detection failed due to invalid state");
+            }
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Detection failed due to invalid arguments");
             }
         }
 
@@ -152,6 +174,11 @@ namespace Ink_Canvas.Controllers
             try
             {
                 bestCandidate = RotPresentationDiscovery.FindBestCandidate(isWpsSupportEnabled());
+                if (!IsMonitoringEnabled())
+                {
+                    return;
+                }
+
                 if (bestCandidate == null)
                 {
                     ClearBinding();
@@ -159,26 +186,30 @@ namespace Ink_Canvas.Controllers
                     return;
                 }
 
-                bool shouldRebind = boundApplicationObject == null
-                    || !bestCandidate.MatchesApplication(boundApplicationObject)
-                    || !PresentationIdentitiesEqual(boundPresentationIdentity, bestCandidate.State.PresentationIdentity);
-                if (shouldRebind)
+                if (ShouldRebind(bestCandidate))
                 {
                     BindCandidate(bestCandidate);
-                    UpdateStrongInteropState();
+                    RefreshStrongInteropState();
                     PublishState(bestCandidate.State);
                     bestCandidate = null;
                     return;
                 }
 
                 boundPresentationIdentity = bestCandidate.State.PresentationIdentity;
-                UpdateStrongInteropState();
+                RefreshStrongInteropState();
                 PublishState(bestCandidate.State);
             }
             finally
             {
                 bestCandidate?.Dispose();
             }
+        }
+
+        private bool ShouldRebind(PresentationBindingCandidate candidate)
+        {
+            return boundApplicationObject == null
+                || !candidate.MatchesApplication(boundApplicationObject)
+                || !PresentationIdentitiesEqual(boundPresentationIdentity, candidate.State.PresentationIdentity);
         }
 
         private void BindCandidate(PresentationBindingCandidate candidate)
@@ -192,134 +223,125 @@ namespace Ink_Canvas.Controllers
             TryBindInteropEvents();
         }
 
-        private void UpdateStrongInteropState()
+        private void RefreshStrongInteropState()
         {
-            ComInteropHelper.SafeRelease(Slide);
-            ComInteropHelper.SafeRelease(Slides);
-            ComInteropHelper.SafeRelease(Presentation);
-
-            Presentation = null;
-            Slides = null;
-            Slide = null;
+            ReleaseStrongInteropState();
 
             if (PowerPointApplication == null)
             {
                 return;
             }
 
-            try
-            {
-                Presentation = PowerPointApplication.ActivePresentation;
-            }
-            catch
-            {
-                Presentation = null;
-            }
-
-            try
-            {
-                Slides = Presentation?.Slides;
-            }
-            catch
-            {
-                Slides = null;
-            }
-
-            try
-            {
-                Slide = PowerPointApplication.SlideShowWindows.Count >= 1
+            Presentation = TryReadStrongInterop(() => PowerPointApplication.ActivePresentation);
+            Slides = TryReadStrongInterop(() => Presentation?.Slides);
+            Slide = TryReadStrongInterop(() =>
+                PowerPointApplication.SlideShowWindows.Count >= 1
                     ? PowerPointApplication.SlideShowWindows[1].View.Slide
-                    : null;
-            }
-            catch
-            {
-                Slide = null;
-            }
+                    : null);
         }
 
         private void PublishState(PresentationRuntimeState newState)
         {
+            if (!IsMonitoringEnabled() && newState.IsConnected)
+            {
+                return;
+            }
+
             PresentationRuntimeState previousState = publishedState;
             publishedState = newState;
 
             RunOnUiThread(() =>
             {
-                if (!newState.IsConnected)
-                {
-                    presentationSessionViewModel.Disconnect();
-                }
-                else
-                {
-                    presentationSessionViewModel.SetConnection(
-                        newState.Provider,
-                        newState.PresentationName,
-                        newState.SlideCount,
-                        newState.CurrentSlideIndex,
-                        newState.IsSlideShowRunning);
-
-                    if (!newState.IsSlideShowRunning)
-                    {
-                        presentationSessionViewModel.SetNavigationVisibility(false, false);
-                    }
-                }
-
-                bool presentationChanged = previousState.IsConnected
-                    && newState.IsConnected
-                    && !PresentationIdentitiesEqual(previousState.PresentationIdentity, newState.PresentationIdentity);
-                if (presentationChanged)
-                {
-                    if (previousState.IsSlideShowRunning)
-                    {
-                        presentationSessionViewModel.SetNavigationVisibility(false, false);
-                        SlideShowEnd?.Invoke();
-                    }
-
-                    PresentationClosed?.Invoke();
-                    PresentationConnected?.Invoke();
-
-                    if (newState.IsSlideShowRunning)
-                    {
-                        SlideShowBegin?.Invoke();
-                    }
-
-                    return;
-                }
-
-                if (!previousState.IsConnected && newState.IsConnected)
-                {
-                    PresentationConnected?.Invoke();
-                }
-                else if (previousState.IsConnected && !newState.IsConnected)
-                {
-                    if (previousState.IsSlideShowRunning)
-                    {
-                        presentationSessionViewModel.SetNavigationVisibility(false, false);
-                        SlideShowEnd?.Invoke();
-                    }
-
-                    PresentationClosed?.Invoke();
-                    return;
-                }
-
-                if (!newState.IsConnected)
+                if (!IsMonitoringEnabled() && newState.IsConnected)
                 {
                     return;
                 }
 
-                if (!previousState.IsSlideShowRunning && newState.IsSlideShowRunning)
-                {
-                    SlideShowBegin?.Invoke();
-                }
-                else if (previousState.IsSlideShowRunning && !newState.IsSlideShowRunning)
+                ApplyViewModelState(newState);
+                PublishTransitionEvents(previousState, newState);
+            }, "Presentation Session | Failed to publish session state");
+        }
+
+        private void ApplyViewModelState(PresentationRuntimeState newState)
+        {
+            if (!newState.IsConnected)
+            {
+                presentationSessionViewModel.Disconnect();
+                return;
+            }
+
+            presentationSessionViewModel.SetConnection(
+                newState.Provider,
+                newState.PresentationName,
+                newState.SlideCount,
+                newState.CurrentSlideIndex,
+                newState.IsSlideShowRunning);
+
+            if (!newState.IsSlideShowRunning)
+            {
+                presentationSessionViewModel.SetNavigationVisibility(false, false);
+            }
+        }
+
+        private void PublishTransitionEvents(PresentationRuntimeState previousState, PresentationRuntimeState newState)
+        {
+            bool presentationChanged = previousState.IsConnected
+                && newState.IsConnected
+                && !PresentationIdentitiesEqual(previousState.PresentationIdentity, newState.PresentationIdentity);
+
+            if (presentationChanged)
+            {
+                if (previousState.IsSlideShowRunning)
                 {
                     presentationSessionViewModel.SetNavigationVisibility(false, false);
                     SlideShowEnd?.Invoke();
                 }
-                else if (newState.IsSlideShowRunning && previousState.CurrentSlideIndex != newState.CurrentSlideIndex)
+
+                PresentationClosed?.Invoke();
+                PresentationConnected?.Invoke();
+
+                if (newState.IsSlideShowRunning)
                 {
-                    SlideShowNextSlide?.Invoke();
+                    SlideShowBegin?.Invoke();
                 }
-            });
+
+                return;
+            }
+
+            if (!previousState.IsConnected && newState.IsConnected)
+            {
+                PresentationConnected?.Invoke();
+            }
+            else if (previousState.IsConnected && !newState.IsConnected)
+            {
+                if (previousState.IsSlideShowRunning)
+                {
+                    presentationSessionViewModel.SetNavigationVisibility(false, false);
+                    SlideShowEnd?.Invoke();
+                }
+
+                PresentationClosed?.Invoke();
+                return;
+            }
+
+            if (!newState.IsConnected)
+            {
+                return;
+            }
+
+            if (!previousState.IsSlideShowRunning && newState.IsSlideShowRunning)
+            {
+                SlideShowBegin?.Invoke();
+            }
+            else if (previousState.IsSlideShowRunning && !newState.IsSlideShowRunning)
+            {
+                presentationSessionViewModel.SetNavigationVisibility(false, false);
+                SlideShowEnd?.Invoke();
+            }
+            else if (newState.IsSlideShowRunning && previousState.CurrentSlideIndex != newState.CurrentSlideIndex)
+            {
+                SlideShowNextSlide?.Invoke();
+            }
         }
 
         private void TryBindInteropEvents()
@@ -381,14 +403,8 @@ namespace Ink_Canvas.Controllers
         private void ClearBinding()
         {
             UnbindInteropEvents();
+            ReleaseStrongInteropState();
 
-            ComInteropHelper.SafeRelease(Slide);
-            ComInteropHelper.SafeRelease(Slides);
-            ComInteropHelper.SafeRelease(Presentation);
-
-            Slide = null;
-            Slides = null;
-            Presentation = null;
             PowerPointApplication = null;
 
             ComInteropHelper.SafeFinalRelease(boundApplicationObject);
@@ -396,46 +412,88 @@ namespace Ink_Canvas.Controllers
             boundPresentationIdentity = string.Empty;
         }
 
-        private void OnPresentationClose(Presentation presentation)
+        private void ReleaseStrongInteropState()
         {
-            QueueImmediateDetection();
+            ComInteropHelper.SafeRelease(Slide);
+            ComInteropHelper.SafeRelease(Slides);
+            ComInteropHelper.SafeRelease(Presentation);
+
+            Slide = null;
+            Slides = null;
+            Presentation = null;
         }
 
-        private void OnSlideShowBegin(SlideShowWindow window)
+        private static T? TryReadStrongInterop<T>(Func<T?> accessor) where T : class
         {
-            QueueImmediateDetection();
-        }
-
-        private void OnSlideShowNextSlide(SlideShowWindow window)
-        {
-            QueueImmediateDetection();
-        }
-
-        private void OnSlideShowEnd(Presentation presentation)
-        {
-            QueueImmediateDetection();
-        }
-
-        private static bool PresentationIdentitiesEqual(string? left, string? right)
-        {
-            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static void RunOnUiThread(Action? action)
-        {
-            if (action == null)
+            try
             {
-                return;
+                return accessor();
             }
+            catch (COMException)
+            {
+                return null;
+            }
+            catch (InvalidOperationException)
+            {
+                return null;
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+        }
 
-            if (System.Windows.Application.Current?.Dispatcher == null
-                || System.Windows.Application.Current.Dispatcher.CheckAccess())
+        private void OnPresentationClose(Presentation presentation) => QueueImmediateDetection();
+
+        private void OnSlideShowBegin(SlideShowWindow window) => QueueImmediateDetection();
+
+        private void OnSlideShowNextSlide(SlideShowWindow window) => QueueImmediateDetection();
+
+        private void OnSlideShowEnd(Presentation presentation) => QueueImmediateDetection();
+
+        private bool IsMonitoringEnabled() => Volatile.Read(ref isMonitoring) == 1;
+
+        private static bool PresentationIdentitiesEqual(string? left, string? right) =>
+            string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+
+        private static Timer CreateTimer(double interval, ElapsedEventHandler elapsedHandler)
+        {
+            Timer timer = new(interval)
+            {
+                AutoReset = true
+            };
+            timer.Elapsed += elapsedHandler;
+            return timer;
+        }
+
+        private static void RunOnUiThread(Action action, string failureContext)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+
+            if (System.Windows.Application.Current?.Dispatcher is not { } dispatcher)
             {
                 action();
                 return;
             }
 
-            System.Windows.Application.Current.Dispatcher.Invoke(action);
+            try
+            {
+                if (dispatcher.CheckAccess())
+                {
+                    action();
+                    return;
+                }
+
+                dispatcher.Invoke(action);
+            }
+            catch (TaskCanceledException ex)
+            {
+                LogHelper.WriteLogToFile(ex, failureContext);
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, failureContext);
+            }
         }
     }
 }

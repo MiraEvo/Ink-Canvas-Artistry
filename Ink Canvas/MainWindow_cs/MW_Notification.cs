@@ -13,23 +13,39 @@ namespace Ink_Canvas
             (Application.Current?.Windows.Cast<Window>().FirstOrDefault(window => window is MainWindow) as MainWindow)?.ShowNotificationAsync(notice, isShowImmediately);
         }
 
-        private CancellationTokenSource ShowNotificationCancellationTokenSource = new CancellationTokenSource();
+        private CancellationTokenSource showNotificationCancellationTokenSource = new();
 
-        public async void ShowNotificationAsync(string notice, bool isShowImmediately = true)
+        public void ShowNotificationAsync(string notice, bool isShowImmediately = true)
         {
-            CancellationTokenSource previousTokenSource = ShowNotificationCancellationTokenSource;
-            ShowNotificationCancellationTokenSource = new CancellationTokenSource();
-            previousTokenSource.Cancel();
-            previousTokenSource.Dispose();
-            var token = ShowNotificationCancellationTokenSource.Token;
+            _ = ShowNotificationCoreAsync(notice, isShowImmediately);
+        }
 
-            TextBlockNotice.Text = notice;
-            AnimationsHelper.ShowWithSlideFromBottomAndFade(GridNotifications);
+        private async Task ShowNotificationCoreAsync(string notice, bool isShowImmediately)
+        {
+            CancellationToken token = await Dispatcher.InvokeAsync(() =>
+            {
+                CancellationTokenSource previousTokenSource = showNotificationCancellationTokenSource;
+                showNotificationCancellationTokenSource = new CancellationTokenSource();
+                previousTokenSource.Cancel();
+                previousTokenSource.Dispose();
+
+                TextBlockNotice.Text = notice;
+                if (isShowImmediately)
+                {
+                    AnimationsHelper.ShowWithSlideFromBottomAndFade(GridNotifications);
+                }
+                else
+                {
+                    GridNotifications.Visibility = Visibility.Visible;
+                }
+
+                return showNotificationCancellationTokenSource.Token;
+            });
 
             try
             {
                 await Task.Delay(2000, token);
-                AnimationsHelper.HideWithSlideAndFade(GridNotifications);
+                await Dispatcher.InvokeAsync(() => AnimationsHelper.HideWithSlideAndFade(GridNotifications));
             }
             catch (TaskCanceledException)
             {

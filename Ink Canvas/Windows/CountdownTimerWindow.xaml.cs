@@ -19,20 +19,19 @@ namespace Ink_Canvas
         {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            Application application = Application.Current;
-            MainWindow mainWindow = application?.MainWindow as MainWindow;
-            if (mainWindow != null && application != null)
+            Application? application = Application.Current;
+            if (application?.MainWindow is MainWindow mainWindow)
             {
                 if (mainWindow.GetMainWindowTheme() == "Light")
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
+                    ResourceDictionary rd = new() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
                     application.Resources.MergedDictionaries.Add(rd);
                 }
                 else
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
+                    ResourceDictionary rd = new() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
                     application.Resources.MergedDictionaries.Add(rd);
                 }
             }
@@ -41,7 +40,7 @@ namespace Ink_Canvas
             timer.Interval = 50;
         }
 
-        private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+        private void Timer_Elapsed(object? sender, ElapsedEventArgs? e)
         {
             if (!isTimerRunning || isPaused)
             {
@@ -56,42 +55,20 @@ namespace Ink_Canvas
             double spentTimePercent = totalSeconds > 0
                 ? timeSpan.TotalMilliseconds / (totalSeconds * 1000.0)
                 : 1;
-            Application application = Application.Current;
+            bool isFinished = spentTimePercent >= 1;
+            if (isFinished)
+            {
+                timer.Stop();
+                isTimerRunning = false;
+            }
+
+            Application? application = Application.Current;
             if (application?.Dispatcher == null)
             {
                 return;
             }
 
-            application.Dispatcher.Invoke(() =>
-            {
-                ProcessBarTime.CurrentValue = 1 - spentTimePercent;
-                TextBlockHour.Text = leftTimeSpan.Hours.ToString("00");
-                TextBlockMinute.Text = leftTimeSpan.Minutes.ToString("00");
-                TextBlockSecond.Text = leftTimeSpan.Seconds.ToString("00");
-                TbCurrentTime.Text = leftTimeSpan.ToString(@"hh\:mm\:ss");
-                if (spentTimePercent >= 1)
-                {
-                    ProcessBarTime.CurrentValue = 0;
-                    TextBlockHour.Text = "00";
-                    TextBlockMinute.Text = "00";
-                    TextBlockSecond.Text = "00";
-                    timer.Stop();
-                    isTimerRunning = false;
-                    SymbolIconStart.Glyph = "\uEdb5";
-                    SymbolIconStartCover.Glyph = "\uEdb5";
-                    BtnStartCover.Visibility = Visibility.Visible;
-                    BorderStopTime.Visibility = Visibility.Collapsed;
-                }
-            });
-            if (spentTimePercent >= 1)
-            {
-                application.Dispatcher.Invoke(() =>
-                {
-                    //Play sound
-                    player.Stream = Properties.Resources.TimerDownNotice;
-                    player.Play();
-                });
-            }
+            _ = application.Dispatcher.InvokeAsync(() => ApplyTimerTick(leftTimeSpan, spentTimePercent, isFinished));
         }
 
         private readonly SoundPlayer player = new SoundPlayer();
@@ -108,6 +85,32 @@ namespace Ink_Canvas
         bool isPaused = false;
 
         private readonly Timer timer = new Timer();
+
+        private void ApplyTimerTick(TimeSpan leftTimeSpan, double spentTimePercent, bool isFinished)
+        {
+            ProcessBarTime.CurrentValue = 1 - spentTimePercent;
+            TextBlockHour.Text = leftTimeSpan.Hours.ToString("00");
+            TextBlockMinute.Text = leftTimeSpan.Minutes.ToString("00");
+            TextBlockSecond.Text = leftTimeSpan.Seconds.ToString("00");
+            TbCurrentTime.Text = leftTimeSpan.ToString(@"hh\:mm\:ss");
+
+            if (!isFinished)
+            {
+                return;
+            }
+
+            ProcessBarTime.CurrentValue = 0;
+            TextBlockHour.Text = "00";
+            TextBlockMinute.Text = "00";
+            TextBlockSecond.Text = "00";
+            SymbolIconStart.Glyph = "\uEdb5";
+            SymbolIconStartCover.Glyph = "\uEdb5";
+            BtnStartCover.Visibility = Visibility.Visible;
+            BorderStopTime.Visibility = Visibility.Collapsed;
+
+            player.Stream = Properties.Resources.TimerDownNotice;
+            player.Play();
+        }
 
         private void Grid_MouseUp(object sender, MouseButtonEventArgs e)
         {

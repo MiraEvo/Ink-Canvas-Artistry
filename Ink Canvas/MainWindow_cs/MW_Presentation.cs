@@ -69,9 +69,8 @@ namespace Ink_Canvas
 
         private void PresentationViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (!Dispatcher.CheckAccess())
+            if (!TryEnqueueOnUiThread(() => PresentationViewModel_PropertyChanged(sender, e)))
             {
-                Dispatcher.Invoke(() => PresentationViewModel_PropertyChanged(sender, e));
                 return;
             }
 
@@ -100,6 +99,17 @@ namespace Ink_Canvas
         private void StopPresentationMonitoring()
         {
             presentationSessionController?.StopMonitoring();
+        }
+
+        private bool TryEnqueueOnUiThread(Action action)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                return true;
+            }
+
+            _ = Dispatcher.InvokeAsync(action);
+            return false;
         }
     }
 }
