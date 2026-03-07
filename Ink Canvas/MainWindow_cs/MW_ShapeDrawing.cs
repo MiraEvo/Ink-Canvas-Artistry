@@ -71,37 +71,20 @@ namespace Ink_Canvas
 
             await Task.Delay(500);
 
-            if (lastMouseDownSender == sender)
+            if (lastMouseDownSender != sender
+                || sender is not UIElement shapeButton
+                || !TryGetLongPressShapeTool(sender, out ShapeToolKind tool))
             {
-                lastMouseDownSender = null;
-                var dA = new DoubleAnimation(1, 0.3, new Duration(TimeSpan.FromMilliseconds(100)));
-                ((UIElement)sender).BeginAnimation(OpacityProperty, dA);
+                return;
+            }
 
-                if (sender == ImageDrawLine || sender == BoardImageDrawLine)
-                {
-                    BeginShapeDrawing(ShapeToolKind.Line);
-                }
-                else if (sender == ImageDrawDashedLine || sender == BoardImageDrawDashedLine)
-                {
-                    BeginShapeDrawing(ShapeToolKind.DashedLine);
-                }
-                else if (sender == ImageDrawDotLine || sender == BoardImageDrawDotLine)
-                {
-                    BeginShapeDrawing(ShapeToolKind.DotLine);
-                }
-                else if (sender == ImageDrawArrow || sender == BoardImageDrawArrow)
-                {
-                    BeginShapeDrawing(ShapeToolKind.Arrow);
-                }
-                else if (sender == ImageDrawParallelLine || sender == BoardImageDrawParallelLine)
-                {
-                    BeginShapeDrawing(ShapeToolKind.ParallelLines);
-                }
-                isLongPressSelected = true;
-                if (isSingleFingerDragMode)
-                {
-                    BtnFingerDragMode_Click(null, null);
-                }
+            lastMouseDownSender = null;
+            shapeButton.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0.3, new Duration(TimeSpan.FromMilliseconds(100))));
+            BeginShapeDrawing(tool);
+            isLongPressSelected = true;
+            if (isSingleFingerDragMode)
+            {
+                BtnFingerDragMode_Click(null, null);
             }
         }
 
@@ -114,23 +97,62 @@ namespace Ink_Canvas
             isLongPressSelected = false;
         }
 
-        private Task<bool> CheckIsDrawingShapesInMultiTouchMode()
+        private void PrepareForShapeDrawing()
         {
             if (isInMultiTouchMode)
             {
                 SettingsViewModel.SetIsEnableMultiTouchMode(false, false);
                 lastIsInMultiTouchMode = true;
             }
-            return Task.FromResult(true);
         }
 
-        private async void BtnDrawLine_Click(object sender, MouseButtonEventArgs e)
+        private bool TryGetLongPressShapeTool(object sender, out ShapeToolKind tool)
         {
-            await CheckIsDrawingShapesInMultiTouchMode();
+            switch (sender)
+            {
+                case var _ when sender == ImageDrawLine || sender == BoardImageDrawLine:
+                    tool = ShapeToolKind.Line;
+                    return true;
+                case var _ when sender == ImageDrawDashedLine || sender == BoardImageDrawDashedLine:
+                    tool = ShapeToolKind.DashedLine;
+                    return true;
+                case var _ when sender == ImageDrawDotLine || sender == BoardImageDrawDotLine:
+                    tool = ShapeToolKind.DotLine;
+                    return true;
+                case var _ when sender == ImageDrawArrow || sender == BoardImageDrawArrow:
+                    tool = ShapeToolKind.Arrow;
+                    return true;
+                case var _ when sender == ImageDrawParallelLine || sender == BoardImageDrawParallelLine:
+                    tool = ShapeToolKind.ParallelLines;
+                    return true;
+                default:
+                    tool = default;
+                    return false;
+            }
+        }
+
+        private void BeginShapeDrawingFromToolbar(ShapeToolKind tool, bool resetMultiStep = false, Action? additionalSetup = null)
+        {
+            PrepareForShapeDrawing();
+            BeginShapeDrawing(tool);
+
+            if (resetMultiStep)
+            {
+                drawMultiStepShapeCurrentStep = 0;
+            }
+
+            additionalSetup?.Invoke();
+            DrawShapePromptToPen();
+        }
+
+        private void BeginLongPressCompatibleShapeDrawing(object? sender, ShapeToolKind tool, UIElement previewElement)
+        {
+            PrepareForShapeDrawing();
             if (lastMouseDownSender == sender)
             {
-                BeginShapeDrawing(ShapeToolKind.Line);
+                BeginShapeDrawing(tool);
             }
+
             lastMouseDownSender = null;
             if (isLongPressSelected)
             {
@@ -138,236 +160,94 @@ namespace Ink_Canvas
                 {
                     CollapseBorderDrawShape(true);
                 }
-                var dA = new DoubleAnimation(1, 1, new Duration(TimeSpan.FromMilliseconds(0)));
-                ImageDrawLine.BeginAnimation(OpacityProperty, dA);
+
+                previewElement.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 1, new Duration(TimeSpan.Zero)));
             }
+
             DrawShapePromptToPen();
         }
 
-        private async void BtnDrawDashedLine_Click(object sender, MouseButtonEventArgs e)
+        private void InitializeCuboidDrawing()
         {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            if (lastMouseDownSender == sender)
-            {
-                BeginShapeDrawing(ShapeToolKind.DashedLine);
-            }
-            lastMouseDownSender = null;
-            if (isLongPressSelected)
-            {
-                if (ToggleSwitchDrawShapeBorderAutoHide.IsOn)
-                {
-                    CollapseBorderDrawShape(true);
-                }
-                var dA = new DoubleAnimation(1, 1, new Duration(TimeSpan.FromMilliseconds(0)));
-                ImageDrawDashedLine.BeginAnimation(OpacityProperty, dA);
-            }
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawDotLine_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            if (lastMouseDownSender == sender)
-            {
-                BeginShapeDrawing(ShapeToolKind.DotLine);
-            }
-            lastMouseDownSender = null;
-            if (isLongPressSelected)
-            {
-                if (ToggleSwitchDrawShapeBorderAutoHide.IsOn)
-                {
-                    CollapseBorderDrawShape(true);
-                }
-                var dA = new DoubleAnimation(1, 1, new Duration(TimeSpan.FromMilliseconds(0)));
-                ImageDrawDotLine.BeginAnimation(OpacityProperty, dA);
-            }
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawArrow_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            if (lastMouseDownSender == sender)
-            {
-                BeginShapeDrawing(ShapeToolKind.Arrow);
-            }
-            lastMouseDownSender = null;
-            if (isLongPressSelected)
-            {
-                if (ToggleSwitchDrawShapeBorderAutoHide.IsOn)
-                {
-                    CollapseBorderDrawShape(true);
-                }
-                var dA = new DoubleAnimation(1, 1, new Duration(TimeSpan.FromMilliseconds(0)));
-                ImageDrawArrow.BeginAnimation(OpacityProperty, dA);
-            }
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawParallelLine_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            if (lastMouseDownSender == sender)
-            {
-                BeginShapeDrawing(ShapeToolKind.ParallelLines);
-            }
-            lastMouseDownSender = null;
-            if (isLongPressSelected)
-            {
-                if (ToggleSwitchDrawShapeBorderAutoHide.IsOn)
-                {
-                    CollapseBorderDrawShape(true);
-                }
-                var dA = new DoubleAnimation(1, 1, new Duration(TimeSpan.FromMilliseconds(0)));
-                ImageDrawParallelLine.BeginAnimation(OpacityProperty, dA);
-            }
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCoordinate1_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantI);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCoordinate2_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantII);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCoordinate3_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantIII);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCoordinate4_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantIV);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCoordinate5_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CoordinateThreeAxes);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawRectangle_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Rectangle);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawRectangleCenter_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.RectangleFromCenter);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawEllipse_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Ellipse);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCircle_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Circle);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCenterEllipse_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CenterEllipse);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCenterEllipseWithFocalPoint_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.CenterEllipseWithFocalPoint);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawDashedCircle_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.DashedCircle);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawHyperbola_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Hyperbola);
-            drawMultiStepShapeCurrentStep = 0;
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawHyperbolaWithFocalPoint_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.HyperbolaWithFocalPoint);
-            drawMultiStepShapeCurrentStep = 0;
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawParabola1_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.ParabolaVertical);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawParabolaWithFocalPoint_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.ParabolaWithFocalPoint);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawParabola2_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.ParabolaHorizontal);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCylinder_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Cylinder);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCone_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Cone);
-            DrawShapePromptToPen();
-        }
-
-        private async void BtnDrawCuboid_Click(object sender, MouseButtonEventArgs e)
-        {
-            await CheckIsDrawingShapesInMultiTouchMode();
-            BeginShapeDrawing(ShapeToolKind.Cuboid);
             isFirstTouchCuboid = true;
             CuboidFrontRectIniP = new Point();
             CuboidFrontRectEndP = new Point();
-            DrawShapePromptToPen();
         }
+
+        private void BtnDrawLine_Click(object sender, MouseButtonEventArgs e) =>
+            BeginLongPressCompatibleShapeDrawing(sender, ShapeToolKind.Line, ImageDrawLine);
+
+        private void BtnDrawDashedLine_Click(object sender, MouseButtonEventArgs e) =>
+            BeginLongPressCompatibleShapeDrawing(sender, ShapeToolKind.DashedLine, ImageDrawDashedLine);
+
+        private void BtnDrawDotLine_Click(object sender, MouseButtonEventArgs e) =>
+            BeginLongPressCompatibleShapeDrawing(sender, ShapeToolKind.DotLine, ImageDrawDotLine);
+
+        private void BtnDrawArrow_Click(object sender, MouseButtonEventArgs e) =>
+            BeginLongPressCompatibleShapeDrawing(sender, ShapeToolKind.Arrow, ImageDrawArrow);
+
+        private void BtnDrawParallelLine_Click(object sender, MouseButtonEventArgs e) =>
+            BeginLongPressCompatibleShapeDrawing(sender, ShapeToolKind.ParallelLines, ImageDrawParallelLine);
+
+        private void BtnDrawCoordinate1_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CoordinateQuadrantI);
+
+        private void BtnDrawCoordinate2_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CoordinateQuadrantII);
+
+        private void BtnDrawCoordinate3_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CoordinateQuadrantIII);
+
+        private void BtnDrawCoordinate4_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CoordinateQuadrantIV);
+
+        private void BtnDrawCoordinate5_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CoordinateThreeAxes);
+
+        private void BtnDrawRectangle_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Rectangle);
+
+        private void BtnDrawRectangleCenter_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.RectangleFromCenter);
+
+        private void BtnDrawEllipse_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Ellipse);
+
+        private void BtnDrawCircle_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Circle);
+
+        private void BtnDrawCenterEllipse_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CenterEllipse);
+
+        private void BtnDrawCenterEllipseWithFocalPoint_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.CenterEllipseWithFocalPoint);
+
+        private void BtnDrawDashedCircle_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.DashedCircle);
+
+        private void BtnDrawHyperbola_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Hyperbola, resetMultiStep: true);
+
+        private void BtnDrawHyperbolaWithFocalPoint_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.HyperbolaWithFocalPoint, resetMultiStep: true);
+
+        private void BtnDrawParabola1_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.ParabolaVertical);
+
+        private void BtnDrawParabolaWithFocalPoint_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.ParabolaWithFocalPoint);
+
+        private void BtnDrawParabola2_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.ParabolaHorizontal);
+
+        private void BtnDrawCylinder_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Cylinder);
+
+        private void BtnDrawCone_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Cone);
+
+        private void BtnDrawCuboid_Click(object sender, MouseButtonEventArgs e) =>
+            BeginShapeDrawingFromToolbar(ShapeToolKind.Cuboid, additionalSetup: InitializeCuboidDrawing);
 
         #endregion
 

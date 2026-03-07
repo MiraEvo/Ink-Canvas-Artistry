@@ -158,7 +158,12 @@ namespace Ink_Canvas
             BorderSettings.Visibility = Visibility.Collapsed;
         }
 
-        private async void HideSubPanels(String mode = null, bool autoAlignCenter = false)
+        private void HideSubPanels(string? mode = null, bool autoAlignCenter = false)
+        {
+            _ = HideSubPanelsAsync(mode, autoAlignCenter);
+        }
+
+        private async Task HideSubPanelsAsync(string? mode = null, bool autoAlignCenter = false)
         {
             if (!isApplyingShellSubPanelState)
             {
@@ -181,48 +186,7 @@ namespace Ink_Canvas
 
             if (mode != null)
             {
-                if (mode != "clear")
-                {
-                    Pen_Icon.Background = null;
-                    BoardPen.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-                    BoardPen.Opacity = 1;
-                    Eraser_Icon.Background = null;
-                    BoardEraser.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-                    BoardEraser.Opacity = 1;
-                    SymbolIconSelect.Background = null;
-                    BoardSelect.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-                    BoardSelect.Opacity = 1;
-                    EraserByStrokes_Icon.Background = null;
-                    BoardEraserByStrokes.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-                    BoardEraserByStrokes.Opacity = 1;
-                }
-                if (mode == "pen" || mode == "color")
-                {
-                    Pen_Icon.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                    BoardPen.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                    BoardPen.Opacity = 0.99;
-                }
-                else
-                {
-                    if (mode == "eraser")
-                    {
-                        Eraser_Icon.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                        BoardEraser.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                        BoardEraser.Opacity = 0.99;
-                    }
-                    else if (mode == "eraserByStrokes")
-                    {
-                        EraserByStrokes_Icon.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                        BoardEraserByStrokes.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                        BoardEraserByStrokes.Opacity = 0.99;
-                    }
-                    else if (mode == "select")
-                    {
-                        BoardSelect.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                        SymbolIconSelect.Background = new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png"))) { Opacity = 0.5 };
-                        SymbolIconSelect.Opacity = 0.99;
-                    }
-                }
+                UpdateToolSelectionHighlights(mode);
 
                 if (autoAlignCenter) // 控制居中
                 {
@@ -232,6 +196,66 @@ namespace Ink_Canvas
             }
             await Task.Delay(150);
             isHidingSubPanelsWhenInking = false;
+        }
+
+        private void UpdateToolSelectionHighlights(string mode)
+        {
+            if (mode != "clear")
+            {
+                Pen_Icon.Background = null;
+                BoardPen.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+                BoardPen.Opacity = 1;
+                Eraser_Icon.Background = null;
+                BoardEraser.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+                BoardEraser.Opacity = 1;
+                SymbolIconSelect.Background = null;
+                BoardSelect.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+                BoardSelect.Opacity = 1;
+                EraserByStrokes_Icon.Background = null;
+                BoardEraserByStrokes.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+                BoardEraserByStrokes.Opacity = 1;
+            }
+
+            ImageBrush highlightBrush = CreateToolSelectionHighlightBrush();
+
+            if (mode == "pen" || mode == "color")
+            {
+                Pen_Icon.Background = highlightBrush;
+                BoardPen.Background = CreateToolSelectionHighlightBrush();
+                BoardPen.Opacity = 0.99;
+                return;
+            }
+
+            if (mode == "eraser")
+            {
+                Eraser_Icon.Background = highlightBrush;
+                BoardEraser.Background = CreateToolSelectionHighlightBrush();
+                BoardEraser.Opacity = 0.99;
+                return;
+            }
+
+            if (mode == "eraserByStrokes")
+            {
+                EraserByStrokes_Icon.Background = highlightBrush;
+                BoardEraserByStrokes.Background = CreateToolSelectionHighlightBrush();
+                BoardEraserByStrokes.Opacity = 0.99;
+                return;
+            }
+
+            if (mode == "select")
+            {
+                BoardSelect.Background = highlightBrush;
+                SymbolIconSelect.Background = CreateToolSelectionHighlightBrush();
+                SymbolIconSelect.Opacity = 0.99;
+            }
+        }
+
+        private static ImageBrush CreateToolSelectionHighlightBrush()
+        {
+            return new ImageBrush(new BitmapImage(new Uri("pack://application:,,,/Resources/Icons-png/check-box-background.png")))
+            {
+                Opacity = 0.5
+            };
         }
 
         private void SymbolIconUndo_Click(object sender, RoutedEventArgs e)
@@ -248,21 +272,25 @@ namespace Ink_Canvas
             HideSubPanels();
         }
 
-        private async void SymbolIconCursor_Click(object sender, RoutedEventArgs e)
+        private void SymbolIconCursor_Click(object sender, RoutedEventArgs e)
+        {
+            _ = SwitchToCursorModeAsync();
+        }
+
+        private async Task SwitchToCursorModeAsync()
         {
             if (ShellViewModel.IsBlackboardMode)
             {
                 ImageBlackboard_Click(null, null);
+                return;
             }
-            else
-            {
-                ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
 
-                if (IsPresentationSlideShowRunning)
-                {
-                    await Task.Delay(100);
-                    ViewboxFloatingBarMarginAnimation();
-                }
+            ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
+
+            if (IsPresentationSlideShowRunning)
+            {
+                await Task.Delay(100);
+                ViewboxFloatingBarMarginAnimation();
             }
         }
 
@@ -303,7 +331,12 @@ namespace Ink_Canvas
             ShellViewModel.SetToolMode(ToolMode.Select, true, true);
         }
 
-        private async void SymbolIconScreenshot_Click(object sender, RoutedEventArgs e)
+        private void SymbolIconScreenshot_Click(object sender, RoutedEventArgs e)
+        {
+            _ = SaveToolbarScreenshotAsync();
+        }
+
+        private async Task SaveToolbarScreenshotAsync()
         {
             HideSubPanelsImmediately();
             await Task.Delay(50);
@@ -351,7 +384,12 @@ namespace Ink_Canvas
             new RandWindow(true).ShowDialog();
         }
 
-        private async void GridInkReplayButton_Click(object sender, RoutedEventArgs e)
+        private void GridInkReplayButton_Click(object sender, RoutedEventArgs e)
+        {
+            _ = StartInkReplayAsync();
+        }
+
+        private async Task StartInkReplayAsync()
         {
             AnimationsHelper.HideWithSlideAndFade(BorderTools);
             AnimationsHelper.HideWithSlideAndFade(BoardBorderTools);
