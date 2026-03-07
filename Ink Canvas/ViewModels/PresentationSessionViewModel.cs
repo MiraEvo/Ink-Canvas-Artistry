@@ -28,11 +28,11 @@ namespace Ink_Canvas.ViewModels
 
         public bool IsNavigationVisible => isBottomNavigationVisible || isSideNavigationVisible;
 
-        public bool IsSlideShowRunning => sessionState == PresentationSessionState.SlideShowRunning;
+        public bool IsSlideShowRunning => sessionState is PresentationSessionState.SlideShowRunning;
 
-        public bool IsPresentationConnected => sessionState != PresentationSessionState.Disconnected;
+        public bool IsPresentationConnected => sessionState is not PresentationSessionState.Disconnected;
 
-        public bool IsPowerPointSession => provider == PresentationProvider.PowerPoint;
+        public bool IsPowerPointSession => provider is PresentationProvider.PowerPoint;
 
         public bool CanNavigateSlides => IsSlideShowRunning && slideCount > 0;
 
@@ -40,95 +40,117 @@ namespace Ink_Canvas.ViewModels
 
         public void SetConnection(
             PresentationProvider sessionProvider,
-            string name,
+            string? name,
             int totalSlides,
             int currentSlide,
             bool isSlideShowRunning)
         {
-            bool providerChanged = SetProperty(ref provider, sessionProvider, nameof(Provider));
-            bool nameChanged = SetProperty(ref presentationName, name ?? string.Empty, nameof(PresentationName));
-            bool slideCountChanged = SetProperty(ref slideCount, totalSlides, nameof(SlideCount));
-            bool currentSlideChanged = SetProperty(ref currentSlideIndex, currentSlide, nameof(CurrentSlideIndex));
-            bool stateChanged = SetProperty(
-                ref sessionState,
-                isSlideShowRunning ? PresentationSessionState.SlideShowRunning : PresentationSessionState.Connected,
-                nameof(SessionState));
+            bool providerChanged = SetProvider(sessionProvider);
+            bool nameChanged = SetPresentationName(name);
+            bool slideCountChanged = SetSlideCount(totalSlides);
+            bool currentSlideChanged = SetCurrentSlideIndex(currentSlide);
+            bool stateChanged = SetSessionState(ResolveSessionState(sessionProvider, isSlideShowRunning));
 
-            if (providerChanged)
-            {
-                OnPropertyChanged(nameof(IsPowerPointSession));
-            }
-
-            if (stateChanged)
-            {
-                OnPropertyChanged(nameof(IsSlideShowRunning));
-                OnPropertyChanged(nameof(IsPresentationConnected));
-                OnPropertyChanged(nameof(CanNavigateSlides));
-                OnPropertyChanged(nameof(ShouldShowSlideShowEndButton));
-            }
-
-            if (slideCountChanged)
-            {
-                OnPropertyChanged(nameof(CanNavigateSlides));
-            }
-
-            if (providerChanged || nameChanged || slideCountChanged || currentSlideChanged || stateChanged)
-            {
-                OnPropertyChanged(nameof(IsNavigationVisible));
-            }
+            NotifyStateChangeEffects(
+                providerChanged,
+                stateChanged,
+                slideCountChanged,
+                providerChanged || nameChanged || slideCountChanged || currentSlideChanged || stateChanged);
         }
 
         public void SetCurrentSlide(int currentSlide, int totalSlides)
         {
-            bool currentSlideChanged = SetProperty(ref currentSlideIndex, currentSlide, nameof(CurrentSlideIndex));
-            bool slideCountChanged = SetProperty(ref slideCount, totalSlides, nameof(SlideCount));
+            bool currentSlideChanged = SetCurrentSlideIndex(currentSlide);
+            bool slideCountChanged = SetSlideCount(totalSlides);
+
             if (slideCountChanged)
             {
-                OnPropertyChanged(nameof(CanNavigateSlides));
+                NotifySlideAvailabilityChanged();
             }
 
             if (currentSlideChanged || slideCountChanged)
             {
-                OnPropertyChanged(nameof(IsNavigationVisible));
+                NotifyNavigationVisibilityChanged();
             }
         }
 
         public void SetSlideShowRunning(bool value)
         {
-            PresentationSessionState nextState = value
-                ? PresentationSessionState.SlideShowRunning
-                : provider == PresentationProvider.None ? PresentationSessionState.Disconnected : PresentationSessionState.Connected;
-
-            if (SetProperty(ref sessionState, nextState, nameof(SessionState)))
+            if (SetSessionState(ResolveSessionState(provider, value)))
             {
-                OnPropertyChanged(nameof(IsSlideShowRunning));
-                OnPropertyChanged(nameof(IsPresentationConnected));
-                OnPropertyChanged(nameof(CanNavigateSlides));
-                OnPropertyChanged(nameof(ShouldShowSlideShowEndButton));
+                NotifySessionStateChanged();
             }
         }
 
         public void SetNavigationVisibility(bool isBottomVisible, bool isSideVisible)
         {
-            bool bottomChanged = SetProperty(ref isBottomNavigationVisible, isBottomVisible, nameof(IsBottomNavigationVisible));
-            bool sideChanged = SetProperty(ref isSideNavigationVisible, isSideVisible, nameof(IsSideNavigationVisible));
+            bool bottomChanged = SetBottomNavigationVisible(isBottomVisible);
+            bool sideChanged = SetSideNavigationVisible(isSideVisible);
 
             if (bottomChanged || sideChanged)
             {
-                OnPropertyChanged(nameof(IsNavigationVisible));
+                NotifyNavigationVisibilityChanged();
             }
         }
 
         public void Disconnect()
         {
-            bool providerChanged = SetProperty(ref provider, PresentationProvider.None, nameof(Provider));
-            bool stateChanged = SetProperty(ref sessionState, PresentationSessionState.Disconnected, nameof(SessionState));
-            bool nameChanged = SetProperty(ref presentationName, string.Empty, nameof(PresentationName));
-            bool slideCountChanged = SetProperty(ref slideCount, 0, nameof(SlideCount));
-            bool currentSlideChanged = SetProperty(ref currentSlideIndex, 0, nameof(CurrentSlideIndex));
-            bool bottomChanged = SetProperty(ref isBottomNavigationVisible, false, nameof(IsBottomNavigationVisible));
-            bool sideChanged = SetProperty(ref isSideNavigationVisible, false, nameof(IsSideNavigationVisible));
+            bool providerChanged = SetProvider(PresentationProvider.None);
+            bool stateChanged = SetSessionState(PresentationSessionState.Disconnected);
+            bool nameChanged = SetPresentationName(string.Empty);
+            bool slideCountChanged = SetSlideCount(0);
+            bool currentSlideChanged = SetCurrentSlideIndex(0);
+            bool bottomChanged = SetBottomNavigationVisible(false);
+            bool sideChanged = SetSideNavigationVisible(false);
 
+            NotifyStateChangeEffects(
+                providerChanged,
+                stateChanged,
+                slideCountChanged,
+                providerChanged || stateChanged || nameChanged || slideCountChanged || currentSlideChanged || bottomChanged || sideChanged);
+        }
+
+        private bool SetProvider(PresentationProvider value)
+        {
+            return SetProperty(ref provider, value, nameof(Provider));
+        }
+
+        private bool SetPresentationName(string? value)
+        {
+            return SetProperty(ref presentationName, value ?? string.Empty, nameof(PresentationName));
+        }
+
+        private bool SetSlideCount(int value)
+        {
+            return SetProperty(ref slideCount, value, nameof(SlideCount));
+        }
+
+        private bool SetCurrentSlideIndex(int value)
+        {
+            return SetProperty(ref currentSlideIndex, value, nameof(CurrentSlideIndex));
+        }
+
+        private bool SetSessionState(PresentationSessionState value)
+        {
+            return SetProperty(ref sessionState, value, nameof(SessionState));
+        }
+
+        private bool SetBottomNavigationVisible(bool value)
+        {
+            return SetProperty(ref isBottomNavigationVisible, value, nameof(IsBottomNavigationVisible));
+        }
+
+        private bool SetSideNavigationVisible(bool value)
+        {
+            return SetProperty(ref isSideNavigationVisible, value, nameof(IsSideNavigationVisible));
+        }
+
+        private void NotifyStateChangeEffects(
+            bool providerChanged,
+            bool stateChanged,
+            bool slideCountChanged,
+            bool navigationContextChanged)
+        {
             if (providerChanged)
             {
                 OnPropertyChanged(nameof(IsPowerPointSession));
@@ -136,16 +158,49 @@ namespace Ink_Canvas.ViewModels
 
             if (stateChanged)
             {
-                OnPropertyChanged(nameof(IsSlideShowRunning));
-                OnPropertyChanged(nameof(IsPresentationConnected));
-                OnPropertyChanged(nameof(CanNavigateSlides));
-                OnPropertyChanged(nameof(ShouldShowSlideShowEndButton));
+                NotifySessionStateChanged();
+            }
+            else if (slideCountChanged)
+            {
+                NotifySlideAvailabilityChanged();
             }
 
-            if (providerChanged || stateChanged || nameChanged || slideCountChanged || currentSlideChanged || bottomChanged || sideChanged)
+            if (navigationContextChanged)
             {
-                OnPropertyChanged(nameof(IsNavigationVisible));
+                NotifyNavigationVisibilityChanged();
             }
+        }
+
+        private void NotifySessionStateChanged()
+        {
+            OnPropertyChanged(nameof(IsSlideShowRunning));
+            OnPropertyChanged(nameof(IsPresentationConnected));
+            NotifySlideAvailabilityChanged();
+            OnPropertyChanged(nameof(ShouldShowSlideShowEndButton));
+        }
+
+        private void NotifySlideAvailabilityChanged()
+        {
+            OnPropertyChanged(nameof(CanNavigateSlides));
+        }
+
+        private void NotifyNavigationVisibilityChanged()
+        {
+            OnPropertyChanged(nameof(IsNavigationVisible));
+        }
+
+        private static PresentationSessionState ResolveSessionState(
+            PresentationProvider currentProvider,
+            bool isSlideShowRunning)
+        {
+            if (currentProvider is PresentationProvider.None)
+            {
+                return PresentationSessionState.Disconnected;
+            }
+
+            return isSlideShowRunning
+                ? PresentationSessionState.SlideShowRunning
+                : PresentationSessionState.Connected;
         }
     }
 }

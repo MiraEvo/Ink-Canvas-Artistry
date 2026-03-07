@@ -4,6 +4,19 @@ namespace Ink_Canvas.ViewModels
 {
     public sealed class WorkspaceSessionViewModel : ObservableObject
     {
+        private static readonly string[] WorkspaceVisualStateDependentProperties =
+        [
+            nameof(IsDesktopSession),
+            nameof(IsBlackboardSession),
+            nameof(IsBlackboardVisible),
+            nameof(IsTransparentDesktopCanvas)
+        ];
+
+        private static readonly string[] CanvasVisibilityDependentProperties =
+        [
+            nameof(IsTransparentDesktopCanvas)
+        ];
+
         private WorkspaceVisualState workspaceVisualState = WorkspaceVisualState.Desktop;
         private bool isCanvasVisible = true;
         private bool shouldRestoreDefaultToolOnDesktopResume;
@@ -17,9 +30,9 @@ namespace Ink_Canvas.ViewModels
 
         public bool ShouldRestoreDefaultFloatingBarPosition => shouldRestoreDefaultFloatingBarPosition;
 
-        public bool IsDesktopSession => workspaceVisualState == WorkspaceVisualState.Desktop;
+        public bool IsDesktopSession => workspaceVisualState is WorkspaceVisualState.Desktop;
 
-        public bool IsBlackboardSession => workspaceVisualState == WorkspaceVisualState.Blackboard;
+        public bool IsBlackboardSession => workspaceVisualState is WorkspaceVisualState.Blackboard;
 
         public bool IsBlackboardVisible => IsBlackboardSession;
 
@@ -27,27 +40,12 @@ namespace Ink_Canvas.ViewModels
 
         public bool SetWorkspaceVisualState(WorkspaceVisualState value)
         {
-            bool changed = SetProperty(ref workspaceVisualState, value);
-            if (changed)
-            {
-                OnPropertyChanged(nameof(IsDesktopSession));
-                OnPropertyChanged(nameof(IsBlackboardSession));
-                OnPropertyChanged(nameof(IsBlackboardVisible));
-                OnPropertyChanged(nameof(IsTransparentDesktopCanvas));
-            }
-
-            return changed;
+            return SetState(ref workspaceVisualState, value, WorkspaceVisualStateDependentProperties);
         }
 
         public bool SetCanvasVisible(bool value)
         {
-            bool changed = SetProperty(ref isCanvasVisible, value);
-            if (changed)
-            {
-                OnPropertyChanged(nameof(IsTransparentDesktopCanvas));
-            }
-
-            return changed;
+            return SetState(ref isCanvasVisible, value, CanvasVisibilityDependentProperties);
         }
 
         public bool SetRestoreDefaultToolOnDesktopResume(bool value)
@@ -62,26 +60,43 @@ namespace Ink_Canvas.ViewModels
 
         public bool ConsumeRestoreDefaultToolOnDesktopResume()
         {
-            if (!shouldRestoreDefaultToolOnDesktopResume)
-            {
-                return false;
-            }
-
-            shouldRestoreDefaultToolOnDesktopResume = false;
-            OnPropertyChanged(nameof(ShouldRestoreDefaultToolOnDesktopResume));
-            return true;
+            return ConsumeFlag(ref shouldRestoreDefaultToolOnDesktopResume, nameof(ShouldRestoreDefaultToolOnDesktopResume));
         }
 
         public bool ConsumeRestoreDefaultFloatingBarPosition()
         {
-            if (!shouldRestoreDefaultFloatingBarPosition)
+            return ConsumeFlag(ref shouldRestoreDefaultFloatingBarPosition, nameof(ShouldRestoreDefaultFloatingBarPosition));
+        }
+
+        private bool SetState<T>(ref T field, T value, string[] dependentProperties)
+        {
+            bool changed = SetProperty(ref field, value);
+            if (changed)
+            {
+                NotifyPropertiesChanged(dependentProperties);
+            }
+
+            return changed;
+        }
+
+        private bool ConsumeFlag(ref bool field, string propertyName)
+        {
+            if (!field)
             {
                 return false;
             }
 
-            shouldRestoreDefaultFloatingBarPosition = false;
-            OnPropertyChanged(nameof(ShouldRestoreDefaultFloatingBarPosition));
+            field = false;
+            OnPropertyChanged(propertyName);
             return true;
+        }
+
+        private void NotifyPropertiesChanged(string[] propertyNames)
+        {
+            foreach (string propertyName in propertyNames)
+            {
+                OnPropertyChanged(propertyName);
+            }
         }
     }
 }

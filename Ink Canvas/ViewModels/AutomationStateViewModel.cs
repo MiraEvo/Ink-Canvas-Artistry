@@ -35,54 +35,34 @@ namespace Ink_Canvas.ViewModels
 
         public string ForegroundWindowTitle => foregroundWindowTitle;
 
-        public bool SetAutoFoldMonitoring(bool value)
+        public bool SetAutoFoldMonitoring(bool value) => SetFlag(ref isAutoFoldMonitoring, value);
+
+        public bool SetProcessKillMonitoring(bool value) => SetFlag(ref isProcessKillMonitoring, value);
+
+        public bool SetSilentUpdateWaiting(bool value) => SetFlag(ref isSilentUpdateWaiting, value);
+
+        public bool SetFloatingBarFoldedByUser(bool value) => SetFlag(ref isFloatingBarFoldedByUser, value);
+
+        public bool SetFloatingBarUnfoldedByUser(bool value) => SetFlag(ref isFloatingBarUnfoldedByUser, value);
+
+        public bool SetFloatingBarFoldRequestedByAutomation(bool value) => SetFlag(ref isFloatingBarFoldRequestedByAutomation, value);
+
+        public bool SetHidingSubPanelsWhenInking(bool value) => SetFlag(ref isHidingSubPanelsWhenInking, value);
+
+        public bool SetPendingUpdateVersion(string? value) => SetText(ref pendingUpdateVersion, value);
+
+        public bool SetForegroundProcessName(string? value) => SetText(ref foregroundProcessName, value);
+
+        public bool SetForegroundWindowTitle(string? value) => SetText(ref foregroundWindowTitle, value);
+
+        private bool SetFlag(ref bool field, bool value)
         {
-            return SetProperty(ref isAutoFoldMonitoring, value);
+            return SetProperty(ref field, value);
         }
 
-        public bool SetProcessKillMonitoring(bool value)
+        private bool SetText(ref string field, string? value)
         {
-            return SetProperty(ref isProcessKillMonitoring, value);
-        }
-
-        public bool SetSilentUpdateWaiting(bool value)
-        {
-            return SetProperty(ref isSilentUpdateWaiting, value);
-        }
-
-        public bool SetFloatingBarFoldedByUser(bool value)
-        {
-            return SetProperty(ref isFloatingBarFoldedByUser, value);
-        }
-
-        public bool SetFloatingBarUnfoldedByUser(bool value)
-        {
-            return SetProperty(ref isFloatingBarUnfoldedByUser, value);
-        }
-
-        public bool SetFloatingBarFoldRequestedByAutomation(bool value)
-        {
-            return SetProperty(ref isFloatingBarFoldRequestedByAutomation, value);
-        }
-
-        public bool SetHidingSubPanelsWhenInking(bool value)
-        {
-            return SetProperty(ref isHidingSubPanelsWhenInking, value);
-        }
-
-        public bool SetPendingUpdateVersion(string value)
-        {
-            return SetProperty(ref pendingUpdateVersion, value ?? string.Empty);
-        }
-
-        public bool SetForegroundProcessName(string value)
-        {
-            return SetProperty(ref foregroundProcessName, value ?? string.Empty);
-        }
-
-        public bool SetForegroundWindowTitle(string value)
-        {
-            return SetProperty(ref foregroundWindowTitle, value ?? string.Empty);
+            return SetProperty(ref field, value ?? string.Empty);
         }
     }
 }
