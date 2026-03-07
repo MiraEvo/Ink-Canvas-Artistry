@@ -32,9 +32,9 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/Resources/BoardDrawShapeImageDictionary.xaml" />
-                <ResourceDictionary Source="/Resources/DrawShapeImageDictionary.xaml" />
-                <ResourceDictionary Source="/Resources/IconImageDictionary.xaml" />
+                <ResourceDictionary Source="/Resources/Dictionaries/Icons/BoardDrawShapeImageDictionary.xaml" />
+                <ResourceDictionary Source="/Resources/Dictionaries/Icons/DrawShapeImageDictionary.xaml" />
+                <ResourceDictionary Source="/Resources/Dictionaries/Icons/IconImageDictionary.xaml" />
             </ResourceDictionary.MergedDictionaries>
             <RoutedUICommand x:Key="HotKey_Command_Undo" Text=" " />
             <RoutedUICommand x:Key="HotKey_Command_Redo" Text=" " />
@@ -1518,7 +1518,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1538,7 +1538,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-black.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-black.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1558,7 +1558,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1578,7 +1578,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                     </Controls:UniformGrid>
@@ -1605,7 +1605,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1625,7 +1625,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1645,7 +1645,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1665,7 +1665,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -1685,7 +1685,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                     </Controls:UniformGrid>
@@ -1752,7 +1752,7 @@
                                                                                 Height="28"
                                                                                 VerticalAlignment="Top"
                                                                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                Source="/Resources/Icons-png/checked-white.png" />
+                                                                                Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                         </Viewbox>
                                                                     </Border>
                                                                     <Border
@@ -1772,7 +1772,7 @@
                                                                                 Height="28"
                                                                                 VerticalAlignment="Top"
                                                                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                Source="/Resources/Icons-png/checked-white.png" />
+                                                                                Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                         </Viewbox>
                                                                     </Border>
                                                                     <Border
@@ -1792,7 +1792,7 @@
                                                                                 Height="28"
                                                                                 VerticalAlignment="Top"
                                                                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                Source="/Resources/Icons-png/checked-white.png" />
+                                                                                Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                         </Viewbox>
                                                                     </Border>
                                                                 </Controls:UniformGrid>
@@ -1819,7 +1819,7 @@
                                                                                 Height="28"
                                                                                 VerticalAlignment="Top"
                                                                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                Source="/Resources/Icons-png/checked-white.png" />
+                                                                                Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                         </Viewbox>
                                                                     </Border>
                                                                     <Border
@@ -1839,7 +1839,7 @@
                                                                                 Height="28"
                                                                                 VerticalAlignment="Top"
                                                                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                Source="/Resources/Icons-png/checked-white.png" />
+                                                                                Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                         </Viewbox>
                                                                     </Border>
                                                                     <Border
@@ -1859,7 +1859,7 @@
                                                                                 Height="28"
                                                                                 VerticalAlignment="Top"
                                                                                 RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                Source="/Resources/Icons-png/checked-white.png" />
+                                                                                Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                         </Viewbox>
                                                                     </Border>
                                                                 </Controls:UniformGrid>
@@ -2696,7 +2696,7 @@
                                                             Width="22"
                                                             Height="22"
                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                            Source="/Resources/Icons-png/EasiCamera.png" />
+                                                            Source="/Resources/Media/IconsPng/EasiCamera.png" />
                                                         <TextBlock
                                                             VerticalAlignment="Center"
                                                             FontSize="12.5"
@@ -2724,7 +2724,7 @@
                                                             Width="22"
                                                             Height="22"
                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                            Source="/Resources/Icons-png/Desmos.png">
+                                                            Source="/Resources/Media/IconsPng/Desmos.png">
                                                             <Image.Clip>
                                                                 <EllipseGeometry
                                                                     Center="11,11"
@@ -4734,7 +4734,7 @@
                                         Width="20"
                                         Height="20"
                                         RenderOptions.BitmapScalingMode="HighQuality"
-                                        Source="/Resources/DeveloperAvatars/ChangSakura.png" />
+                                        Source="/Resources/Brand/DeveloperAvatars/ChangSakura.png" />
                                     <TextBlock
                                         FontSize="15"
                                         Foreground="{DynamicResource SettingsPageForeground}"
@@ -4768,7 +4768,7 @@
                                         Height="20"
                                         Margin="3,0"
                                         RenderOptions.BitmapScalingMode="HighQuality"
-                                        Source="/Resources/DeveloperAvatars/WXRIW.png">
+                                        Source="/Resources/Brand/DeveloperAvatars/WXRIW.png">
                                         <Image.Clip>
                                             <EllipseGeometry
                                                 Center="10,10"
@@ -4794,7 +4794,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/Kengwang.png">
+                                            Source="/Resources/Brand/DeveloperAvatars/Kengwang.png">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -4813,7 +4813,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/Raspberry-Monster.jpg">
+                                            Source="/Resources/Brand/DeveloperAvatars/Raspberry-Monster.jpg">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -4832,7 +4832,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/jiajiaxd.jpg">
+                                            Source="/Resources/Brand/DeveloperAvatars/jiajiaxd.jpg">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -4851,7 +4851,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/CN-Ironegg.jpg">
+                                            Source="/Resources/Brand/DeveloperAvatars/CN-Ironegg.jpg">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -4870,7 +4870,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/clover-yan.png">
+                                            Source="/Resources/Brand/DeveloperAvatars/clover-yan.png">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -4889,7 +4889,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/STBBRD.png">
+                                            Source="/Resources/Brand/DeveloperAvatars/STBBRD.png">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -4908,7 +4908,7 @@
                                             Height="20"
                                             Margin="3,0"
                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                            Source="/Resources/DeveloperAvatars/ChangSakura.png">
+                                            Source="/Resources/Brand/DeveloperAvatars/ChangSakura.png">
                                             <Image.Clip>
                                                 <EllipseGeometry
                                                     Center="10,10"
@@ -5681,7 +5681,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5701,7 +5701,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-black.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-black.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5721,7 +5721,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5741,7 +5741,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                     </Controls:UniformGrid>
@@ -5768,7 +5768,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5788,7 +5788,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5808,7 +5808,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5828,7 +5828,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                         <Border
@@ -5848,7 +5848,7 @@
                                                                                     Height="24"
                                                                                     VerticalAlignment="Top"
                                                                                     RenderOptions.BitmapScalingMode="HighQuality"
-                                                                                    Source="/Resources/Icons-png/checked-white.png" />
+                                                                                    Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                             </Viewbox>
                                                                         </Border>
                                                                     </Controls:UniformGrid>
@@ -5913,7 +5913,7 @@
                                                                             Height="28"
                                                                             VerticalAlignment="Top"
                                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                                            Source="/Resources/Icons-png/checked-white.png" />
+                                                                            Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                     </Viewbox>
                                                                 </Border>
                                                                 <Border
@@ -5933,7 +5933,7 @@
                                                                             Height="28"
                                                                             VerticalAlignment="Top"
                                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                                            Source="/Resources/Icons-png/checked-white.png" />
+                                                                            Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                     </Viewbox>
                                                                 </Border>
                                                                 <Border
@@ -5953,7 +5953,7 @@
                                                                             Height="28"
                                                                             VerticalAlignment="Top"
                                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                                            Source="/Resources/Icons-png/checked-white.png" />
+                                                                            Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                     </Viewbox>
                                                                 </Border>
                                                             </Controls:UniformGrid>
@@ -5980,7 +5980,7 @@
                                                                             Height="28"
                                                                             VerticalAlignment="Top"
                                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                                            Source="/Resources/Icons-png/checked-white.png" />
+                                                                            Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                     </Viewbox>
                                                                 </Border>
                                                                 <Border
@@ -6000,7 +6000,7 @@
                                                                             Height="28"
                                                                             VerticalAlignment="Top"
                                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                                            Source="/Resources/Icons-png/checked-white.png" />
+                                                                            Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                     </Viewbox>
                                                                 </Border>
                                                                 <Border
@@ -6020,7 +6020,7 @@
                                                                             Height="28"
                                                                             VerticalAlignment="Top"
                                                                             RenderOptions.BitmapScalingMode="HighQuality"
-                                                                            Source="/Resources/Icons-png/checked-white.png" />
+                                                                            Source="/Resources/Media/IconsPng/checked-white.png" />
                                                                     </Viewbox>
                                                                 </Border>
                                                             </Controls:UniformGrid>
@@ -7160,7 +7160,7 @@
                         Height="50"
                         Margin="0,0,-15,0"
                         RenderOptions.BitmapScalingMode="HighQuality"
-                        Source="/Resources/Icons-png/penUpright.png" />
+                        Source="/Resources/Media/IconsPng/penUpright.png" />
                 </Border>
             </ikw:SimpleStackPanel>
         </Viewbox>
@@ -7185,9 +7185,10 @@
                         Height="50"
                         Margin="-15,0,0,0"
                         RenderOptions.BitmapScalingMode="HighQuality"
-                        Source="/Resources/Icons-png/penUpright.png" />
+                        Source="/Resources/Media/IconsPng/penUpright.png" />
                 </Border>
             </ikw:SimpleStackPanel>
         </Viewbox>
     </Grid>
 </Window>
+

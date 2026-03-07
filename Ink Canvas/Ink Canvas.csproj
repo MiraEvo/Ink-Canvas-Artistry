@@ -12,7 +12,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-		<ApplicationIcon>Resources\Ink Canvas Artistry.ico</ApplicationIcon>
+		<ApplicationIcon>Resources\Brand\Ink Canvas Artistry.ico</ApplicationIcon>
 		<Platforms>AnyCPU;x86;x64;ARM64</Platforms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<PlatformTarget>AnyCPU</PlatformTarget>
@@ -56,23 +56,23 @@
 		<WCFMetadata Include="Connected Services\" />
 	</ItemGroup>
 	<ItemGroup>
-		<Resource Include="Resources\DeveloperAvatars\ChangSakura.png" />
-		<Resource Include="Resources\DeveloperAvatars\clover-yan.png" />
-		<Resource Include="Resources\DeveloperAvatars\CN-Ironegg.jpg" />
-		<Resource Include="Resources\DeveloperAvatars\jiajiaxd.jpg" />
-		<Resource Include="Resources\DeveloperAvatars\kengwang.png" />
-		<Resource Include="Resources\DeveloperAvatars\Raspberry-Monster.jpg" />
-		<Resource Include="Resources\DeveloperAvatars\STBBRD.png" />
-		<Resource Include="Resources\DeveloperAvatars\WXRIW.png" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\ChangSakura.png" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\clover-yan.png" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\CN-Ironegg.jpg" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\jiajiaxd.jpg" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\kengwang.png" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\Raspberry-Monster.jpg" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\STBBRD.png" />
+		<Resource Include="Resources\Brand\DeveloperAvatars\WXRIW.png" />
 		
-		<Resource Include="Resources\Ink Canvas Artistry.ico" />
-		<Resource Include="Resources\Segoe Fluent Icons.ttf" />
-		<Resource Include="Resources\Icons-png\check-box-background.png" />
-		<Resource Include="Resources\Icons-png\checked-black.png" />
-		<Resource Include="Resources\Icons-png\checked-white.png" />
-		<Resource Include="Resources\Icons-png\Desmos.png" />
-		<Resource Include="Resources\Icons-png\EasiCamera.png" />
-		<Resource Include="Resources\Icons-png\penUpright.png" />
+		<Resource Include="Resources\Brand\Ink Canvas Artistry.ico" />
+		<Resource Include="Resources\Media\Fonts\Segoe Fluent Icons.ttf" />
+		<Resource Include="Resources\Media\IconsPng\check-box-background.png" />
+		<Resource Include="Resources\Media\IconsPng\checked-black.png" />
+		<Resource Include="Resources\Media\IconsPng\checked-white.png" />
+		<Resource Include="Resources\Media\IconsPng\Desmos.png" />
+		<Resource Include="Resources\Media\IconsPng\EasiCamera.png" />
+		<Resource Include="Resources\Media\IconsPng\penUpright.png" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Compile Update="Properties\Settings.Designer.cs">
