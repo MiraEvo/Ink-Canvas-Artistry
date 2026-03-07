@@ -39,14 +39,14 @@ namespace Ink_Canvas
 
             if (ShellViewModel?.IsBlackboardMode != true)
             {
-                ApplyPendingWorkspaceDesktopDefaults();
+                shellExperienceCoordinator.ApplyPendingWorkspaceDesktopDefaults();
             }
         }
 
         private void RestoreDesktopWorkspaceDefaultsAfterPresentation()
         {
             workspaceSessionController?.RestoreDesktopDefaultsAfterPresentation();
-            ApplyPendingWorkspaceDesktopDefaults();
+            shellExperienceCoordinator.ApplyPendingWorkspaceDesktopDefaults();
         }
 
         private void SyncWorkspaceCanvasVisibility()
@@ -54,7 +54,7 @@ namespace Ink_Canvas
             workspaceSessionController?.SyncCanvasVisibility(IsCanvasWritingVisible);
         }
 
-        private void ApplyWorkspaceVisualState(WorkspaceMode workspaceMode)
+        private void ApplyWorkspaceVisualStateCore(WorkspaceMode workspaceMode)
         {
             workspaceSessionController?.ApplyWorkspaceMode(workspaceMode, IsCanvasWritingVisible);
 
@@ -70,7 +70,7 @@ namespace Ink_Canvas
 
                 Topmost = true;
                 BtnHideInkCanvas_Click(null, null);
-                ApplyPendingWorkspaceDesktopDefaults();
+                shellExperienceCoordinator.ApplyPendingWorkspaceDesktopDefaults();
                 return;
             }
 
@@ -92,7 +92,7 @@ namespace Ink_Canvas
             }
 
             SyncWorkspaceCanvasVisibility();
-            ApplyPendingWorkspaceDesktopDefaults();
+            shellExperienceCoordinator.ApplyPendingWorkspaceDesktopDefaults();
         }
 
         private void SetBlackboardVisualState(bool isVisible)
@@ -110,24 +110,6 @@ namespace Ink_Canvas
                 AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
                 AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
                 AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
-            }
-        }
-
-        private void ApplyPendingWorkspaceDesktopDefaults()
-        {
-            if (WorkspaceSessionViewModel == null || !WorkspaceSessionViewModel.IsDesktopSession)
-            {
-                return;
-            }
-
-            if (WorkspaceSessionViewModel.ConsumeRestoreDefaultFloatingBarPosition())
-            {
-                RequestDefaultDesktopFloatingBarPosition();
-            }
-
-            if (WorkspaceSessionViewModel.ConsumeRestoreDefaultToolOnDesktopResume())
-            {
-                ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
             }
         }
 

@@ -1,4 +1,5 @@
 using Ink_Canvas.Features.Settings;
+using Ink_Canvas.Features.Shell;
 using Ink_Canvas.Services;
 using Ink_Canvas.ViewModels;
 using iNKORE.UI.WPF.Modern.Controls;
@@ -19,6 +20,7 @@ namespace Ink_Canvas
 
         private MainWindowViewModel mainWindowViewModel = null!;
         private SettingsApplicationCoordinator settingsApplicationCoordinator = null!;
+        private ShellExperienceCoordinator shellExperienceCoordinator = null!;
 
         private SettingsViewModel SettingsViewModel => mainWindowViewModel.Settings;
 
@@ -50,6 +52,12 @@ namespace Ink_Canvas
             InitializeAutomationControllers();
 
             settingsApplicationCoordinator = new SettingsApplicationCoordinator(this, mainWindowViewModel.Settings);
+            shellExperienceCoordinator = new ShellExperienceCoordinator(
+                this,
+                mainWindowViewModel.Shell,
+                mainWindowViewModel.Settings,
+                mainWindowViewModel.WorkspaceSession,
+                mainWindowViewModel.Input);
             ConfigureSettingsBindings();
         }
 
@@ -59,74 +67,78 @@ namespace Ink_Canvas
             BindVisibility(AutoUpdateTimePeriodBlock, "Settings.AutoUpdateTimePeriodVisibility");
             BindVisibility(TouchMultiplierSlider, "Settings.TouchMultiplierVisibility");
 
-            BindToggle(ToggleSwitchIsAutoUpdate, "Settings.IsAutoUpdate", ToggleSwitchIsAutoUpdate_Toggled);
-            BindToggle(ToggleSwitchIsAutoUpdateWithSilence, "Settings.IsAutoUpdateWithSilence", ToggleSwitchIsAutoUpdateWithSilence_Toggled);
-            BindComboBoxSelectedItem(AutoUpdateWithSilenceStartTimeComboBox, "Settings.AutoUpdateWithSilenceStartTime", AutoUpdateWithSilenceStartTimeComboBox_SelectionChanged);
-            BindComboBoxSelectedItem(AutoUpdateWithSilenceEndTimeComboBox, "Settings.AutoUpdateWithSilenceEndTime", AutoUpdateWithSilenceEndTimeComboBox_SelectionChanged);
-            BindToggle(ToggleSwitchRunAtStartup, "Settings.RunAtStartup", ToggleSwitchRunAtStartup_Toggled);
-            BindToggle(ToggleSwitchFoldAtStartup, "Settings.IsFoldAtStartup", ToggleSwitchFoldAtStartup_Toggled);
+            BindToggle(ToggleSwitchIsAutoUpdate, "Settings.IsAutoUpdate");
+            BindToggle(ToggleSwitchIsAutoUpdateWithSilence, "Settings.IsAutoUpdateWithSilence");
+            BindComboBoxSelectedItem(AutoUpdateWithSilenceStartTimeComboBox, "Settings.AutoUpdateWithSilenceStartTime");
+            BindComboBoxSelectedItem(AutoUpdateWithSilenceEndTimeComboBox, "Settings.AutoUpdateWithSilenceEndTime");
+            BindToggle(ToggleSwitchRunAtStartup, "Settings.RunAtStartup");
+            BindToggle(ToggleSwitchFoldAtStartup, "Settings.IsFoldAtStartup");
 
-            BindComboBoxSelectedIndex(ComboBoxTheme, "Settings.Theme", ComboBoxTheme_SelectionChanged);
-            BindToggle(ToggleSwitchEnableDisPlayFloatBarText, "Settings.IsEnableDisplayFloatBarText", ToggleSwitchEnableDisPlayFloatBarText_Toggled);
-            BindToggle(ToggleSwitchEnableDisPlayNibModeToggle, "Settings.IsEnableDisplayNibModeToggle", ToggleSwitchEnableDisPlayNibModeToggle_Toggled);
-            BindToggle(ToggleSwitchColorfulViewboxFloatingBar, "Settings.IsColorfulViewboxFloatingBar", ToggleSwitchIsColorfulViewboxFloatingBar_Toggled);
-            BindSlider(SliderFloatingBarBottomMargin, "Settings.FloatingBarBottomMargin", SliderFloatingBarBottomMargin_ValueChanged);
-            BindSlider(SliderFloatingBarScale, "Settings.FloatingBarScale", SliderFloatingBarScale_ValueChanged);
-            BindSlider(SliderBlackboardScale, "Settings.BlackboardScale", SliderBlackboardScale_ValueChanged);
+            BindComboBoxSelectedIndex(ComboBoxTheme, "Settings.Theme");
+            BindToggle(ToggleSwitchEnableDisPlayFloatBarText, "Settings.IsEnableDisplayFloatBarText");
+            BindToggle(ToggleSwitchEnableDisPlayNibModeToggle, "Settings.IsEnableDisplayNibModeToggle");
+            BindToggle(ToggleSwitchColorfulViewboxFloatingBar, "Settings.IsColorfulViewboxFloatingBar");
+            BindSlider(SliderFloatingBarBottomMargin, "Settings.FloatingBarBottomMargin");
+            BindSlider(SliderFloatingBarScale, "Settings.FloatingBarScale");
+            BindSlider(SliderBlackboardScale, "Settings.BlackboardScale");
 
-            BindToggle(ToggleSwitchShowButtonPPTNavigationBottom, "Settings.IsShowPptNavigationBottom", ToggleSwitchShowButtonPPTNavigationBottom_OnToggled);
-            BindToggle(ToggleSwitchShowButtonPPTNavigationSides, "Settings.IsShowPptNavigationSides", ToggleSwitchShowButtonPPTNavigationSides_OnToggled);
-            BindToggle(ToggleSwitchShowPPTNavigationPanelBottom, "Settings.IsShowBottomPptNavigationPanel", ToggleSwitchShowPPTNavigationPanelBottom_OnToggled);
-            BindToggle(ToggleSwitchShowPPTNavigationPanelSide, "Settings.IsShowSidePptNavigationPanel", ToggleSwitchShowPPTNavigationPanelSide_OnToggled);
-            BindToggle(ToggleSwitchSupportPowerPoint, "Settings.IsSupportPowerPoint", ToggleSwitchSupportPowerPoint_Toggled);
-            BindToggle(ToggleSwitchShowCanvasAtNewSlideShow, "Settings.IsShowCanvasAtNewSlideShow", ToggleSwitchShowCanvasAtNewSlideShow_Toggled);
-            BindToggle(ToggleSwitchEnableTwoFingerGestureInPresentationMode, "Settings.IsEnableTwoFingerGestureInPresentationMode", ToggleSwitchEnableTwoFingerGestureInPresentationMode_Toggled);
-            BindToggle(ToggleSwitchEnableFingerGestureSlideShowControl, "Settings.IsEnableFingerGestureSlideShowControl", ToggleSwitchEnableFingerGestureSlideShowControl_Toggled);
-            BindToggle(ToggleSwitchAutoSaveScreenShotInPowerPoint, "Settings.IsAutoSaveScreenShotInPowerPoint", ToggleSwitchAutoSaveScreenShotInPowerPoint_Toggled);
-            BindToggle(ToggleSwitchAutoSaveStrokesInPowerPoint, "Settings.IsAutoSaveStrokesInPowerPoint", ToggleSwitchAutoSaveStrokesInPowerPoint_Toggled);
-            BindToggle(ToggleSwitchNotifyPreviousPage, "Settings.IsNotifyPreviousPage", ToggleSwitchNotifyPreviousPage_Toggled);
-            BindToggle(ToggleSwitchNotifyHiddenPage, "Settings.IsNotifyHiddenPage", ToggleSwitchNotifyHiddenPage_Toggled);
-            BindToggle(ToggleSwitchNotifyAutoPlayPresentation, "Settings.IsNotifyAutoPlayPresentation", ToggleSwitchNotifyAutoPlayPresentation_Toggled);
+            BindToggle(ToggleSwitchShowButtonPPTNavigationBottom, "Settings.IsShowPptNavigationBottom");
+            BindToggle(ToggleSwitchShowButtonPPTNavigationSides, "Settings.IsShowPptNavigationSides");
+            BindToggle(ToggleSwitchShowPPTNavigationPanelBottom, "Settings.IsShowBottomPptNavigationPanel");
+            BindToggle(ToggleSwitchShowPPTNavigationPanelSide, "Settings.IsShowSidePptNavigationPanel");
+            BindToggle(ToggleSwitchSupportPowerPoint, "Settings.IsSupportPowerPoint");
+            BindToggle(ToggleSwitchShowCanvasAtNewSlideShow, "Settings.IsShowCanvasAtNewSlideShow");
+            BindToggle(ToggleSwitchEnableTwoFingerGestureInPresentationMode, "Settings.IsEnableTwoFingerGestureInPresentationMode");
+            BindToggle(ToggleSwitchEnableFingerGestureSlideShowControl, "Settings.IsEnableFingerGestureSlideShowControl");
+            BindToggle(ToggleSwitchAutoSaveScreenShotInPowerPoint, "Settings.IsAutoSaveScreenShotInPowerPoint");
+            BindToggle(ToggleSwitchAutoSaveStrokesInPowerPoint, "Settings.IsAutoSaveStrokesInPowerPoint");
+            BindToggle(ToggleSwitchNotifyPreviousPage, "Settings.IsNotifyPreviousPage");
+            BindToggle(ToggleSwitchNotifyHiddenPage, "Settings.IsNotifyHiddenPage");
+            BindToggle(ToggleSwitchNotifyAutoPlayPresentation, "Settings.IsNotifyAutoPlayPresentation");
 
-            BindToggle(ToggleSwitchCompressPicturesUploaded, "Settings.IsCompressPicturesUploaded", ToggleSwitchCompressPicturesUploaded_Toggled);
-            BindToggle(ToggleSwitchShowCursor, "Settings.IsShowCursor", ToggleSwitchShowCursor_Toggled);
-            BindComboBoxSelectedIndex(ComboBoxEraserSize, "Settings.EraserSize", ComboBoxEraserSize_SelectionChanged);
-            BindToggle(ToggleSwitchHideStrokeWhenSelecting, "Settings.HideStrokeWhenSelecting", ToggleSwitchHideStrokeWhenSelecting_Toggled);
-            BindComboBoxSelectedIndex(ComboBoxHyperbolaAsymptoteOption, "Settings.HyperbolaAsymptoteOption", ComboBoxHyperbolaAsymptoteOption_SelectionChanged);
-            BindToggle(ToggleSwitchEnableInkToShape, "Settings.IsEnableInkToShape", ToggleSwitchEnableInkToShape_Toggled);
+            BindToggle(ToggleSwitchCompressPicturesUploaded, "Settings.IsCompressPicturesUploaded");
+            BindToggle(ToggleSwitchShowCursor, "Settings.IsShowCursor");
+            BindComboBoxSelectedIndex(ComboBoxEraserSize, "Settings.EraserSize");
+            BindToggle(ToggleSwitchHideStrokeWhenSelecting, "Settings.HideStrokeWhenSelecting");
+            BindComboBoxSelectedIndex(ComboBoxHyperbolaAsymptoteOption, "Settings.HyperbolaAsymptoteOption");
+            BindToggle(ToggleSwitchEnableInkToShape, "Settings.IsEnableInkToShape");
 
-            BindToggle(ToggleSwitchIsSpecialScreen, "Settings.IsSpecialScreen", ToggleSwitchIsSpecialScreen_OnToggled);
-            BindSlider(TouchMultiplierSlider, "Settings.TouchMultiplier", TouchMultiplierSlider_ValueChanged);
-            BindSlider(NibModeBoundsWidthSlider, "Settings.NibModeBoundsWidth", NibModeBoundsWidthSlider_ValueChanged);
-            BindSlider(FingerModeBoundsWidthSlider, "Settings.FingerModeBoundsWidth", FingerModeBoundsWidthSlider_ValueChanged);
-            BindSlider(NibModeBoundsWidthThresholdValueSlider, "Settings.NibModeBoundsWidthThresholdValue", NibModeBoundsWidthThresholdValueSlider_ValueChanged);
-            BindSlider(FingerModeBoundsWidthThresholdValueSlider, "Settings.FingerModeBoundsWidthThresholdValue", FingerModeBoundsWidthThresholdValueSlider_ValueChanged);
-            BindSlider(NibModeBoundsWidthEraserSizeSlider, "Settings.NibModeBoundsWidthEraserSize", NibModeBoundsWidthEraserSizeSlider_ValueChanged);
-            BindSlider(FingerModeBoundsWidthEraserSizeSlider, "Settings.FingerModeBoundsWidthEraserSize", FingerModeBoundsWidthEraserSizeSlider_ValueChanged);
-            BindToggle(ToggleSwitchIsQuadIR, "Settings.IsQuadIR", ToggleSwitchIsQuadIR_Toggled);
-            BindToggle(ToggleSwitchIsLogEnabled, "Settings.IsLogEnabled", ToggleSwitchIsLogEnabled_Toggled);
-            BindToggle(ToggleSwitchIsSecondConfimeWhenShutdownApp, "Settings.IsSecondConfimeWhenShutdownApp", ToggleSwitchIsSecondConfimeWhenShutdownApp_Toggled);
-            BindToggle(ToggleSwitchIsEnableEdgeGestureUtil, "Settings.IsEnableEdgeGestureUtil", ToggleSwitchIsEnableEdgeGestureUtil_Toggled);
+            BindToggle(ToggleSwitchIsSpecialScreen, "Settings.IsSpecialScreen");
+            BindSlider(TouchMultiplierSlider, "Settings.TouchMultiplier");
+            BindSlider(NibModeBoundsWidthSlider, "Settings.NibModeBoundsWidth");
+            BindSlider(FingerModeBoundsWidthSlider, "Settings.FingerModeBoundsWidth");
+            BindSlider(NibModeBoundsWidthThresholdValueSlider, "Settings.NibModeBoundsWidthThresholdValue");
+            BindSlider(FingerModeBoundsWidthThresholdValueSlider, "Settings.FingerModeBoundsWidthThresholdValue");
+            BindSlider(NibModeBoundsWidthEraserSizeSlider, "Settings.NibModeBoundsWidthEraserSize");
+            BindSlider(FingerModeBoundsWidthEraserSizeSlider, "Settings.FingerModeBoundsWidthEraserSize");
+            BindToggle(ToggleSwitchIsQuadIR, "Settings.IsQuadIR");
+            BindToggle(ToggleSwitchIsLogEnabled, "Settings.IsLogEnabled");
+            BindToggle(ToggleSwitchIsSecondConfimeWhenShutdownApp, "Settings.IsSecondConfimeWhenShutdownApp");
+            BindToggle(ToggleSwitchIsEnableEdgeGestureUtil, "Settings.IsEnableEdgeGestureUtil");
 
-            BindToggle(ToggleSwitchAutoFoldInEasiNote, "Settings.IsAutoFoldInEasiNote", ToggleSwitchAutoFoldInEasiNote_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInEasiNoteIgnoreDesktopAnno, "Settings.IsAutoFoldInEasiNoteIgnoreDesktopAnno", ToggleSwitchAutoFoldInEasiNoteIgnoreDesktopAnno_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInEasiCamera, "Settings.IsAutoFoldInEasiCamera", ToggleSwitchAutoFoldInEasiCamera_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInEasiNote3C, "Settings.IsAutoFoldInEasiNote3C", ToggleSwitchAutoFoldInEasiNote3C_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInSeewoPincoTeacher, "Settings.IsAutoFoldInSeewoPincoTeacher", ToggleSwitchAutoFoldInSeewoPincoTeacher_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInHiteTouchPro, "Settings.IsAutoFoldInHiteTouchPro", ToggleSwitchAutoFoldInHiteTouchPro_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInHiteCamera, "Settings.IsAutoFoldInHiteCamera", ToggleSwitchAutoFoldInHiteCamera_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInWxBoardMain, "Settings.IsAutoFoldInWxBoardMain", ToggleSwitchAutoFoldInWxBoardMain_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInOldZyBoard, "Settings.IsAutoFoldInOldZyBoard", ToggleSwitchAutoFoldInOldZyBoard_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInMSWhiteboard, "Settings.IsAutoFoldInMSWhiteboard", ToggleSwitchAutoFoldInMSWhiteboard_Toggled);
-            BindToggle(ToggleSwitchAutoFoldInPPTSlideShow, "Settings.IsAutoFoldInPPTSlideShow", ToggleSwitchAutoFoldInPPTSlideShow_Toggled);
-            BindToggle(ToggleSwitchAutoKillPptService, "Settings.IsAutoKillPptService", ToggleSwitchAutoKillPptService_Toggled);
-            BindToggle(ToggleSwitchAutoKillEasiNote, "Settings.IsAutoKillEasiNote", ToggleSwitchAutoKillEasiNote_Toggled);
-            BindToggle(ToggleSwitchSaveScreenshotsInDateFolders, "Settings.IsSaveScreenshotsInDateFolders", ToggleSwitchSaveScreenshotsInDateFolders_Toggled);
-            BindToggle(ToggleSwitchAutoSaveStrokesAtScreenshot, "Settings.IsAutoSaveStrokesAtScreenshot", ToggleSwitchAutoSaveStrokesAtScreenshot_Toggled);
-            BindToggle(ToggleSwitchAutoSaveStrokesAtClear, "Settings.IsAutoSaveStrokesAtClear", ToggleSwitchAutoSaveStrokesAtClear_Toggled);
-            BindSlider(SideControlMinimumAutomationSlider, "Settings.MinimumAutomationStrokeNumber", SideControlMinimumAutomationSlider_ValueChanged);
-            BindToggle(ToggleSwitchAutoDelSavedFiles, "Settings.AutoDelSavedFiles", ToggleSwitchAutoDelSavedFiles_Toggled);
-            BindComboBoxSelectedIndex(ComboBoxAutoDelSavedFilesDaysThreshold, "Settings.AutoDelSavedFilesDaysThresholdIndex", ComboBoxAutoDelSavedFilesDaysThreshold_SelectionChanged);
+            BindToggle(ToggleSwitchAutoFoldInEasiNote, "Settings.IsAutoFoldInEasiNote");
+            BindToggle(ToggleSwitchAutoFoldInEasiNoteIgnoreDesktopAnno, "Settings.IsAutoFoldInEasiNoteIgnoreDesktopAnno");
+            BindToggle(ToggleSwitchAutoFoldInEasiCamera, "Settings.IsAutoFoldInEasiCamera");
+            BindToggle(ToggleSwitchAutoFoldInEasiNote3C, "Settings.IsAutoFoldInEasiNote3C");
+            BindToggle(ToggleSwitchAutoFoldInSeewoPincoTeacher, "Settings.IsAutoFoldInSeewoPincoTeacher");
+            BindToggle(ToggleSwitchAutoFoldInHiteTouchPro, "Settings.IsAutoFoldInHiteTouchPro");
+            BindToggle(ToggleSwitchAutoFoldInHiteCamera, "Settings.IsAutoFoldInHiteCamera");
+            BindToggle(ToggleSwitchAutoFoldInWxBoardMain, "Settings.IsAutoFoldInWxBoardMain");
+            BindToggle(ToggleSwitchAutoFoldInOldZyBoard, "Settings.IsAutoFoldInOldZyBoard");
+            BindToggle(ToggleSwitchAutoFoldInMSWhiteboard, "Settings.IsAutoFoldInMSWhiteboard");
+            BindToggle(ToggleSwitchAutoFoldInPPTSlideShow, "Settings.IsAutoFoldInPPTSlideShow");
+            BindToggle(ToggleSwitchAutoKillPptService, "Settings.IsAutoKillPptService");
+            BindToggle(ToggleSwitchAutoKillEasiNote, "Settings.IsAutoKillEasiNote");
+            BindToggle(ToggleSwitchSaveScreenshotsInDateFolders, "Settings.IsSaveScreenshotsInDateFolders");
+            BindToggle(ToggleSwitchAutoSaveStrokesAtScreenshot, "Settings.IsAutoSaveStrokesAtScreenshot");
+            BindToggle(ToggleSwitchAutoSaveStrokesAtClear, "Settings.IsAutoSaveStrokesAtClear");
+            if (FindName("ToggleSwitchClearExitingWritingMode") is ToggleSwitch clearExitingWritingModeToggle)
+            {
+                BindToggle(clearExitingWritingModeToggle, "Settings.IsAutoClearWhenExitingWritingMode");
+            }
+            BindSlider(SideControlMinimumAutomationSlider, "Settings.MinimumAutomationStrokeNumber");
+            BindToggle(ToggleSwitchAutoDelSavedFiles, "Settings.AutoDelSavedFiles");
+            BindComboBoxSelectedIndex(ComboBoxAutoDelSavedFilesDaysThreshold, "Settings.AutoDelSavedFilesDaysThresholdIndex");
         }
 
         private void SettingsViewModel_ReloadRequested(string? notificationMessage)
@@ -173,27 +185,23 @@ namespace Ink_Canvas
             BindingOperations.SetBinding(element, UIElement.VisibilityProperty, new Binding(path));
         }
 
-        private void BindToggle(ToggleSwitch toggleSwitch, string path, RoutedEventHandler handler)
+        private void BindToggle(ToggleSwitch toggleSwitch, string path)
         {
-            toggleSwitch.Toggled -= handler;
             BindingOperations.SetBinding(toggleSwitch, ToggleSwitch.IsOnProperty, CreateTwoWayBinding(path));
         }
 
-        private void BindSlider(RangeBase slider, string path, RoutedPropertyChangedEventHandler<double> handler)
+        private void BindSlider(RangeBase slider, string path)
         {
-            slider.ValueChanged -= handler;
             BindingOperations.SetBinding(slider, RangeBase.ValueProperty, CreateTwoWayBinding(path));
         }
 
-        private void BindComboBoxSelectedIndex(ComboBox comboBox, string path, SelectionChangedEventHandler handler)
+        private void BindComboBoxSelectedIndex(ComboBox comboBox, string path)
         {
-            comboBox.SelectionChanged -= handler;
             BindingOperations.SetBinding(comboBox, Selector.SelectedIndexProperty, CreateTwoWayBinding(path));
         }
 
-        private void BindComboBoxSelectedItem(ComboBox comboBox, string path, SelectionChangedEventHandler handler)
+        private void BindComboBoxSelectedItem(ComboBox comboBox, string path)
         {
-            comboBox.SelectionChanged -= handler;
             BindingOperations.SetBinding(comboBox, Selector.SelectedItemProperty, CreateTwoWayBinding(path));
         }
 

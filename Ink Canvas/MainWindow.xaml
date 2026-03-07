@@ -1431,7 +1431,7 @@
                                                                             IsOn="{Binding ElementName=ToggleSwitchEnableInkToShape, Path=IsOn}"
                                                                             OffContent="关"
                                                                             OnContent="开"
-                                                                            Toggled="ToggleSwitchEnableInkToShape_Toggled" />
+                                                             />
                                                                     </ikw:SimpleStackPanel>
                                                                 </ikw:SimpleStackPanel>
                                                             </Controls:UniformGrid>
@@ -3098,7 +3098,7 @@
                                             Name="ToggleSwitchIsAutoUpdate"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsAutoUpdate_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3114,7 +3114,7 @@
                                             Name="ToggleSwitchIsAutoUpdateWithSilence"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsAutoUpdateWithSilence_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3154,7 +3154,7 @@
                                                         <ComboBox
                                                             x:Name="AutoUpdateWithSilenceStartTimeComboBox"
                                                             Width="90"
-                                                            SelectionChanged="AutoUpdateWithSilenceStartTimeComboBox_SelectionChanged" />
+                                                   />
                                                     </ikw:SimpleStackPanel>
                                                     <ikw:SimpleStackPanel Orientation="Horizontal">
                                                         <TextBlock
@@ -3167,7 +3167,7 @@
                                                         <ComboBox
                                                             x:Name="AutoUpdateWithSilenceEndTimeComboBox"
                                                             Width="90"
-                                                            SelectionChanged="AutoUpdateWithSilenceEndTimeComboBox_SelectionChanged" />
+                                                   />
                                                     </ikw:SimpleStackPanel>
                                                 </ikw:SimpleStackPanel>
                                                 <TextBlock
@@ -3185,7 +3185,7 @@
                                             Name="ToggleSwitchRunAtStartup"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchRunAtStartup_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3200,7 +3200,7 @@
                                             Name="ToggleSwitchFoldAtStartup"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchFoldAtStartup_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3227,7 +3227,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchCompressPicturesUploaded_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3243,7 +3243,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchShowCursor_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3262,7 +3262,7 @@
                                         Name="ComboBoxEraserSize"
                                         Margin="5,0,0,0"
                                         SelectedIndex="2"
-                                        SelectionChanged="ComboBoxEraserSize_SelectionChanged">
+                                          >
                                         <ComboBoxItem Content="小" />
                                         <ComboBoxItem Content="较小" />
                                         <ComboBoxItem Content="中（默认）" />
@@ -3277,7 +3277,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchHideStrokeWhenSelecting_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3299,7 +3299,7 @@
                                     <ComboBox
                                         Name="ComboBoxHyperbolaAsymptoteOption"
                                         SelectedIndex="0"
-                                        SelectionChanged="ComboBoxHyperbolaAsymptoteOption_SelectionChanged">
+                                          >
                                         <ComboBoxItem Content="是" />
                                         <ComboBoxItem Content="否" />
                                         <ComboBoxItem Content="每次询问" />
@@ -3393,7 +3393,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchEnableInkToShape_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3422,7 +3422,7 @@
                                     <ComboBox
                                         Name="ComboBoxTheme"
                                         SelectedIndex="0"
-                                        SelectionChanged="ComboBoxTheme_SelectionChanged">
+                                          >
                                         <ComboBoxItem Content="浅色主题" />
                                         <ComboBoxItem Content="深色主题" />
                                         <ComboBoxItem Content="跟随系统" />
@@ -3435,7 +3435,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchEnableDisPlayFloatBarText_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3451,7 +3451,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsColorfulViewboxFloatingBar_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3472,7 +3472,7 @@
                                             Minimum="0"
                                             TickFrequency="1"
                                             TickPlacement="BottomRight"
-                                            ValueChanged="SliderFloatingBarBottomMargin_ValueChanged"
+                                            
                                             Value="100" />
                                         <TextBlock
                                             Width="35"
@@ -3503,7 +3503,7 @@
                                             Minimum="50"
                                             TickFrequency="1"
                                             TickPlacement="BottomRight"
-                                            ValueChanged="SliderFloatingBarScale_ValueChanged"
+                                            
                                             Value="100" />
                                         <TextBlock
                                             Width="35"
@@ -3559,7 +3559,7 @@
                                             Minimum="50"
                                             TickFrequency="1"
                                             TickPlacement="BottomRight"
-                                            ValueChanged="SliderBlackboardScale_ValueChanged"
+                                            
                                             Value="100" />
                                         <TextBlock
                                             Width="35"
@@ -3621,7 +3621,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchShowPPTNavigationPanelBottom_OnToggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3637,7 +3637,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchShowButtonPPTNavigationBottom_OnToggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3653,7 +3653,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchShowPPTNavigationPanelSide_OnToggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3669,7 +3669,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchShowButtonPPTNavigationSides_OnToggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3695,7 +3695,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchSupportPowerPoint_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3741,7 +3741,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchShowCanvasAtNewSlideShow_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3758,7 +3758,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchEnableTwoFingerGestureInPresentationMode_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3775,7 +3775,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchEnableFingerGestureSlideShowControl_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3796,7 +3796,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoSaveScreenShotInPowerPoint_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3817,7 +3817,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoSaveStrokesInPowerPoint_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3838,7 +3838,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchNotifyPreviousPage_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3855,7 +3855,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchNotifyHiddenPage_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3872,7 +3872,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchNotifyAutoPlayPresentation_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3907,7 +3907,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsSpecialScreen_OnToggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -3926,7 +3926,7 @@
                                         Minimum="0"
                                         TickFrequency="0.01"
                                         TickPlacement="None"
-                                        ValueChanged="TouchMultiplierSlider_ValueChanged"
+                                            
                                         Visibility="Visible" />
                                     <TextBlock
                                         Width="30"
@@ -3982,7 +3982,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchEnableDisPlayNibModeToggle_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4015,7 +4015,7 @@
                                         Minimum="1"
                                         TickFrequency="1"
                                         TickPlacement="None"
-                                        ValueChanged="NibModeBoundsWidthSlider_ValueChanged"
+                                            
                                         Value="5" />
                                     <TextBlock
                                         Width="30"
@@ -4035,7 +4035,7 @@
                                         Minimum="1"
                                         TickFrequency="1"
                                         TickPlacement="None"
-                                        ValueChanged="FingerModeBoundsWidthSlider_ValueChanged"
+                                            
                                         Value="20" />
                                     <TextBlock
                                         Width="30"
@@ -4068,7 +4068,7 @@
                                         Minimum="0"
                                         TickFrequency="0.01"
                                         TickPlacement="None"
-                                        ValueChanged="NibModeBoundsWidthThresholdValueSlider_ValueChanged"
+                                            
                                         Value="2.5" />
                                     <TextBlock
                                         Width="30"
@@ -4088,7 +4088,7 @@
                                         Minimum="0"
                                         TickFrequency="0.01"
                                         TickPlacement="None"
-                                        ValueChanged="FingerModeBoundsWidthThresholdValueSlider_ValueChanged"
+                                            
                                         Value="2.5" />
                                     <TextBlock
                                         Width="30"
@@ -4121,7 +4121,7 @@
                                         Minimum="0.01"
                                         TickFrequency="0.01"
                                         TickPlacement="None"
-                                        ValueChanged="NibModeBoundsWidthEraserSizeSlider_ValueChanged"
+                                            
                                         Value="0.8" />
                                     <TextBlock
                                         Width="30"
@@ -4141,7 +4141,7 @@
                                         Minimum="0.01"
                                         TickFrequency="0.01"
                                         TickPlacement="None"
-                                        ValueChanged="FingerModeBoundsWidthEraserSizeSlider_ValueChanged"
+                                            
                                         Value="0.8" />
                                     <TextBlock
                                         Width="30"
@@ -4170,7 +4170,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsQuadIR_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4196,7 +4196,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsLogEnabled_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4216,7 +4216,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsSecondConfimeWhenShutdownApp_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4232,7 +4232,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchIsEnableEdgeGestureUtil_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,6,0"
@@ -4260,7 +4260,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInEasiNote_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4277,7 +4277,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInEasiNoteIgnoreDesktopAnno_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4294,7 +4294,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInEasiCamera_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4311,7 +4311,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInEasiNote3C_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4328,7 +4328,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInSeewoPincoTeacher_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4345,7 +4345,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInHiteTouchPro_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4362,7 +4362,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInHiteCamera_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4379,7 +4379,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInWxBoardMain_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4396,7 +4396,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInOldZyBoard_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4413,7 +4413,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInMSWhiteboard_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4430,7 +4430,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoFoldInPPTSlideShow_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4456,7 +4456,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoKillPptService_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4477,7 +4477,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoKillEasiNote_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4503,7 +4503,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoSaveStrokesAtClear_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4520,7 +4520,7 @@
                                             IsOn="False"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchSaveScreenshotsInDateFolders_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4537,7 +4537,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoSaveStrokesAtScreenshot_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4556,7 +4556,7 @@
                                     Y1="0"
                                     Y2="0" />
                                 <!--
-                                <ui:ToggleSwitch Name="ToggleSwitchClearExitingWritingMode" Header="切换到鼠标模式后自动清屏" IsOn="False" OnContent="开" OffContent="关" Toggled="ToggleSwitchExitingWritingMode_Toggled"/>
+                            <ui:ToggleSwitch Name="ToggleSwitchClearExitingWritingMode" Header="切换到鼠标模式后自动清屏" IsOn="False" OnContent="开" OffContent="关"/>
                                 -->
                                 <StackPanel Orientation="Horizontal">
                                     <Slider
@@ -4569,7 +4569,7 @@
                                         Minimum="0"
                                         TickFrequency="1"
                                         TickPlacement="None"
-                                        ValueChanged="SideControlMinimumAutomationSlider_ValueChanged"
+                                            
                                         Value="0" />
                                     <TextBlock
                                         Width="25"
@@ -4622,7 +4622,7 @@
                                             IsOn="True"
                                             OffContent="关"
                                             OnContent="开"
-                                            Toggled="ToggleSwitchAutoDelSavedFiles_Toggled" />
+                                     />
                                     </ikw:SimpleStackPanel>
                                     <TextBlock
                                         Margin="0,0,14,0"
@@ -4648,7 +4648,7 @@
                                     <ComboBox
                                         Name="ComboBoxAutoDelSavedFilesDaysThreshold"
                                         SelectedIndex="4"
-                                        SelectionChanged="ComboBoxAutoDelSavedFilesDaysThreshold_SelectionChanged">
+                                          >
                                         <ComboBoxItem Content="1" />
                                         <ComboBoxItem Content="3" />
                                         <ComboBoxItem Content="5" />
@@ -5594,7 +5594,7 @@
                                                                             IsOn="{Binding ElementName=ToggleSwitchEnableInkToShape, Path=IsOn}"
                                                                             OffContent="关"
                                                                             OnContent="开"
-                                                                            Toggled="ToggleSwitchEnableInkToShape_Toggled" />
+                                                             />
                                                                     </ikw:SimpleStackPanel>
                                                                 </ikw:SimpleStackPanel>
                                                             </Controls:UniformGrid>

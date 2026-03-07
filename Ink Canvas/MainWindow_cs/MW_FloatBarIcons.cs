@@ -69,12 +69,41 @@ namespace Ink_Canvas
 
         #region Drag
 
-        bool isDragDropInEffect = false;
-        Point pos = new Point();
-        Point downPos = new Point();
-        Point pointDesktop = new Point(-1, -1); //用于记录上次在桌面时的坐标
-        Point pointPPT = new Point(-1, -1); //用于记录上次在PPT中的坐标
-        bool shouldRestoreDefaultDesktopFloatingBarPosition;
+        private bool isDragDropInEffect
+        {
+            get => floatingBarLayoutState.IsDragDropInEffect;
+            set => floatingBarLayoutState.IsDragDropInEffect = value;
+        }
+
+        private Point pos
+        {
+            get => floatingBarLayoutState.CurrentPointerPosition;
+            set => floatingBarLayoutState.CurrentPointerPosition = value;
+        }
+
+        private Point downPos
+        {
+            get => floatingBarLayoutState.MouseDownPosition;
+            set => floatingBarLayoutState.MouseDownPosition = value;
+        }
+
+        private Point pointDesktop
+        {
+            get => floatingBarLayoutState.DesktopPosition;
+            set => floatingBarLayoutState.DesktopPosition = value;
+        }
+
+        private Point pointPPT
+        {
+            get => floatingBarLayoutState.PresentationPosition;
+            set => floatingBarLayoutState.PresentationPosition = value;
+        }
+
+        private bool shouldRestoreDefaultDesktopFloatingBarPosition
+        {
+            get => floatingBarLayoutState.ShouldRestoreDefaultDesktopPosition;
+            set => floatingBarLayoutState.ShouldRestoreDefaultDesktopPosition = value;
+        }
 
         private void RequestDefaultDesktopFloatingBarPosition()
         {
@@ -511,7 +540,11 @@ namespace Ink_Canvas
             ShellViewModel.ToggleToolsPanelCommand.Execute(null);
         }
 
-        bool isViewboxFloatingBarMarginAnimationRunning = false;
+        private bool isViewboxFloatingBarMarginAnimationRunning
+        {
+            get => floatingBarLayoutState.IsMarginAnimationRunning;
+            set => floatingBarLayoutState.IsMarginAnimationRunning = value;
+        }
 
         private void ViewboxFloatingBarMarginAnimation()
         {
@@ -558,8 +591,9 @@ namespace Ink_Canvas
                 IntPtr windowHandle = new WindowInteropHelper(this).Handle;
                 System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.FromHandle(windowHandle);
                 double screenWidth = screen.Bounds.Width / dpiScaleX, screenHeight = screen.Bounds.Height / dpiScaleY;
-                pos.X = (screenWidth - ViewboxFloatingBar.ActualWidth * ViewboxFloatingBarScaleTransform.ScaleX) / 2;
-                pos.Y = screenHeight - MarginFromEdge * ((ViewboxFloatingBarScaleTransform.ScaleY == 1) ? 1 : 0.9);
+                pos = new Point(
+                    (screenWidth - ViewboxFloatingBar.ActualWidth * ViewboxFloatingBarScaleTransform.ScaleX) / 2,
+                    screenHeight - MarginFromEdge * ((ViewboxFloatingBarScaleTransform.ScaleY == 1) ? 1 : 0.9));
 
                 if (MarginFromEdge != -60)
                 {
@@ -851,7 +885,7 @@ namespace Ink_Canvas
 
         private void BtnSwitch_Click(object sender, RoutedEventArgs e)
         {
-            ApplyWorkspaceVisualState(ShellViewModel.WorkspaceMode);
+            ApplyWorkspaceVisualStateCore(ShellViewModel.WorkspaceMode);
         }
 
         int BoundsWidth = 5;

@@ -157,6 +157,23 @@ namespace Ink_Canvas
             }
         }
 
+        private void ApplyScaling()
+        {
+            double floatingBarScaleFactor = Settings.Appearance.FloatingBarScale / 100.0;
+            ViewboxFloatingBarScaleTransform.ScaleX = floatingBarScaleFactor;
+            ViewboxFloatingBarScaleTransform.ScaleY = floatingBarScaleFactor;
+
+            double blackboardScaleFactor = Settings.Appearance.BlackboardScale / 100.0;
+            ViewboxBlackboardLeftSideScaleTransform.ScaleX = blackboardScaleFactor;
+            ViewboxBlackboardLeftSideScaleTransform.ScaleY = blackboardScaleFactor;
+            ViewboxBlackboardCenterSideScaleTransform.ScaleX = blackboardScaleFactor;
+            ViewboxBlackboardCenterSideScaleTransform.ScaleY = blackboardScaleFactor;
+            ViewboxBlackboardRightSideScaleTransform.ScaleX = blackboardScaleFactor;
+            ViewboxBlackboardRightSideScaleTransform.ScaleY = blackboardScaleFactor;
+
+            ViewboxFloatingBarMarginAnimation();
+        }
+
         private void ApplyPptNavigationBottomButtonVisibility()
         {
             PptNavigationBottomBtn.Visibility = Settings.PowerPointSettings.IsShowPPTNavigationBottom
