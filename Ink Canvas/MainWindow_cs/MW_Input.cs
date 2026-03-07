@@ -1,4 +1,5 @@
 using Ink_Canvas.Controllers;
+using Ink_Canvas.Features.Ink;
 using Ink_Canvas.ViewModels;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -44,6 +45,7 @@ namespace Ink_Canvas
         private void InitializeInputController()
         {
             inkCanvasInteractionController = new InkCanvasInteractionController(inkCanvas, mainWindowViewModel.Input);
+            InitializeInkFeature();
         }
 
         private void ApplyCanvasInteractionMode(CanvasInteractionMode mode, double pointEraserDiameter = 50, double strokeEraserDiameter = 5)

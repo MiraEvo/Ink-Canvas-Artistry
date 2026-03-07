@@ -313,7 +313,7 @@ namespace Ink_Canvas
                 if (Settings.Automation.IsAutoSaveStrokesAtClear && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
                 {
                     if (IsPresentationSlideShowRunning)
-                        SavePPTScreenshot($"{CurrentPresentationName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
+                        SavePPTScreenshot($"{CurrentPresentationName}/{CurrentPresentationSlideIndex}_{DateTime.Now:HH-mm-ss}");
                     else
                         SaveScreenshot(true);
                 }

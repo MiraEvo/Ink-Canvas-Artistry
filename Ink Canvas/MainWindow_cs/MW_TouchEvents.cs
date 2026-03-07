@@ -66,12 +66,6 @@ namespace Ink_Canvas
         }
 
         #endregion
-
-        int lastTouchDownTime = 0, lastTouchUpTime = 0;
-
-        Point iniP = new Point(0, 0);
-        bool isLastTouchEraser = false;
-
         private void Main_Grid_TouchDown(object sender, TouchEventArgs e)
         {
             if (!isHidingSubPanelsWhenInking)
@@ -131,13 +125,6 @@ namespace Ink_Canvas
             if (!Settings.Advanced.IsQuadIR) return args.Width;
             else return Math.Sqrt(args.Width * args.Height); //四边红外
         }
-
-        //记录触摸设备ID
-        private readonly List<int> dec = new List<int>();
-        //中心点
-        Point centerPoint;
-        InkCanvasEditingMode lastInkCanvasEditingMode = InkCanvasEditingMode.Ink;
-        bool isSingleFingerDragMode = false;
 
         private void inkCanvas_PreviewTouchDown(object sender, TouchEventArgs e)
         {

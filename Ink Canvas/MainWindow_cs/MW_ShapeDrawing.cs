@@ -25,8 +25,6 @@ namespace Ink_Canvas
 
         #endregion Floating Bar Control
 
-        bool isLongPressSelected = false; // 用于存是否是“选中”状态，便于后期抬笔后不做切换到笔的处理
-
         #region Buttons
 
         private void SymbolIconPinBorderDrawShape_MouseUp(object sender, MouseButtonEventArgs e)
@@ -44,9 +42,6 @@ namespace Ink_Canvas
                 BoardBorderDrawShapePin.Glyph = "\uE77a";
             }
         }
-
-        object lastMouseDownSender = null;
-        DateTime lastMouseDownTime = DateTime.MinValue;
 
         private void BeginShapeDrawing(ShapeToolKind tool)
         {
@@ -66,35 +61,17 @@ namespace Ink_Canvas
 
         private async void Image_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            lastMouseDownSender = sender;
-            lastMouseDownTime = DateTime.Now;
-
-            await Task.Delay(500);
-
-            if (lastMouseDownSender != sender
-                || sender is not UIElement shapeButton
-                || !TryGetLongPressShapeTool(sender, out ShapeToolKind tool))
+            if (inkInteractionCoordinator == null)
             {
                 return;
             }
 
-            lastMouseDownSender = null;
-            shapeButton.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 0.3, new Duration(TimeSpan.FromMilliseconds(100))));
-            BeginShapeDrawing(tool);
-            isLongPressSelected = true;
-            if (isSingleFingerDragMode)
-            {
-                BtnFingerDragMode_Click(null, null);
-            }
+            await inkInteractionCoordinator.HandleShapeButtonMouseDownAsync(sender);
         }
 
         private void BtnPen_Click(object sender, RoutedEventArgs e)
         {
-            ShellViewModel.SetToolMode(ToolMode.Pen, false);
-            ExitShapeDrawingMode(true);
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
-            isLongPressSelected = false;
+            inkInteractionCoordinator?.HandlePenButtonClicked();
         }
 
         private void PrepareForShapeDrawing()
@@ -147,24 +124,7 @@ namespace Ink_Canvas
 
         private void BeginLongPressCompatibleShapeDrawing(object? sender, ShapeToolKind tool, UIElement previewElement)
         {
-            PrepareForShapeDrawing();
-            if (lastMouseDownSender == sender)
-            {
-                BeginShapeDrawing(tool);
-            }
-
-            lastMouseDownSender = null;
-            if (isLongPressSelected)
-            {
-                if (ToggleSwitchDrawShapeBorderAutoHide.IsOn)
-                {
-                    CollapseBorderDrawShape(true);
-                }
-
-                previewElement.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 1, new Duration(TimeSpan.Zero)));
-            }
-
-            DrawShapePromptToPen();
+            inkInteractionCoordinator?.HandleShapeToolSelection(sender, tool, previewElement);
         }
 
         private void InitializeCuboidDrawing()
@@ -278,11 +238,8 @@ namespace Ink_Canvas
             MouseTouchMove(e.GetTouchPoint(inkCanvas).Position);
         }
 
-        int drawMultiStepShapeCurrentStep = 0; //多笔完成的图形 当前所处在的笔画
-        StrokeCollection drawMultiStepShapeSpecialStrokeCollection = new StrokeCollection(); //多笔完成的图形 当前所处在的笔画
-                                                                                             //double drawMultiStepShapeSpecialParameter1 = 0.0; //多笔完成的图形 特殊参数 通常用于表示a
-                                                                                             //double drawMultiStepShapeSpecialParameter2 = 0.0; //多笔完成的图形 特殊参数 通常用于表示b
-        double drawMultiStepShapeSpecialParameter3 = 0.0; //多笔完成的图形 特殊参数 通常用于表示k
+        //double drawMultiStepShapeSpecialParameter1 = 0.0; //多笔完成的图形 特殊参数 通常用于表示a
+        //double drawMultiStepShapeSpecialParameter2 = 0.0; //多笔完成的图形 特殊参数 通常用于表示b
 
         private void MouseTouchMove(Point endP)
         {
@@ -909,10 +866,6 @@ namespace Ink_Canvas
             }
         }
 
-        bool isFirstTouchCuboid = true;
-        Point CuboidFrontRectIniP = new Point();
-        Point CuboidFrontRectEndP = new Point();
-
         private void Main_Grid_TouchUp(object sender, TouchEventArgs e)
         {
             inkCanvas_MouseUp(sender, null);
@@ -921,9 +874,6 @@ namespace Ink_Canvas
                 isWaitUntilNextTouchDown = false;
             }
         }
-        Stroke lastTempStroke = null;
-        StrokeCollection lastTempStrokeCollection = new StrokeCollection();
-        bool isWaitUntilNextTouchDown = false;
 
         private void RemoveLastTempStroke()
         {
@@ -1133,7 +1083,6 @@ namespace Ink_Canvas
             return strokes;
         }
 
-        bool isMouseDown = false;
         private void inkCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             isMouseDown = true;

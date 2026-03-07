@@ -1,4 +1,5 @@
 using Ink_Canvas.Controllers;
+using Ink_Canvas.Features.Presentation;
 using Ink_Canvas.ViewModels;
 using Microsoft.Office.Interop.PowerPoint;
 using System.ComponentModel;
@@ -9,6 +10,7 @@ namespace Ink_Canvas
     public partial class MainWindow
     {
         private IPresentationSessionController? presentationSessionController;
+        private PresentationExperienceCoordinator? presentationExperienceCoordinator;
 
         private PresentationSessionViewModel PresentationViewModel => mainWindowViewModel.Presentation;
 
@@ -18,13 +20,42 @@ namespace Ink_Canvas
 
         private bool IsPresentationConnected => PresentationViewModel.IsPresentationConnected;
 
-        private string CurrentPresentationName => string.IsNullOrWhiteSpace(PresentationViewModel.PresentationName)
-            ? pptName
-            : PresentationViewModel.PresentationName;
+        private string CurrentPresentationName
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(PresentationViewModel.PresentationName))
+                {
+                    return PresentationViewModel.PresentationName;
+                }
 
-        private int CurrentPresentationSlideIndex => PresentationViewModel.CurrentSlideIndex != 0
-            ? PresentationViewModel.CurrentSlideIndex
-            : previousSlideID;
+                return presentationExperienceCoordinator?.State.PresentationName ?? string.Empty;
+            }
+        }
+
+        private int CurrentPresentationSlideIndex
+        {
+            get
+            {
+                if (PresentationViewModel.CurrentSlideIndex > 0)
+                {
+                    return PresentationViewModel.CurrentSlideIndex;
+                }
+
+                PresentationInkSessionState? sessionState = presentationExperienceCoordinator?.State;
+                if (sessionState == null)
+                {
+                    return 0;
+                }
+
+                if (sessionState.CurrentSlideIndex > 0)
+                {
+                    return sessionState.CurrentSlideIndex;
+                }
+
+                return sessionState.PreviousSlideIndex;
+            }
+        }
 
         public static bool IsShowingRestoreHiddenSlidesWindow = false;
 
@@ -60,6 +91,12 @@ namespace Ink_Canvas
                 mainWindowViewModel.Presentation,
                 () => Settings.PowerPointSettings.IsSupportWPS,
                 () => IsShowingRestoreHiddenSlidesWindow);
+            presentationExperienceCoordinator = new PresentationExperienceCoordinator(
+                presentationSessionController!,
+                mainWindowViewModel.Settings,
+                mainWindowViewModel.Presentation,
+                this,
+                new PresentationInkArchiveService());
             presentationSessionController.PresentationConnected += PresentationSessionController_PresentationConnected;
             presentationSessionController.PresentationClosed += PptApplication_PresentationClose;
             presentationSessionController.SlideShowBegin += PptApplication_SlideShowBegin;

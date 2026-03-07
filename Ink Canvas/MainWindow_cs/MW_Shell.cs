@@ -161,7 +161,7 @@ namespace Ink_Canvas
             {
                 if (IsPresentationSlideShowRunning)
                 {
-                    SavePPTScreenshot($"{CurrentPresentationName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
+                    SavePPTScreenshot($"{CurrentPresentationName}/{CurrentPresentationSlideIndex}_{DateTime.Now:HH-mm-ss}");
                 }
                 else
                 {
