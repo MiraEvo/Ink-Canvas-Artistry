@@ -183,6 +183,10 @@ namespace Ink_Canvas
 
         private async void ApplyCursorToolMode()
         {
+            InputStateViewModel.SetActiveShapeTool(ShapeToolKind.None, false);
+            InputStateViewModel.SetForceEraser(false, false);
+            SetCursorInteractionMode();
+
             if (inkCanvas.Strokes.Count > 0
                 && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
             {
@@ -257,7 +261,9 @@ namespace Ink_Canvas
                 UnFoldFloatingBar_MouseUp(LeftSidePanel, null);
             }
 
-            inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
+            ExitShapeDrawingMode(false);
+            forceEraser = false;
+            ApplyCanvasInteractionMode(CanvasInteractionMode.Ink);
             Main_Grid.Background = new SolidColorBrush(StringToColor("#01FFFFFF"));
             inkCanvas.IsHitTestVisible = true;
             inkCanvas.Visibility = Visibility.Visible;
@@ -267,7 +273,6 @@ namespace Ink_Canvas
             StackPanelCanvasControls.Visibility = Visibility.Visible;
 
             CheckEnableTwoFingerGestureBtnVisibility(true);
-            inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
             ColorSwitchCheck();
             HideSubPanels("pen", true);
         }
@@ -293,8 +298,7 @@ namespace Ink_Canvas
                     break;
             }
 
-            inkCanvas.EraserShape = new EllipseStylusShape(k * 90, k * 90);
-            inkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
+            ApplyCanvasInteractionMode(CanvasInteractionMode.EraseByPoint, k * 90);
             drawingShapeMode = 0;
 
             inkCanvas_EditingModeChanged(inkCanvas, null);
@@ -308,8 +312,7 @@ namespace Ink_Canvas
             forceEraser = true;
             forcePointEraser = false;
 
-            inkCanvas.EraserShape = new EllipseStylusShape(5, 5);
-            inkCanvas.EditingMode = InkCanvasEditingMode.EraseByStroke;
+            ApplyCanvasInteractionMode(CanvasInteractionMode.EraseByStroke, strokeEraserDiameter: 5);
             drawingShapeMode = 0;
 
             inkCanvas_EditingModeChanged(inkCanvas, null);
@@ -347,7 +350,7 @@ namespace Ink_Canvas
             }
             else
             {
-                inkCanvas.EditingMode = InkCanvasEditingMode.Select;
+                ApplyCanvasInteractionMode(CanvasInteractionMode.Select);
             }
 
             HideSubPanels("select");

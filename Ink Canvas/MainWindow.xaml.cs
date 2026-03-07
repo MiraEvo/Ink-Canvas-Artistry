@@ -142,6 +142,7 @@ namespace Ink_Canvas
         {
             var inkCanvas1 = sender as InkCanvas;
             if (inkCanvas1 == null) return;
+            SyncInputInteractionMode();
             if (Settings.Canvas.IsShowCursor)
             {
                 if (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink || drawingShapeMode != 0)

@@ -25,7 +25,6 @@ namespace Ink_Canvas
 
         #endregion Floating Bar Control
 
-        int drawingShapeMode = 0;
         bool isLongPressSelected = false; // 用于存是否是“选中”状态，便于后期抬笔后不做切换到笔的处理
 
         #region Buttons
@@ -49,6 +48,22 @@ namespace Ink_Canvas
         object lastMouseDownSender = null;
         DateTime lastMouseDownTime = DateTime.MinValue;
 
+        private void BeginShapeDrawing(ShapeToolKind tool)
+        {
+            EnterShapeDrawingMode(tool);
+            inkCanvas.IsManipulationEnabled = true;
+            CancelSingleFingerDragMode();
+        }
+
+        private void RestoreMultiTouchAfterShapeDrawing()
+        {
+            if (lastIsInMultiTouchMode)
+            {
+                SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
+                lastIsInMultiTouchMode = false;
+            }
+        }
+
         private async void Image_MouseDown(object sender, MouseButtonEventArgs e)
         {
             lastMouseDownSender = sender;
@@ -62,28 +77,25 @@ namespace Ink_Canvas
                 var dA = new DoubleAnimation(1, 0.3, new Duration(TimeSpan.FromMilliseconds(100)));
                 ((UIElement)sender).BeginAnimation(OpacityProperty, dA);
 
-                forceEraser = true;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
-                inkCanvas.IsManipulationEnabled = true;
                 if (sender == ImageDrawLine || sender == BoardImageDrawLine)
                 {
-                    drawingShapeMode = 1;
+                    BeginShapeDrawing(ShapeToolKind.Line);
                 }
                 else if (sender == ImageDrawDashedLine || sender == BoardImageDrawDashedLine)
                 {
-                    drawingShapeMode = 8;
+                    BeginShapeDrawing(ShapeToolKind.DashedLine);
                 }
                 else if (sender == ImageDrawDotLine || sender == BoardImageDrawDotLine)
                 {
-                    drawingShapeMode = 18;
+                    BeginShapeDrawing(ShapeToolKind.DotLine);
                 }
                 else if (sender == ImageDrawArrow || sender == BoardImageDrawArrow)
                 {
-                    drawingShapeMode = 2;
+                    BeginShapeDrawing(ShapeToolKind.Arrow);
                 }
                 else if (sender == ImageDrawParallelLine || sender == BoardImageDrawParallelLine)
                 {
-                    drawingShapeMode = 15;
+                    BeginShapeDrawing(ShapeToolKind.ParallelLines);
                 }
                 isLongPressSelected = true;
                 if (isSingleFingerDragMode)
@@ -96,9 +108,7 @@ namespace Ink_Canvas
         private void BtnPen_Click(object sender, RoutedEventArgs e)
         {
             ShellViewModel.SetToolMode(ToolMode.Pen, false);
-            forceEraser = false;
-            drawingShapeMode = 0;
-            inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
+            ExitShapeDrawingMode(true);
             inkCanvas.IsManipulationEnabled = true;
             CancelSingleFingerDragMode();
             isLongPressSelected = false;
@@ -119,11 +129,7 @@ namespace Ink_Canvas
             await CheckIsDrawingShapesInMultiTouchMode();
             if (lastMouseDownSender == sender)
             {
-                forceEraser = true;
-                drawingShapeMode = 1;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
-                inkCanvas.IsManipulationEnabled = true;
-                CancelSingleFingerDragMode();
+                BeginShapeDrawing(ShapeToolKind.Line);
             }
             lastMouseDownSender = null;
             if (isLongPressSelected)
@@ -143,11 +149,7 @@ namespace Ink_Canvas
             await CheckIsDrawingShapesInMultiTouchMode();
             if (lastMouseDownSender == sender)
             {
-                forceEraser = true;
-                drawingShapeMode = 8;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
-                inkCanvas.IsManipulationEnabled = true;
-                CancelSingleFingerDragMode();
+                BeginShapeDrawing(ShapeToolKind.DashedLine);
             }
             lastMouseDownSender = null;
             if (isLongPressSelected)
@@ -167,11 +169,7 @@ namespace Ink_Canvas
             await CheckIsDrawingShapesInMultiTouchMode();
             if (lastMouseDownSender == sender)
             {
-                forceEraser = true;
-                drawingShapeMode = 18;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
-                inkCanvas.IsManipulationEnabled = true;
-                CancelSingleFingerDragMode();
+                BeginShapeDrawing(ShapeToolKind.DotLine);
             }
             lastMouseDownSender = null;
             if (isLongPressSelected)
@@ -191,11 +189,7 @@ namespace Ink_Canvas
             await CheckIsDrawingShapesInMultiTouchMode();
             if (lastMouseDownSender == sender)
             {
-                forceEraser = true;
-                drawingShapeMode = 2;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
-                inkCanvas.IsManipulationEnabled = true;
-                CancelSingleFingerDragMode();
+                BeginShapeDrawing(ShapeToolKind.Arrow);
             }
             lastMouseDownSender = null;
             if (isLongPressSelected)
@@ -215,11 +209,7 @@ namespace Ink_Canvas
             await CheckIsDrawingShapesInMultiTouchMode();
             if (lastMouseDownSender == sender)
             {
-                forceEraser = true;
-                drawingShapeMode = 15;
-                inkCanvas.EditingMode = InkCanvasEditingMode.None;
-                inkCanvas.IsManipulationEnabled = true;
-                CancelSingleFingerDragMode();
+                BeginShapeDrawing(ShapeToolKind.ParallelLines);
             }
             lastMouseDownSender = null;
             if (isLongPressSelected)
@@ -237,225 +227,145 @@ namespace Ink_Canvas
         private async void BtnDrawCoordinate1_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 11;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantI);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCoordinate2_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 12;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantII);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCoordinate3_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 13;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantIII);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCoordinate4_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 14;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CoordinateQuadrantIV);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCoordinate5_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 17;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CoordinateThreeAxes);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawRectangle_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 3;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.Rectangle);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawRectangleCenter_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 19;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.RectangleFromCenter);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawEllipse_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 4;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.Ellipse);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCircle_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 5;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.Circle);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCenterEllipse_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 16;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CenterEllipse);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCenterEllipseWithFocalPoint_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 23;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.CenterEllipseWithFocalPoint);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawDashedCircle_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 10;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.DashedCircle);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawHyperbola_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 24;
+            BeginShapeDrawing(ShapeToolKind.Hyperbola);
             drawMultiStepShapeCurrentStep = 0;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawHyperbolaWithFocalPoint_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 25;
+            BeginShapeDrawing(ShapeToolKind.HyperbolaWithFocalPoint);
             drawMultiStepShapeCurrentStep = 0;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawParabola1_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 20;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.ParabolaVertical);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawParabolaWithFocalPoint_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 22;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.ParabolaWithFocalPoint);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawParabola2_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 21;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.ParabolaHorizontal);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCylinder_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 6;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.Cylinder);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCone_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 7;
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
+            BeginShapeDrawing(ShapeToolKind.Cone);
             DrawShapePromptToPen();
         }
 
         private async void BtnDrawCuboid_Click(object sender, MouseButtonEventArgs e)
         {
             await CheckIsDrawingShapesInMultiTouchMode();
-            forceEraser = true;
-            drawingShapeMode = 9;
+            BeginShapeDrawing(ShapeToolKind.Cuboid);
             isFirstTouchCuboid = true;
             CuboidFrontRectIniP = new Point();
             CuboidFrontRectEndP = new Point();
-            inkCanvas.EditingMode = InkCanvasEditingMode.None;
-            inkCanvas.IsManipulationEnabled = true;
-            CancelSingleFingerDragMode();
             DrawShapePromptToPen();
         }
 
@@ -1486,11 +1396,7 @@ namespace Ink_Canvas
                 circle.Centroid = new Point((circle.Stroke.StylusPoints[0].X + circle.Stroke.StylusPoints[circle.Stroke.StylusPoints.Count / 2].X) / 2,
                                             (circle.Stroke.StylusPoints[0].Y + circle.Stroke.StylusPoints[circle.Stroke.StylusPoints.Count / 2].Y) / 2);
                 circles.Add(circle);
-                if (lastIsInMultiTouchMode)
-                {
-                    SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
-                    lastIsInMultiTouchMode = false;
-                }
+                RestoreMultiTouchAfterShapeDrawing();
             }
             if (drawingShapeMode != 9 && drawingShapeMode != 0 && drawingShapeMode != 24 && drawingShapeMode != 25)
             {
@@ -1502,11 +1408,7 @@ namespace Ink_Canvas
                 {
                     BtnPen_Click(null, null); //画完一次还原到笔模式
 
-                    if (lastIsInMultiTouchMode)
-                    {
-                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
-                        lastIsInMultiTouchMode = false;
-                    }
+                    RestoreMultiTouchAfterShapeDrawing();
                 }
             }
             if (drawingShapeMode == 9)
@@ -1525,11 +1427,7 @@ namespace Ink_Canvas
                 {
                     BtnPen_Click(null, null); //画完还原到笔模式
 
-                    if (lastIsInMultiTouchMode)
-                    {
-                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
-                        lastIsInMultiTouchMode = false;
-                    }
+                    RestoreMultiTouchAfterShapeDrawing();
 
                     if (_currentCommitType == CommitReason.ShapeDrawing)
                     {
@@ -1571,11 +1469,7 @@ namespace Ink_Canvas
                     }
                     BtnPen_Click(null, null); //画完还原到笔模式
 
-                    if (lastIsInMultiTouchMode)
-                    {
-                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
-                        lastIsInMultiTouchMode = false;
-                    }
+                    RestoreMultiTouchAfterShapeDrawing();
 
                 }
             }

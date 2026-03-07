@@ -32,7 +32,8 @@ namespace Ink_Canvas
                     settingsService,
                     pathPickerService,
                     settings => Settings = settings),
-                new ShellViewModel());
+                new ShellViewModel(),
+                new InputStateViewModel());
             mainWindowViewModel.Settings.PropertyChanged += SettingsViewModel_PropertyChanged;
             mainWindowViewModel.Settings.ReloadRequested += SettingsViewModel_ReloadRequested;
             mainWindowViewModel.Shell.WorkspaceModeChanged += ShellViewModel_WorkspaceModeChanged;
@@ -40,6 +41,7 @@ namespace Ink_Canvas
             mainWindowViewModel.Shell.ActiveSubPanelChanged += ShellViewModel_ActiveSubPanelChanged;
 
             DataContext = mainWindowViewModel;
+            InitializeInputController();
 
             ConfigureSettingsBindings();
         }

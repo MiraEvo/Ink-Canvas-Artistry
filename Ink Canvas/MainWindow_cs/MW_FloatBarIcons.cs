@@ -587,7 +587,7 @@ namespace Ink_Canvas
             }
             else
             {
-                inkCanvas.EditingMode = InkCanvasEditingMode.Select;
+                ApplyCanvasInteractionMode(CanvasInteractionMode.Select);
             }
         }
 
@@ -719,9 +719,6 @@ namespace Ink_Canvas
             ShellViewModel.ToggleSettingsPanelCommand.Execute(null);
         }
 
-        bool forceEraser = false;
-
-
         private void BtnClear_Click(object sender, RoutedEventArgs e)
         {
             forceEraser = false;
@@ -758,8 +755,6 @@ namespace Ink_Canvas
 
             CancelSingleFingerDragMode();
         }
-
-        bool lastIsInMultiTouchMode = false;
 
         private void CancelSingleFingerDragMode()
         {
