@@ -9,6 +9,12 @@ namespace Ink_Canvas.Helpers
     {
         public static void ShowWithSlideFromBottomAndFade(UIElement element, double duration = 0.15)
         {
+            if (element is Window window)
+            {
+                ShowWindowWithSlideFromBottomAndFade(window, duration);
+                return;
+            }
+
             FrameworkElement frameworkElement = EnsureFrameworkElement(element);
             if (frameworkElement.Visibility == Visibility.Visible)
             {
@@ -108,6 +114,42 @@ namespace Ink_Canvas.Helpers
             }
 
             throw new ArgumentException("Animation target must be a FrameworkElement.", nameof(element));
+        }
+
+        private static void ShowWindowWithSlideFromBottomAndFade(Window window, double duration)
+        {
+            ArgumentNullException.ThrowIfNull(window);
+
+            void StartAnimation()
+            {
+                double originalTop = window.Top;
+                if (double.IsNaN(originalTop))
+                {
+                    originalTop = window.Top;
+                }
+
+                double fromTop = originalTop + 10;
+                window.Opacity = 0.5;
+                window.Top = fromTop;
+
+                window.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.5, 1, TimeSpan.FromSeconds(duration)));
+                window.BeginAnimation(Window.TopProperty, new DoubleAnimation(fromTop, originalTop, TimeSpan.FromSeconds(duration)));
+            }
+
+            if (window.IsLoaded)
+            {
+                StartAnimation();
+                return;
+            }
+
+            RoutedEventHandler? loadedHandler = null;
+            loadedHandler = (_, __) =>
+            {
+                window.Loaded -= loadedHandler;
+                StartAnimation();
+            };
+
+            window.Loaded += loadedHandler;
         }
 
         private static DoubleAnimation CreateOpacityAnimation(double from, double to, double duration)

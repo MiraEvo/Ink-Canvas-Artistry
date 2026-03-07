@@ -163,7 +163,7 @@ namespace Ink_Canvas
                                     {
                                         var strokes = new StrokeCollection(strokesStream);
                                         ClearStrokes(true);
-                                        timeMachine.ClearStrokeHistory();
+                                        inkHistoryCoordinator?.ClearHistory();
                                         inkCanvas.Strokes.Add(strokes);
                                         LogHelper.NewLog($"Strokes Insert: Strokes Count: {inkCanvas.Strokes.Count}");
                                     }
@@ -226,7 +226,7 @@ namespace Ink_Canvas
                                 strokesStream.Seek(0, SeekOrigin.Begin);
                                 var strokes = new StrokeCollection(strokesStream);
                                 ClearStrokes(true);
-                                timeMachine.ClearStrokeHistory();
+                                inkHistoryCoordinator?.ClearHistory();
                                 inkCanvas.Strokes.Add(strokes);
                                 LogHelper.NewLog($"Strokes Insert: Strokes Count: {inkCanvas.Strokes.Count}");
                             }

@@ -71,15 +71,7 @@ namespace Ink_Canvas
                     stroke.DrawingAttributes.Height = newHeight;
                 }
             }
-            if (DrawingAttributesHistory.Count > 0)
-            {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
-            }
+            CommitDrawingAttributesHistoryIfNeeded();
         }
 
         private void MatrixTransform(int type)
@@ -113,15 +105,7 @@ namespace Ink_Canvas
                 stroke.Transform(m, false);
             }
 
-            if (DrawingAttributesHistory.Count > 0)
-            {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
-            }
+            CommitDrawingAttributesHistoryIfNeeded();
             ToCommitStrokeManipulationHistoryAfterMouseUp();
         }
 
@@ -234,7 +218,9 @@ namespace Ink_Canvas
                 StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
                 List<UIElement> elementsList = InkCanvasElementsHelper.GetSelectedElements(inkCanvas);
                 isProgramChangeStrokeSelection = true;
-                ElementsSelectionClone = InkCanvasElementsHelper.CloneSelectedElements(inkCanvas, ref ElementsInitialHistory);
+                var elementsInitialHistory = ElementsInitialHistory;
+                ElementsSelectionClone = InkCanvasElementsHelper.CloneSelectedElements(inkCanvas, ref elementsInitialHistory);
+                ElementsInitialHistory = elementsInitialHistory;
                 inkCanvas.Select(new StrokeCollection());
                 StrokesSelectionClone = strokes.Clone();
                 inkCanvas.Strokes.Add(StrokesSelectionClone);
@@ -406,35 +392,8 @@ namespace Ink_Canvas
 
         private void GridInkCanvasSelectionCover_ManipulationCompleted(object sender, ManipulationCompletedEventArgs e)
         {
-            if (StrokeManipulationHistory?.Count > 0 || ElementsManipulationHistory?.Count > 0)
-            {
-                timeMachine.CommitStrokeManipulationHistory(StrokeManipulationHistory, ElementsManipulationHistory);
-                if(StrokeManipulationHistory?.Count > 0)
-                {
-                    foreach (var item in StrokeManipulationHistory)
-                    {
-                        StrokeInitialHistory[item.Key] = item.Value.Item2;
-                    }
-                    StrokeManipulationHistory = null;
-                }
-                if(ElementsManipulationHistory?.Count > 0)
-                {
-                    foreach (var item in ElementsManipulationHistory)
-                    {
-                        ElementsInitialHistory[item.Key] = item.Value.Item2;
-                    }
-                    ElementsManipulationHistory = null;
-                }
-            }
-            if (DrawingAttributesHistory.Count > 0)
-            {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
-            }
+            CommitPendingManipulationHistory();
+            CommitDrawingAttributesHistoryIfNeeded();
         }
 
         private void GridInkCanvasSelectionCover_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
@@ -494,7 +453,9 @@ namespace Ink_Canvas
                     StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
                     List<UIElement> elementsList = InkCanvasElementsHelper.GetSelectedElements(inkCanvas);
                     isProgramChangeStrokeSelection = true;
-                    ElementsSelectionClone = InkCanvasElementsHelper.CloneSelectedElements(inkCanvas, ref ElementsInitialHistory);
+                    var elementsInitialHistory = ElementsInitialHistory;
+                    ElementsSelectionClone = InkCanvasElementsHelper.CloneSelectedElements(inkCanvas, ref elementsInitialHistory);
+                    ElementsInitialHistory = elementsInitialHistory;
                     inkCanvas.Select(new StrokeCollection());
                     StrokesSelectionClone = strokes.Clone();
                     inkCanvas.Strokes.Add(StrokesSelectionClone);

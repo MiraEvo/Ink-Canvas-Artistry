@@ -21,6 +21,7 @@ namespace Ink_Canvas
         private MainWindowViewModel mainWindowViewModel = null!;
         private SettingsApplicationCoordinator settingsApplicationCoordinator = null!;
         private ShellExperienceCoordinator shellExperienceCoordinator = null!;
+        private ToolbarExperienceCoordinator toolbarExperienceCoordinator = null!;
 
         private SettingsViewModel SettingsViewModel => mainWindowViewModel.Settings;
 
@@ -58,6 +59,9 @@ namespace Ink_Canvas
                 mainWindowViewModel.Settings,
                 mainWindowViewModel.WorkspaceSession,
                 mainWindowViewModel.Input);
+            toolbarExperienceCoordinator = new ToolbarExperienceCoordinator(
+                this,
+                mainWindowViewModel.Shell);
             ConfigureSettingsBindings();
         }
 

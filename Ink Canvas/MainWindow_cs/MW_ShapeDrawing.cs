@@ -1146,7 +1146,7 @@ namespace Ink_Canvas
                     {
                         CuboidStrokeCollection.Add(lastTempStrokeCollection);
                         _currentCommitType = CommitReason.UserInput;
-                        timeMachine.CommitStrokeUserInputHistory(CuboidStrokeCollection);
+                        inkHistoryCoordinator?.CommitUserInput(CuboidStrokeCollection);
                         CuboidStrokeCollection = null;
                     }
                 }
@@ -1189,7 +1189,7 @@ namespace Ink_Canvas
             isMouseDown = false;
             if (ReplacedStroke != null || AddedStroke != null)
             {
-                timeMachine.CommitStrokeEraseHistory(ReplacedStroke, AddedStroke);
+                inkHistoryCoordinator?.CommitErase(ReplacedStroke, AddedStroke);
                 AddedStroke = null;
                 ReplacedStroke = null;
             }
@@ -1207,40 +1207,13 @@ namespace Ink_Canvas
                 }
                 if (collection != null)
                 {
-                    timeMachine.CommitStrokeUserInputHistory(collection);
+                    inkHistoryCoordinator?.CommitUserInput(collection);
                 }
             }
             lastTempStroke = null;
             lastTempStrokeCollection = null;
-            if (StrokeManipulationHistory?.Count > 0 || ElementsManipulationHistory?.Count > 0)
-            {
-                timeMachine.CommitStrokeManipulationHistory(StrokeManipulationHistory, ElementsManipulationHistory);
-                if(StrokeManipulationHistory?.Count > 0)
-                {
-                    foreach (var item in StrokeManipulationHistory)
-                    {
-                        StrokeInitialHistory[item.Key] = item.Value.Item2;
-                    }
-                    StrokeManipulationHistory = null;
-                }
-                if (ElementsManipulationHistory?.Count > 0)
-                {
-                    foreach (var item in ElementsManipulationHistory)
-                    {
-                        ElementsInitialHistory[item.Key] = item.Value.Item2;
-                    }
-                    ElementsManipulationHistory = null;
-                }
-            }
-            if (DrawingAttributesHistory.Count > 0)
-            {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
-            }
+            CommitPendingManipulationHistory();
+            CommitDrawingAttributesHistoryIfNeeded();
         }
 
         private bool NeedUpdateIniP()

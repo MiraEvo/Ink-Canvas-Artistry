@@ -59,12 +59,7 @@ namespace Ink_Canvas
             }
             if (DrawingAttributesHistory.Count > 0)
             {
-                timeMachine.CommitStrokeDrawingAttributesHistory(DrawingAttributesHistory);
-                DrawingAttributesHistory = new Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>();
-                foreach (var item in DrawingAttributesHistoryFlag)
-                {
-                    item.Value.Clear();
-                }
+                CommitDrawingAttributesHistoryIfNeeded();
             }
             else
             {

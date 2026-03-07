@@ -31,7 +31,7 @@ namespace Ink_Canvas
             InkCanvas.SetTop(image, 0);
             inkCanvas.Children.Add(image);
 
-            timeMachine.CommitElementInsertHistory(image);
+            inkHistoryCoordinator?.CommitElementInsert(image);
         }
 
         private async Task<Image> CreateAndCompressImageAsync(string filePath)
@@ -103,7 +103,7 @@ namespace Ink_Canvas
                 mediaElement.Pause();
             };
 
-            timeMachine.CommitElementInsertHistory(mediaElement);
+            inkHistoryCoordinator?.CommitElementInsert(mediaElement);
         }
 
         private async Task<MediaElement> CreateMediaElementAsync(string filePath)

@@ -17,7 +17,11 @@ namespace Ink_Canvas.Features.Ink
         private const double DoubleComparisonTolerance = 0.000001;
         private const float PressureComparisonTolerance = 0.001f;
 
-        public void HandleStrokeCollected(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, InkCanvasStrokeCollectedEventArgs e)
+        public void HandleStrokeCollected(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            InkCanvasStrokeCollectedEventArgs e)
         {
             try
             {
@@ -26,7 +30,7 @@ namespace Ink_Canvas.Features.Ink
 
                 if (inkCanvasHost.Settings.InkToShape.IsInkToShapeEnabled && !Environment.Is64BitProcess)
                 {
-                    ProcessInkToShape(inkCanvasHost, shapeDrawingState, e);
+                    ProcessInkToShape(inkCanvasHost, inkHistoryHost, shapeDrawingState, e);
                 }
 
                 ApplyPressureStyle(inkCanvasHost, shapeDrawingState, e);
@@ -41,7 +45,11 @@ namespace Ink_Canvas.Features.Ink
             }
         }
 
-        private void ProcessInkToShape(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, InkCanvasStrokeCollectedEventArgs e)
+        private void ProcessInkToShape(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            InkCanvasStrokeCollectedEventArgs e)
         {
             try
             {
@@ -85,22 +93,22 @@ namespace Ink_Canvas.Features.Ink
                 string recognizedShapeName = result.InkDrawingNode.GetShapeName();
                 if (recognizedShapeName == "Circle")
                 {
-                    HandleCircleRecognition(inkCanvasHost, shapeDrawingState, result);
+                    HandleCircleRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
                 else if (recognizedShapeName.Contains("Ellipse", StringComparison.Ordinal))
                 {
-                    HandleEllipseRecognition(inkCanvasHost, shapeDrawingState, result);
+                    HandleEllipseRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
                 else if (recognizedShapeName.Contains("Triangle", StringComparison.Ordinal))
                 {
-                    HandleTriangleRecognition(inkCanvasHost, shapeDrawingState, result);
+                    HandleTriangleRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
                 else if (recognizedShapeName.Contains("Rectangle", StringComparison.Ordinal)
                     || recognizedShapeName.Contains("Diamond", StringComparison.Ordinal)
                     || recognizedShapeName.Contains("Parallelogram", StringComparison.Ordinal)
                     || recognizedShapeName.Contains("Square", StringComparison.Ordinal))
                 {
-                    HandleRectangleRecognition(inkCanvasHost, shapeDrawingState, result);
+                    HandleRectangleRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
             }
             catch (ArgumentException ex)
@@ -113,7 +121,7 @@ namespace Ink_Canvas.Features.Ink
             }
         }
 
-        private void HandleCircleRecognition(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleCircleRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
         {
             InkCanvas inkCanvas = inkCanvasHost.InkCanvas;
             dynamic shape = result.InkDrawingNode.GetShape();
@@ -154,10 +162,10 @@ namespace Ink_Canvas.Features.Ink
             Stroke stroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint));
 
             shapeDrawingState.Circles.Add(new Circle(result.Centroid, shape.Width / 2.0, stroke));
-            ApplyRecognitionResult(inkCanvasHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, false);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, false);
         }
 
-        private void HandleEllipseRecognition(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleEllipseRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
         {
             InkCanvas inkCanvas = inkCanvasHost.InkCanvas;
             dynamic shape = result.InkDrawingNode.GetShape();
@@ -222,8 +230,8 @@ namespace Ink_Canvas.Features.Ink
                         initialPoint.Y = result.Centroid.Y - newA / 5;
                         endPoint.Y = result.Centroid.Y + newA / 5;
 
-                        inkCanvasHost.BackupCurrentStrokes();
-                        inkCanvasHost.SetCommitReasonShapeRecognition();
+                        inkHistoryHost.BackupCurrentStrokes();
+                        inkHistoryHost.SetCommitReason(CommitReason.ShapeRecognition);
                         inkCanvas.Strokes.Remove(result.InkDrawingNode.Strokes);
                         shapeDrawingState.NewStrokes = new StrokeCollection();
 
@@ -232,7 +240,7 @@ namespace Ink_Canvas.Features.Ink
                         StrokeCollection strokes = new() { stroke };
                         strokes.Add(dashedStroke);
                         inkCanvas.Strokes.Add(strokes);
-                        inkCanvasHost.SetCommitReasonUserInput();
+                        inkHistoryHost.SetCommitReason(CommitReason.UserInput);
                         return;
                     }
                 }
@@ -269,10 +277,10 @@ namespace Ink_Canvas.Features.Ink
                 ellipseStroke.Transform(matrix, false);
             }
 
-            ApplyRecognitionResult(inkCanvasHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { ellipseStroke }, true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { ellipseStroke }, true);
         }
 
-        private void HandleTriangleRecognition(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleTriangleRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
         {
             dynamic hotPoints = result.InkDrawingNode.HotPoints;
             if (!((Math.Max(Math.Max(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X) - Math.Min(Math.Min(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X) >= 100
@@ -303,10 +311,10 @@ namespace Ink_Canvas.Features.Ink
                 DrawingAttributes = inkCanvasHost.InkCanvas.DefaultDrawingAttributes.Clone()
             };
 
-            ApplyRecognitionResult(inkCanvasHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, true);
         }
 
-        private void HandleRectangleRecognition(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleRectangleRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
         {
             dynamic hotPoints = result.InkDrawingNode.HotPoints;
             if (!((Math.Max(Math.Max(Math.Max(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X), hotPoints[3].X)
@@ -337,22 +345,23 @@ namespace Ink_Canvas.Features.Ink
                 DrawingAttributes = inkCanvasHost.InkCanvas.DefaultDrawingAttributes.Clone()
             };
 
-            ApplyRecognitionResult(inkCanvasHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, true);
         }
 
         private void ApplyRecognitionResult(
             IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
             ShapeDrawingSessionState shapeDrawingState,
             StrokeCollection replacedStrokes,
             StrokeCollection addedStrokes,
             bool hideSelectionCover)
         {
             InkCanvas inkCanvas = inkCanvasHost.InkCanvas;
-            inkCanvasHost.BackupCurrentStrokes();
-            inkCanvasHost.SetCommitReasonShapeRecognition();
+            inkHistoryHost.BackupCurrentStrokes();
+            inkHistoryHost.SetCommitReason(CommitReason.ShapeRecognition);
             inkCanvas.Strokes.Remove(replacedStrokes);
             inkCanvas.Strokes.Add(addedStrokes);
-            inkCanvasHost.SetCommitReasonUserInput();
+            inkHistoryHost.SetCommitReason(CommitReason.UserInput);
             if (hideSelectionCover)
             {
                 inkCanvasHost.HideSelectionCover();

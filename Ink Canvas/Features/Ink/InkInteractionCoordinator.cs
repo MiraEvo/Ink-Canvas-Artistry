@@ -10,6 +10,7 @@ namespace Ink_Canvas.Features.Ink
     internal sealed class InkInteractionCoordinator
     {
         private readonly IInkCanvasHost inkCanvasHost;
+        private readonly IInkHistoryHost inkHistoryHost;
         private readonly SettingsViewModel settingsViewModel;
         private readonly ShellViewModel shellViewModel;
         private readonly InputStateViewModel inputStateViewModel;
@@ -17,12 +18,14 @@ namespace Ink_Canvas.Features.Ink
 
         public InkInteractionCoordinator(
             IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
             SettingsViewModel settingsViewModel,
             ShellViewModel shellViewModel,
             InputStateViewModel inputStateViewModel,
             InkRecognitionService inkRecognitionService)
         {
             this.inkCanvasHost = inkCanvasHost ?? throw new ArgumentNullException(nameof(inkCanvasHost));
+            this.inkHistoryHost = inkHistoryHost ?? throw new ArgumentNullException(nameof(inkHistoryHost));
             this.settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             this.shellViewModel = shellViewModel ?? throw new ArgumentNullException(nameof(shellViewModel));
             this.inputStateViewModel = inputStateViewModel ?? throw new ArgumentNullException(nameof(inputStateViewModel));
@@ -151,7 +154,7 @@ namespace Ink_Canvas.Features.Ink
 
         public void HandleStrokeCollected(InkCanvasStrokeCollectedEventArgs e)
         {
-            inkRecognitionService.HandleStrokeCollected(inkCanvasHost, ShapeDrawingState, e);
+            inkRecognitionService.HandleStrokeCollected(inkCanvasHost, inkHistoryHost, ShapeDrawingState, e);
         }
 
         private void PrepareForShapeDrawing()

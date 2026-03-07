@@ -20,17 +20,26 @@ namespace Ink_Canvas
     {
         private readonly ShapeDrawingSessionState shapeDrawingFallbackState = new();
         private readonly SelectionSessionState selectionFallbackState = new();
+        private readonly InkHistorySessionState inkHistoryFallbackState = new();
+        private readonly WhiteboardSessionState whiteboardFallbackState = new();
         private InkRecognitionService inkRecognitionService = null!;
         private InkInteractionCoordinator inkInteractionCoordinator = null!;
+        private InkHistoryCoordinator inkHistoryCoordinator = null!;
 
         private ShapeDrawingSessionState ShapeDrawingState => inkInteractionCoordinator?.ShapeDrawingState ?? shapeDrawingFallbackState;
 
         private SelectionSessionState SelectionState => inkInteractionCoordinator?.SelectionState ?? selectionFallbackState;
 
+        private InkHistorySessionState InkHistoryState => inkHistoryCoordinator?.HistoryState ?? inkHistoryFallbackState;
+
+        private WhiteboardSessionState WhiteboardState => inkHistoryCoordinator?.WhiteboardState ?? whiteboardFallbackState;
+
         private void InitializeInkFeature()
         {
+            inkHistoryCoordinator = new InkHistoryCoordinator(this);
             inkRecognitionService = new InkRecognitionService();
             inkInteractionCoordinator = new InkInteractionCoordinator(
+                this,
                 this,
                 mainWindowViewModel.Settings,
                 mainWindowViewModel.Shell,
@@ -282,12 +291,6 @@ namespace Ink_Canvas
 
         void IInkCanvasHost.ApplySelectionMatrixTransform(int type) => MatrixTransform(type);
 
-        void IInkCanvasHost.BackupCurrentStrokes() => BackupCurrentStrokes();
-
-        void IInkCanvasHost.SetCommitReasonShapeRecognition() => _currentCommitType = CommitReason.ShapeRecognition;
-
-        void IInkCanvasHost.SetCommitReasonUserInput() => _currentCommitType = CommitReason.UserInput;
-
         void IInkCanvasHost.HideSelectionCover() => GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
 
         private void UpdateSelectionCloneToggleVisual(bool enabled)
@@ -307,7 +310,11 @@ namespace Ink_Canvas
                 strokes = strokes.Clone();
                 EnterBlackboardSession();
                 inkCanvas.Strokes.Add(strokes);
-                InkCanvasElementsHelper.AddElements(inkCanvas, elements, timeMachine);
+                foreach (UIElement element in elements)
+                {
+                    inkCanvas.Children.Add(element);
+                    inkHistoryCoordinator?.CommitElementInsert(element);
+                }
                 return;
             }
 
@@ -317,7 +324,11 @@ namespace Ink_Canvas
             selectedStrokes = selectedStrokes.Clone();
             BtnWhiteBoardAdd_Click(null, null);
             inkCanvas.Strokes.Add(selectedStrokes);
-            InkCanvasElementsHelper.AddElements(inkCanvas, selectedElements, timeMachine);
+            foreach (UIElement element in selectedElements)
+            {
+                inkCanvas.Children.Add(element);
+                inkHistoryCoordinator?.CommitElementInsert(element);
+            }
         }
 
         private void RestoreSelectedStrokeThickness()
@@ -397,14 +408,7 @@ namespace Ink_Canvas
 
         private void BackupCurrentStrokes()
         {
-            lastTouchDownStrokeCollection = inkCanvas.Strokes.Clone();
-            int whiteboardIndex = CurrentWhiteboardIndex;
-            if (ShellViewModel.IsDesktopAnnotationMode)
-            {
-                whiteboardIndex = 0;
-            }
-
-            strokeCollections[whiteboardIndex] = lastTouchDownStrokeCollection;
+            inkHistoryCoordinator?.BackupCurrentStrokes();
         }
 
         public double GetDistance(Point point1, Point point2)

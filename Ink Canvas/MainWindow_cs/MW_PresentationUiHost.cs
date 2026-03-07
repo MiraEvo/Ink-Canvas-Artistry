@@ -156,7 +156,7 @@ namespace Ink_Canvas
         private void ClearPresentationInkAndHistory()
         {
             ClearStrokes(true);
-            timeMachine.ClearStrokeHistory();
+            inkHistoryCoordinator?.ClearHistory();
         }
 
         private void ApplySlideShowEndWorkspaceTransition(bool isColorfulFloatingBar)

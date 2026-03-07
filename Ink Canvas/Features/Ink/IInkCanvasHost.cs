@@ -59,12 +59,6 @@ namespace Ink_Canvas.Features.Ink
 
         void ApplySelectionMatrixTransform(int type);
 
-        void BackupCurrentStrokes();
-
-        void SetCommitReasonShapeRecognition();
-
-        void SetCommitReasonUserInput();
-
         void HideSelectionCover();
     }
 }
