@@ -1,11 +1,10 @@
 ﻿using Ink_Canvas.Helpers;
-using Newtonsoft.Json;
+using Ink_Canvas.Services;
 using System;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
-using File = System.IO.File;
 
 namespace Ink_Canvas
 {
@@ -13,21 +12,11 @@ namespace Ink_Canvas
     {
         private void LoadSettings(bool isStartup = false)
         {
+            bool runAtStartup = false;
+
             try
             {
-                if (File.Exists(App.RootPath + settingsFileName))
-                {
-                    try
-                    {
-                        string text = File.ReadAllText(App.RootPath + settingsFileName);
-                        Settings = JsonConvert.DeserializeObject<Settings>(text);
-                    }
-                    catch { }
-                }
-                else
-                {
-                    BtnResetToSuggestion_Click(null, null);
-                }
+                Settings = SettingsDefaults.Normalize(settingsService.Load());
             }
             catch (Exception ex)
             {
@@ -40,15 +29,14 @@ namespace Ink_Canvas
             }
             try
             {
-                if (NormalizeStartupRegistration())
-                {
-                    ToggleSwitchRunAtStartup.IsOn = true;
-                }
+                runAtStartup = NormalizeStartupRegistration();
             }
             catch (Exception ex)
             {
                 LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
             }
+
+            SettingsViewModel.Load(Settings, runAtStartup);
             if (Settings.Startup != null)
             {
                 if (isStartup)
@@ -286,86 +274,20 @@ namespace Ink_Canvas
             // Gesture
             if (Settings.Gesture != null)
             {
-                ComboBoxMatrixTransformCenterPoint.SelectedIndex = (int)Settings.Gesture.MatrixTransformCenterPoint;
-                if (Settings.Gesture.IsEnableMultiTouchMode)
-                {
-                    ToggleSwitchEnableMultiTouchMode.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchEnableMultiTouchMode.IsOn = false;
-                }
-                if (Settings.Gesture.IsEnableTwoFingerZoom)
-                {
-                    ToggleSwitchEnableTwoFingerZoom.IsOn = true;
-                    BoardToggleSwitchEnableTwoFingerZoom.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchEnableTwoFingerZoom.IsOn = false;
-                    BoardToggleSwitchEnableTwoFingerZoom.IsOn = false;
-                }
-                if (Settings.Gesture.IsEnableTwoFingerTranslate)
-                {
-                    ToggleSwitchEnableTwoFingerTranslate.IsOn = true;
-                    BoardToggleSwitchEnableTwoFingerTranslate.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchEnableTwoFingerTranslate.IsOn = false;
-                    BoardToggleSwitchEnableTwoFingerTranslate.IsOn = false;
-                }
-                if (Settings.Gesture.IsEnableTwoFingerRotation)
-                {
-                    ToggleSwitchEnableTwoFingerRotation.IsOn = true;
-                    BoardToggleSwitchEnableTwoFingerRotation.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchEnableTwoFingerRotation.IsOn = false;
-                    BoardToggleSwitchEnableTwoFingerRotation.IsOn = false;
-                }
-                if (Settings.Gesture.AutoSwitchTwoFingerGesture)
-                {
-                    ToggleSwitchAutoSwitchTwoFingerGesture.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchAutoSwitchTwoFingerGesture.IsOn = false;
-                }
-                if (Settings.Gesture.IsEnableTwoFingerRotation)
-                {
-                    ToggleSwitchEnableTwoFingerRotation.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchEnableTwoFingerRotation.IsOn = false;
-                }
-                if (Settings.Gesture.IsEnableTwoFingerRotationOnSelection)
-                {
-                    ToggleSwitchEnableTwoFingerRotationOnSelection.IsOn = true;
-                }
-                else
-                {
-                    ToggleSwitchEnableTwoFingerRotationOnSelection.IsOn = false;
-                }
                 if (Settings.Gesture.AutoSwitchTwoFingerGesture)
                 {
                     if (Topmost)
                     {
-                        ToggleSwitchEnableTwoFingerTranslate.IsOn = false;
-                        BoardToggleSwitchEnableTwoFingerTranslate.IsOn = false;
-                        Settings.Gesture.IsEnableTwoFingerTranslate = false;
-                        if (!isInMultiTouchMode) ToggleSwitchEnableMultiTouchMode.IsOn = true;
+                        SettingsViewModel.SetIsEnableTwoFingerTranslate(false, false);
+                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
                     }
                     else
                     {
-                        ToggleSwitchEnableTwoFingerTranslate.IsOn = true;
-                        BoardToggleSwitchEnableTwoFingerTranslate.IsOn = true;
-                        Settings.Gesture.IsEnableTwoFingerTranslate = true;
-                        if (isInMultiTouchMode) ToggleSwitchEnableMultiTouchMode.IsOn = false;
+                        SettingsViewModel.SetIsEnableTwoFingerTranslate(true, false);
+                        SettingsViewModel.SetIsEnableMultiTouchMode(false, false);
                     }
                 }
+                ApplyMultiTouchMode();
                 CheckEnableTwoFingerGestureBtnColorPrompt();
             }
             else

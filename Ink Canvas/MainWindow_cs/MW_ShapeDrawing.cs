@@ -115,7 +115,7 @@ namespace Ink_Canvas
         {
             if (isInMultiTouchMode)
             {
-                ToggleSwitchEnableMultiTouchMode.IsOn = false;
+                SettingsViewModel.SetIsEnableMultiTouchMode(false, false);
                 lastIsInMultiTouchMode = true;
             }
             return Task.FromResult(true);
@@ -1495,7 +1495,7 @@ namespace Ink_Canvas
                 circles.Add(circle);
                 if (lastIsInMultiTouchMode)
                 {
-                    ToggleSwitchEnableMultiTouchMode.IsOn = true;
+                    SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
                     lastIsInMultiTouchMode = false;
                 }
             }
@@ -1511,7 +1511,7 @@ namespace Ink_Canvas
 
                     if (lastIsInMultiTouchMode)
                     {
-                        ToggleSwitchEnableMultiTouchMode.IsOn = true;
+                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
                         lastIsInMultiTouchMode = false;
                     }
                 }
@@ -1534,7 +1534,7 @@ namespace Ink_Canvas
 
                     if (lastIsInMultiTouchMode)
                     {
-                        ToggleSwitchEnableMultiTouchMode.IsOn = true;
+                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
                         lastIsInMultiTouchMode = false;
                     }
 
@@ -1580,7 +1580,7 @@ namespace Ink_Canvas
 
                     if (lastIsInMultiTouchMode)
                     {
-                        ToggleSwitchEnableMultiTouchMode.IsOn = true;
+                        SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
                         lastIsInMultiTouchMode = false;
                     }
 

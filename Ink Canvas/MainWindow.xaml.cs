@@ -24,6 +24,7 @@ namespace Ink_Canvas
                 处于 PPT 放映内：BtnPPTSlideShowEnd.Visibility
             */
             InitializeComponent();
+            InitializeMvvm();
 
             BlackboardLeftSide.Visibility = Visibility.Collapsed;
             BlackboardCenterSide.Visibility = Visibility.Collapsed;

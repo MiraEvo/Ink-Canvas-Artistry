@@ -40,7 +40,7 @@ namespace Ink_Canvas
 
         private void CheckEnableTwoFingerGestureBtnColorPrompt()
         {
-            if (ToggleSwitchEnableMultiTouchMode.IsOn)
+            if (Settings.Gesture.IsEnableMultiTouchMode)
             {
                 TwoFingerGestureSimpleStackPanel.Opacity = 0.5;
                 EnableTwoFingerGestureBtn.Opacity = 0.5;
@@ -337,8 +337,8 @@ namespace Ink_Canvas
 
                 if (Settings.Gesture.AutoSwitchTwoFingerGesture) // 自动关闭多指书写、开启双指移动
                 {
-                    ToggleSwitchEnableTwoFingerTranslate.IsOn = true;
-                    if (isInMultiTouchMode) ToggleSwitchEnableMultiTouchMode.IsOn = false;
+                    SettingsViewModel.SetIsEnableTwoFingerTranslate(true, false);
+                    SettingsViewModel.SetIsEnableMultiTouchMode(false, false);
                 }
             }
             else
@@ -375,8 +375,8 @@ namespace Ink_Canvas
 
                 if (Settings.Gesture.AutoSwitchTwoFingerGesture) // 自动启用多指书写
                 {
-                    ToggleSwitchEnableTwoFingerTranslate.IsOn = false;
-                    if (!isInMultiTouchMode) ToggleSwitchEnableMultiTouchMode.IsOn = true;
+                    SettingsViewModel.SetIsEnableTwoFingerTranslate(false, false);
+                    SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
                 }
             }
 
