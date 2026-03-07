@@ -3,6 +3,7 @@ using Ink_Canvas.ViewModels;
 using Microsoft.Office.Interop.PowerPoint;
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Timers;
 namespace Ink_Canvas.Controllers
@@ -98,8 +99,21 @@ namespace Ink_Canvas.Controllers
 
                 Connect(application);
             }
-            catch
+            catch (COMException ex)
             {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to connect to PowerPoint");
+                ClearConnectionState();
+                monitorTimer.Start();
+            }
+            catch (InvalidCastException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to cast PowerPoint COM object");
+                ClearConnectionState();
+                monitorTimer.Start();
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Invalid PowerPoint state during connection");
                 ClearConnectionState();
                 monitorTimer.Start();
             }
@@ -130,8 +144,14 @@ namespace Ink_Canvas.Controllers
             {
                 slide = GetCurrentSlide(application, slides);
             }
-            catch
+            catch (COMException ex)
             {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to get current slide from PowerPoint");
+                slide = null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Invalid state while reading current slide");
                 slide = null;
             }
 
@@ -177,8 +197,13 @@ namespace Ink_Canvas.Controllers
                     PowerPointApplication.SlideShowNextSlide -= OnSlideShowNextSlide;
                     PowerPointApplication.SlideShowEnd -= OnSlideShowEnd;
                 }
-                catch
+                catch (COMException ex)
                 {
+                    LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to detach PowerPoint event handlers");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, "Presentation Session | Invalid state while detaching PowerPoint event handlers");
                 }
             }
 
@@ -270,8 +295,16 @@ namespace Ink_Canvas.Controllers
             {
                 return slides?[application.ActiveWindow.Selection.SlideRange.SlideNumber];
             }
-            catch
+            catch (COMException ex)
             {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Falling back to slide-show window slide lookup");
+                return application.SlideShowWindows.Count >= 1
+                    ? application.SlideShowWindows[1].View.Slide
+                    : null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Presentation Session | Active window slide lookup failed");
                 return application.SlideShowWindows.Count >= 1
                     ? application.SlideShowWindows[1].View.Slide
                     : null;

@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Security;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -64,17 +65,36 @@ namespace Ink_Canvas
                     }
                 }
             }
-            catch (Exception Ex)
+            catch (ArgumentException ex)
             {
-                ShowNotificationAsync("墨迹及元素保存失败！");
-                LogHelper.WriteLogToFile("墨迹及元素保存失败 | " + Ex.ToString(), LogHelper.LogType.Error);
+                HandleInkArchiveFailure(ex, "Save | Invalid save path or archive state", "墨迹及元素保存失败！");
+            }
+            catch (IOException ex)
+            {
+                HandleInkArchiveFailure(ex, "Save | Failed to persist ink archive", "墨迹及元素保存失败！");
+            }
+            catch (InvalidOperationException ex)
+            {
+                HandleInkArchiveFailure(ex, "Save | Failed to create ink archive", "墨迹及元素保存失败！");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                HandleInkArchiveFailure(ex, "Save | Access denied while saving ink archive", "墨迹及元素保存失败！");
+            }
+            catch (SecurityException ex)
+            {
+                HandleInkArchiveFailure(ex, "Save | Security error while saving ink archive", "墨迹及元素保存失败！");
+            }
+            catch (NotSupportedException ex)
+            {
+                HandleInkArchiveFailure(ex, "Save | Unsupported save path or archive operation", "墨迹及元素保存失败！");
             }
         }
 
         private void SaveRelatedUrlFiles(ZipArchive archive)
         {
             string dependencyFolder = InkCanvasArchiveElementsSerializer.DependencyFolderName;
-            var folderEntry = archive.CreateEntry(dependencyFolder + "/");
+            archive.CreateEntry(dependencyFolder + "/");
             foreach (UIElement element in inkCanvas.Children)
             {
                 if (InkCanvasArchiveElementsSerializer.TryGetDependencySourcePath(element, out string sourcePath))
@@ -167,10 +187,25 @@ namespace Ink_Canvas
 
                                             LogHelper.NewLog($"Elements Insert: Elements Count: {inkCanvas.Children.Count}");
                                         }
-                                        catch (Exception ex)
+                                        catch (ArgumentException ex)
                                         {
-                                            LogHelper.WriteLogToFile($"加载 UI 元素失败: {ex.Message}", LogHelper.LogType.Error);
-                                            ShowNotificationAsync("加载 UI 元素失败");
+                                            HandleInkArchiveFailure(ex, "Open | Invalid serialized UI elements", "加载 UI 元素失败");
+                                        }
+                                        catch (IOException ex)
+                                        {
+                                            HandleInkArchiveFailure(ex, "Open | Failed to load UI element dependencies", "加载 UI 元素失败");
+                                        }
+                                        catch (InvalidOperationException ex)
+                                        {
+                                            HandleInkArchiveFailure(ex, "Open | Failed to deserialize UI elements", "加载 UI 元素失败");
+                                        }
+                                        catch (UnauthorizedAccessException ex)
+                                        {
+                                            HandleInkArchiveFailure(ex, "Open | Access denied while loading UI elements", "加载 UI 元素失败");
+                                        }
+                                        catch (NotSupportedException ex)
+                                        {
+                                            HandleInkArchiveFailure(ex, "Open | Unsupported UI element dependency", "加载 UI 元素失败");
                                         }
                                     }
                                 }
@@ -201,10 +236,33 @@ namespace Ink_Canvas
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (ArgumentException ex)
                 {
-                    ShowNotificationAsync("墨迹或元素打开失败");
-                    LogHelper.WriteLogToFile($"打开墨迹或元素失败: {ex.Message}\n{ex.StackTrace}", LogHelper.LogType.Error);
+                    HandleInkArchiveFailure(ex, "Open | Invalid ink archive path or entry", "墨迹或元素打开失败");
+                }
+                catch (IOException ex)
+                {
+                    HandleInkArchiveFailure(ex, "Open | Failed to read ink archive", "墨迹或元素打开失败");
+                }
+                catch (InvalidDataException ex)
+                {
+                    HandleInkArchiveFailure(ex, "Open | Invalid ink archive data", "墨迹或元素打开失败");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    HandleInkArchiveFailure(ex, "Open | Failed to process ink archive", "墨迹或元素打开失败");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    HandleInkArchiveFailure(ex, "Open | Access denied while opening ink archive", "墨迹或元素打开失败");
+                }
+                catch (SecurityException ex)
+                {
+                    HandleInkArchiveFailure(ex, "Open | Security error while opening ink archive", "墨迹或元素打开失败");
+                }
+                catch (NotSupportedException ex)
+                {
+                    HandleInkArchiveFailure(ex, "Open | Unsupported ink archive path or operation", "墨迹或元素打开失败");
                 }
             }
         }
@@ -231,6 +289,12 @@ namespace Ink_Canvas
                             }
 
                             string directoryPath = Path.GetDirectoryName(fileName);
+                            if (string.IsNullOrWhiteSpace(directoryPath))
+                            {
+                                LogHelper.WriteLogToFile($"Elements Load | Missing target directory for archive entry: {entry.FullName}", LogHelper.LogType.Error);
+                                continue;
+                            }
+
                             if (!Directory.Exists(directoryPath))
                             {
                                 Directory.CreateDirectory(directoryPath);
@@ -241,13 +305,39 @@ namespace Ink_Canvas
                                 entry.ExtractToFile(fileName, overwrite: false);
                             }
                         }
-                        catch (Exception ex)
+                        catch (ArgumentException ex)
                         {
-                            LogHelper.WriteLogToFile($"Elements Load | Failed to extract archive entry '{entry.FullName}': {ex.Message}", LogHelper.LogType.Error);
+                            LogHelper.WriteLogToFile(ex, $"Elements Load | Invalid archive entry '{entry.FullName}'");
+                        }
+                        catch (IOException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"Elements Load | Failed to extract archive entry '{entry.FullName}'");
+                        }
+                        catch (InvalidDataException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"Elements Load | Invalid archive entry data '{entry.FullName}'");
+                        }
+                        catch (UnauthorizedAccessException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"Elements Load | Access denied while extracting archive entry '{entry.FullName}'");
+                        }
+                        catch (SecurityException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"Elements Load | Security error while extracting archive entry '{entry.FullName}'");
+                        }
+                        catch (NotSupportedException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"Elements Load | Unsupported archive entry '{entry.FullName}'");
                         }
                     }
                 }
             }
+        }
+
+        private void HandleInkArchiveFailure(Exception exception, string context, string notification)
+        {
+            ShowNotificationAsync(notification);
+            LogHelper.WriteLogToFile(exception, context);
         }
 
         private static string AppendDirectorySeparator(string path)

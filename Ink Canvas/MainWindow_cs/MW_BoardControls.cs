@@ -7,11 +7,11 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        StrokeCollection[] strokeCollections = new StrokeCollection[101];
+        private readonly StrokeCollection[] strokeCollections = new StrokeCollection[101];
         StrokeCollection lastTouchDownStrokeCollection = new StrokeCollection();
 
         int CurrentWhiteboardIndex = 1, WhiteboardTotalCount = 1;
-        TimeMachineHistory[][] TimeMachineHistories = new TimeMachineHistory[101][]; //最多99页，0用来存储非白板时的墨迹以便还原
+        private readonly TimeMachineHistory[][] TimeMachineHistories = new TimeMachineHistory[101][]; //最多99页，0用来存储非白板时的墨迹以便还原
 
         private void SaveStrokes(bool isBackupMain = false)
         {
@@ -41,27 +41,30 @@ namespace Ink_Canvas
 
         private void RestoreStrokes(bool isBackupMain = false)
         {
+            TimeMachineHistory[] history = isBackupMain
+                ? TimeMachineHistories[0]
+                : TimeMachineHistories[CurrentWhiteboardIndex];
+            if (history == null)
+            {
+                return;
+            }
+
             try
             {
-                if (TimeMachineHistories[CurrentWhiteboardIndex] == null) return; //防止白板打开后不居中
-                if (isBackupMain)
+                timeMachine.ImportTimeMachineHistory(history);
+                foreach (var item in history)
                 {
-                    timeMachine.ImportTimeMachineHistory(TimeMachineHistories[0]);
-                    foreach (var item in TimeMachineHistories[0])
-                    {
-                        ApplyHistoryToCanvas(item);
-                    }
-                }
-                else
-                {
-                    timeMachine.ImportTimeMachineHistory(TimeMachineHistories[CurrentWhiteboardIndex]);
-                    foreach (var item in TimeMachineHistories[CurrentWhiteboardIndex])
-                    {
-                        ApplyHistoryToCanvas(item);
-                    }
+                    ApplyHistoryToCanvas(item);
                 }
             }
-            catch { }
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Board | Failed to restore whiteboard history");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Board | Failed to apply restored whiteboard history");
+            }
         }
 
         private void BtnWhiteBoardSwitchPrevious_Click(object sender, EventArgs e)

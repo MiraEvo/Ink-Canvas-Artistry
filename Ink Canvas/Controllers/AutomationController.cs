@@ -1,6 +1,7 @@
 using Ink_Canvas.Helpers;
 using Ink_Canvas.ViewModels;
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using System.Timers;
@@ -272,7 +273,7 @@ namespace Ink_Canvas.Controllers
 
             try
             {
-                Process process = new Process
+                using Process process = new Process
                 {
                     StartInfo = new ProcessStartInfo("taskkill", arguments)
                     {
@@ -286,9 +287,13 @@ namespace Ink_Canvas.Controllers
                     RunOnUiThread(onAutoKilledEasiNote);
                 }
             }
-            catch (Exception ex)
+            catch (Win32Exception ex)
             {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile(ex, "Automation | Failed to start taskkill");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Automation | Failed to execute process cleanup");
             }
         }
 

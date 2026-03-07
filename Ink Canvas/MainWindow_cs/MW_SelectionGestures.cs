@@ -224,7 +224,11 @@ namespace Ink_Canvas
 
         private void ApplyElementMatrixTransform(UIElement element, Matrix matrix)
         {
-            FrameworkElement frameworkElement = element as FrameworkElement;
+            if (element is not FrameworkElement frameworkElement)
+            {
+                return;
+            }
+
             TransformGroup transformGroup = frameworkElement.RenderTransform as TransformGroup;
             if (transformGroup == null)
             {
@@ -247,6 +251,33 @@ namespace Ink_Canvas
             }
             ElementsManipulationHistory[frameworkElement.Name] =
                 new Tuple<object, TransformGroup>(ElementsInitialHistory[frameworkElement.Name], transformGroup.Clone());
+        }
+
+        private static void ScaleStrokeDrawingAttributes(Stroke stroke, double scaleX, double scaleY)
+        {
+            if (stroke == null)
+            {
+                return;
+            }
+
+            DrawingAttributes drawingAttributes = stroke.DrawingAttributes;
+            drawingAttributes.Width = ClampDrawingAttributeDimension(drawingAttributes.Width * Math.Abs(scaleX), DrawingAttributes.MinWidth, DrawingAttributes.MaxWidth);
+            drawingAttributes.Height = ClampDrawingAttributeDimension(drawingAttributes.Height * Math.Abs(scaleY), DrawingAttributes.MinHeight, DrawingAttributes.MaxHeight);
+        }
+
+        private static double ClampDrawingAttributeDimension(double value, double minValue, double maxValue)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return minValue;
+            }
+
+            if (value < minValue)
+            {
+                return minValue;
+            }
+
+            return value > maxValue ? maxValue : value;
         }
 
         private void BtnFlipHorizontal_Click(object sender, RoutedEventArgs e)
@@ -395,12 +426,7 @@ namespace Ink_Canvas
             foreach (Stroke stroke in strokes)
             {
                 stroke.Transform(m, false);
-                try
-                {
-                    stroke.DrawingAttributes.Width *= scale;
-                    stroke.DrawingAttributes.Height *= scale;
-                }
-                catch { }
+                ScaleStrokeDrawingAttributes(stroke, scale, scale);
             }
             updateBorderStrokeSelectionControlLocation();
         }
@@ -521,59 +547,44 @@ namespace Ink_Canvas
 
         private void GridInkCanvasSelectionCover_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
         {
-            try
+            if (dec.Count < 1 || e.Source is not FrameworkElement sourceElement)
             {
-                if (dec.Count >= 1)
-                {
-                    ManipulationDelta md = e.DeltaManipulation;
-                    Vector trans = md.Translation;
-                    double rotate = md.Rotation;
-                    Vector scale = md.Scale;
-                    Point center = GetMatrixTransformCenterPoint(e.ManipulationOrigin, e.Source as FrameworkElement);
-                    Matrix m = new Matrix();
-                    // add Scale
-                    m.ScaleAt(scale.X, scale.Y, center.X, center.Y);
-                    StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
-                    if (StrokesSelectionClone.Count != 0)
-                    {
-                        strokes = StrokesSelectionClone;
-                    }
-                    else if (Settings.Gesture.IsEnableTwoFingerRotationOnSelection)
-                    {
-                        // add Rotate
-                        m.RotateAt(rotate, center.X, center.Y);
-                    }
-                    // add Translate
-                    m.Translate(trans.X, trans.Y);
-                    List<UIElement> elements = new List<UIElement>();
-                    if (ElementsSelectionClone.Count != 0)
-                    {
-                        elements = ElementsSelectionClone;
-                    }
-                    else
-                    {
-                        elements = InkCanvasElementsHelper.GetSelectedElements(inkCanvas);
-                    }
-                    // handle UIElements
-                    foreach (UIElement element in elements)
-                    {
-                        ApplyElementMatrixTransform(element, m);
-                    }
-                    // handle strokes
-                    foreach (Stroke stroke in strokes)
-                    {
-                        stroke.Transform(m, false);
-                        try
-                        {
-                            stroke.DrawingAttributes.Width *= md.Scale.X;
-                            stroke.DrawingAttributes.Height *= md.Scale.Y;
-                        }
-                        catch { }
-                    }
-                    updateBorderStrokeSelectionControlLocation();
-                }
+                return;
             }
-            catch { }
+
+            ManipulationDelta md = e.DeltaManipulation;
+            Vector trans = md.Translation;
+            double rotate = md.Rotation;
+            Vector scale = md.Scale;
+            Point center = GetMatrixTransformCenterPoint(e.ManipulationOrigin, sourceElement);
+            Matrix m = new Matrix();
+            m.ScaleAt(scale.X, scale.Y, center.X, center.Y);
+
+            StrokeCollection strokes = StrokesSelectionClone.Count != 0
+                ? StrokesSelectionClone
+                : inkCanvas.GetSelectedStrokes();
+            if (StrokesSelectionClone.Count == 0 && Settings.Gesture.IsEnableTwoFingerRotationOnSelection)
+            {
+                m.RotateAt(rotate, center.X, center.Y);
+            }
+
+            m.Translate(trans.X, trans.Y);
+
+            List<UIElement> elements = ElementsSelectionClone.Count != 0
+                ? ElementsSelectionClone
+                : InkCanvasElementsHelper.GetSelectedElements(inkCanvas);
+            foreach (UIElement element in elements)
+            {
+                ApplyElementMatrixTransform(element, m);
+            }
+
+            foreach (Stroke stroke in strokes)
+            {
+                stroke.Transform(m, false);
+                ScaleStrokeDrawingAttributes(stroke, md.Scale.X, md.Scale.Y);
+            }
+
+            updateBorderStrokeSelectionControlLocation();
         }
 
         Point lastTouchPointOnGridInkCanvasCover = new Point(0, 0);

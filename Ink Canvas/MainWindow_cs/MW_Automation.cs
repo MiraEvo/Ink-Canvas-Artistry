@@ -1,6 +1,7 @@
 using Ink_Canvas.Controllers;
 using Ink_Canvas.Helpers;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
 
@@ -68,9 +69,14 @@ namespace Ink_Canvas
             {
                 return Dispatcher.Invoke(() => Topmost && inkCanvas.Strokes.Count == 0);
             }
-            catch (Exception ex)
+            catch (TaskCanceledException ex)
             {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile(ex, "Automation | Dispatcher call was canceled while checking silent update readiness");
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Automation | Dispatcher call failed while checking silent update readiness");
                 return false;
             }
         }

@@ -96,20 +96,12 @@ namespace Ink_Canvas
 
         private void HotKey_Undo(object sender, ExecutedRoutedEventArgs e)
         {
-            try
-            {
-                SymbolIconUndo_Click(null, null);
-            }
-            catch { }
+            SymbolIconUndo_Click(null, null);
         }
 
         private void HotKey_Redo(object sender, ExecutedRoutedEventArgs e)
         {
-            try
-            {
-                SymbolIconRedo_Click(null, null);
-            }
-            catch { }
+            SymbolIconRedo_Click(null, null);
         }
 
         private void KeyExit(object sender, ExecutedRoutedEventArgs e)

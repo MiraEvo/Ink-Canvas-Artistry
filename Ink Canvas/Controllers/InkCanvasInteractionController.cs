@@ -180,24 +180,19 @@ namespace Ink_Canvas.Controllers
 
         public void HandleStylusMove(StylusEventArgs e, IInputElement relativeTo)
         {
+            if (GetTouchDownMode(e.StylusDevice.Id) != InkCanvasEditingMode.None)
+            {
+                return;
+            }
+
+            if (e.StylusDevice.StylusButtons.Count > 1
+                && e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down)
+            {
+                return;
+            }
+
             try
             {
-                if (GetTouchDownMode(e.StylusDevice.Id) != InkCanvasEditingMode.None)
-                {
-                    return;
-                }
-
-                try
-                {
-                    if (e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down)
-                    {
-                        return;
-                    }
-                }
-                catch
-                {
-                }
-
                 StrokeVisual strokeVisual = GetStrokeVisual(e.StylusDevice.Id);
                 StylusPointCollection stylusPointCollection = e.GetStylusPoints(relativeTo);
                 foreach (StylusPoint stylusPoint in stylusPointCollection)
@@ -207,53 +202,49 @@ namespace Ink_Canvas.Controllers
 
                 strokeVisual.Redraw();
             }
-            catch
+            catch (ArgumentException ex)
             {
+                LogHelper.WriteLogToFile(ex, "Ink Interaction | Invalid stylus point data during move");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Ink Interaction | Failed to redraw stroke preview during move");
             }
         }
 
         public async Task HandleStylusUpAsync(StylusEventArgs e, Action<Stroke> onStrokeCollected)
         {
-            try
+            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus)
             {
-                if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus)
+                try
                 {
-                    try
+                    StrokeVisual strokeVisual = GetStrokeVisual(e.StylusDevice.Id);
+                    inkCanvas.Strokes.Add(strokeVisual.Stroke);
+                    await Task.Delay(5);
+                    VisualCanvas visualCanvas = GetVisualCanvas(e.StylusDevice.Id);
+                    if (visualCanvas != null)
                     {
-                        StrokeVisual strokeVisual = GetStrokeVisual(e.StylusDevice.Id);
-                        inkCanvas.Strokes.Add(strokeVisual.Stroke);
-                        await Task.Delay(5);
-                        VisualCanvas visualCanvas = GetVisualCanvas(e.StylusDevice.Id);
-                        if (visualCanvas != null)
-                        {
-                            inkCanvas.Children.Remove(visualCanvas);
-                        }
+                        inkCanvas.Children.Remove(visualCanvas);
+                    }
 
-                        onStrokeCollected?.Invoke(strokeVisual.Stroke);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
-                    }
+                    onStrokeCollected?.Invoke(strokeVisual.Stroke);
+                }
+                catch (ArgumentException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, "Ink Interaction | Invalid stylus point data during stylus up");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, "Ink Interaction | Failed to finalize stroke preview during stylus up");
                 }
             }
-            catch (Exception ex)
-            {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
-            }
 
-            try
+            strokeVisualList.Remove(e.StylusDevice.Id);
+            visualCanvasList.Remove(e.StylusDevice.Id);
+            touchDownPointsList.Remove(e.StylusDevice.Id);
+            if (strokeVisualList.Count == 0 || visualCanvasList.Count == 0 || touchDownPointsList.Count == 0)
             {
-                strokeVisualList.Remove(e.StylusDevice.Id);
-                visualCanvasList.Remove(e.StylusDevice.Id);
-                touchDownPointsList.Remove(e.StylusDevice.Id);
-                if (strokeVisualList.Count == 0 || visualCanvasList.Count == 0 || touchDownPointsList.Count == 0)
-                {
-                    ResetTransientState();
-                }
-            }
-            catch
-            {
+                ResetTransientState();
             }
         }
 

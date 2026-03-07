@@ -1,6 +1,8 @@
+using Ink_Canvas.Helpers;
 using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Security;
 using System.Windows;
 
 namespace Ink_Canvas
@@ -11,7 +13,8 @@ namespace Ink_Canvas
 
         private static string GetStartupShortcutPath(string exeName)
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), exeName + ".lnk");
+            string safeExeName = Path.GetFileNameWithoutExtension(exeName);
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), safeExeName + ".lnk");
         }
 
         private static bool StartupEntryExists(string exeName)
@@ -39,7 +42,22 @@ namespace Ink_Canvas
                 DeleteLegacyStartupShortcut(exeName);
                 return true;
             }
-            catch (Exception) { }
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Invalid startup entry name '{exeName}'");
+            }
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Failed to create startup entry '{exeName}'");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Access denied while creating startup entry '{exeName}'");
+            }
+            catch (SecurityException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Security error while creating startup entry '{exeName}'");
+            }
 
             return false;
         }
@@ -53,7 +71,22 @@ namespace Ink_Canvas
                 DeleteLegacyStartupShortcut(exeName);
                 return true;
             }
-            catch (Exception) { }
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Invalid startup entry name '{exeName}'");
+            }
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Failed to delete startup entry '{exeName}'");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Access denied while deleting startup entry '{exeName}'");
+            }
+            catch (SecurityException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Startup | Security error while deleting startup entry '{exeName}'");
+            }
 
             return false;
         }

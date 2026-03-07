@@ -1,3 +1,4 @@
+using Ink_Canvas.Helpers;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -15,9 +16,9 @@ namespace Ink_Canvas.Services
 
         public Settings Load()
         {
+            string settingsPath = settingsPathProvider();
             try
             {
-                string settingsPath = settingsPathProvider();
                 if (!File.Exists(settingsPath))
                 {
                     return SettingsDefaults.CreateRecommended();
@@ -27,8 +28,19 @@ namespace Ink_Canvas.Services
                 Settings settings = JsonConvert.DeserializeObject<Settings>(text);
                 return SettingsDefaults.Normalize(settings);
             }
-            catch
+            catch (IOException ex)
             {
+                LogHelper.WriteLogToFile(ex, $"Settings Load | Failed to read '{settingsPath}'");
+                return SettingsDefaults.CreateRecommended();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Settings Load | Access denied for '{settingsPath}'");
+                return SettingsDefaults.CreateRecommended();
+            }
+            catch (JsonException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Settings Load | Invalid JSON in '{settingsPath}'");
                 return SettingsDefaults.CreateRecommended();
             }
         }
@@ -36,10 +48,10 @@ namespace Ink_Canvas.Services
         public void Save(Settings settings)
         {
             string text = JsonConvert.SerializeObject(SettingsDefaults.Normalize(settings), Formatting.Indented);
+            string settingsPath = settingsPathProvider();
 
             try
             {
-                string settingsPath = settingsPathProvider();
                 string directory = Path.GetDirectoryName(settingsPath);
                 if (!string.IsNullOrWhiteSpace(directory))
                 {
@@ -48,8 +60,13 @@ namespace Ink_Canvas.Services
 
                 File.WriteAllText(settingsPath, text);
             }
-            catch
+            catch (IOException ex)
             {
+                LogHelper.WriteLogToFile(ex, $"Settings Save | Failed to write '{settingsPath}'");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"Settings Save | Access denied for '{settingsPath}'");
             }
         }
     }

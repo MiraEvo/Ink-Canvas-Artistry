@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 using System.Text.RegularExpressions;
+using System.ComponentModel;
 
 namespace Ink_Canvas.Helpers
 {
@@ -21,7 +22,7 @@ namespace Ink_Canvas.Helpers
         {
             try
             {
-                string localVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                string localVersion = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
                 string remoteAddress = $"{UpdateServerBaseUrl}/version";
                 string remoteVersion = ValidateVersionOrNull(await GetRemoteVersion(remoteAddress));
 
@@ -51,7 +52,12 @@ namespace Ink_Canvas.Helpers
                 LogHelper.WriteLogToFile($"AutoUpdate | Version format error: {ex.Message}", LogHelper.LogType.Error);
                 return null;
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error checking for updates: {ex.Message}", LogHelper.LogType.Error);
+                return null;
+            }
+            catch (InvalidOperationException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate | Error checking for updates: {ex.Message}", LogHelper.LogType.Error);
                 return null;
@@ -79,7 +85,7 @@ namespace Ink_Canvas.Helpers
                 {
                     LogHelper.WriteLogToFile($"AutoUpdate | Timeout getting version from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
                 }
-                catch (Exception ex)
+                catch (InvalidOperationException ex)
                 {
                     LogHelper.WriteLogToFile($"AutoUpdate | Error getting remote version from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
                 }
@@ -87,7 +93,7 @@ namespace Ink_Canvas.Helpers
             }
         }
 
-        private static string updatesFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ink Canvas Artistry", "AutoUpdate");
+        private static readonly string updatesFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ink Canvas Artistry", "AutoUpdate");
         private static string statusFilePath = null;
 
         public static async Task<bool> DownloadSetupFileAndSaveStatus(string version)
@@ -116,22 +122,46 @@ namespace Ink_Canvas.Helpers
                 LogHelper.WriteLogToFile("AutoUpdate | Setup file successfully downloaded.");
                 return true;
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
                 SaveDownloadStatus(false);
-                try
-                {
-                    string destinationPath = ResolvePathWithinUpdatesFolder(GetSetupFileName(ValidateVersionOrThrow(version)));
-                    if (File.Exists(destinationPath))
-                    {
-                        File.Delete(destinationPath);
-                    }
-                }
-                catch (Exception deleteEx)
-                {
-                    LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {deleteEx.Message}", LogHelper.LogType.Error);
-                }
+                CleanupIncompleteDownload(version);
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
+                SaveDownloadStatus(false);
+                CleanupIncompleteDownload(version);
+                return false;
+            }
+            catch (HttpRequestException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
+                SaveDownloadStatus(false);
+                CleanupIncompleteDownload(version);
+                return false;
+            }
+            catch (TaskCanceledException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
+                SaveDownloadStatus(false);
+                CleanupIncompleteDownload(version);
+                return false;
+            }
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
+                SaveDownloadStatus(false);
+                CleanupIncompleteDownload(version);
+                return false;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
+                SaveDownloadStatus(false);
+                CleanupIncompleteDownload(version);
                 return false;
             }
         }
@@ -174,9 +204,14 @@ namespace Ink_Canvas.Helpers
                     LogHelper.WriteLogToFile($"AutoUpdate | IO error saving to {destinationPath}: {ex.Message}", LogHelper.LogType.Error);
                     throw;
                 }
-                catch (Exception ex)
+                catch (UnauthorizedAccessException ex)
                 {
-                    LogHelper.WriteLogToFile($"AutoUpdate | Generic error downloading from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                    LogHelper.WriteLogToFile($"AutoUpdate | Access denied saving to {destinationPath}: {ex.Message}", LogHelper.LogType.Error);
+                    throw;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    LogHelper.WriteLogToFile($"AutoUpdate | Invalid operation downloading from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
                     throw;
                 }
             }
@@ -201,7 +236,15 @@ namespace Ink_Canvas.Helpers
                 File.WriteAllText(statusFilePath, isSuccess.ToString());
                 LogHelper.WriteLogToFile($"AutoUpdate | Saved download status ({isSuccess}) to {statusFilePath}");
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error saving download status: {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error saving download status: {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (InvalidOperationException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate | Error saving download status: {ex.Message}", LogHelper.LogType.Error);
             }
@@ -223,7 +266,19 @@ namespace Ink_Canvas.Helpers
                 LogHelper.WriteLogToFile($"AutoUpdate | Starting installer: {setupFilePath}");
                 StartInstaller(setupFilePath, isInSilence);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (UnauthorizedAccessException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
             }
@@ -254,7 +309,11 @@ namespace Ink_Canvas.Helpers
                     });
                 }
             }
-            catch (Exception ex)
+            catch (Win32Exception ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (InvalidOperationException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}", LogHelper.LogType.Error);
             }
@@ -270,7 +329,11 @@ namespace Ink_Canvas.Helpers
                     LogHelper.WriteLogToFile($"AutoUpdate | Deleted updates folder: {updatesFolderPath}");
                 }
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}", LogHelper.LogType.Error);
+            }
+            catch (UnauthorizedAccessException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}", LogHelper.LogType.Error);
             }
@@ -309,15 +372,58 @@ namespace Ink_Canvas.Helpers
             {
                 return ValidateVersionOrThrow(version);
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
+                return null;
+            }
+            catch (FormatException ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
+                return null;
+            }
+            catch (OverflowException ex)
             {
                 LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
                 return null;
             }
         }
 
+        private static void CleanupIncompleteDownload(string version)
+        {
+            try
+            {
+                string destinationPath = ResolvePathWithinUpdatesFolder(GetSetupFileName(ValidateVersionOrThrow(version)));
+                if (File.Exists(destinationPath))
+                {
+                    File.Delete(destinationPath);
+                }
+            }
+            catch (IOException deleteEx)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {deleteEx.Message}", LogHelper.LogType.Error);
+            }
+            catch (UnauthorizedAccessException deleteEx)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {deleteEx.Message}", LogHelper.LogType.Error);
+            }
+            catch (ArgumentException deleteEx)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {deleteEx.Message}", LogHelper.LogType.Error);
+            }
+            catch (InvalidOperationException deleteEx)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {deleteEx.Message}", LogHelper.LogType.Error);
+            }
+        }
+
         private static string ResolvePathWithinUpdatesFolder(string fileName)
         {
+            if (Path.IsPathRooted(fileName))
+            {
+                throw new InvalidOperationException("Update file name must be a relative path.");
+            }
+
             string rootPath = AppendDirectorySeparator(Path.GetFullPath(updatesFolderPath));
             string fullPath = Path.GetFullPath(Path.Combine(rootPath, fileName));
 
@@ -344,8 +450,8 @@ namespace Ink_Canvas.Helpers
 
     internal class AutoUpdateWithSilenceTimeComboBox
     {
-        public static ObservableCollection<string> Hours { get; set; } = new ObservableCollection<string>();
-        public static ObservableCollection<string> Minutes { get; set; } = new ObservableCollection<string>();
+        public static ObservableCollection<string> Hours { get; } = new ObservableCollection<string>();
+        public static ObservableCollection<string> Minutes { get; } = new ObservableCollection<string>();
 
         public static void InitializeAutoUpdateWithSilenceTimeComboBoxOptions(ComboBox startTimeComboBox, ComboBox endTimeComboBox)
         {

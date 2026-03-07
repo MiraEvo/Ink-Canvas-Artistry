@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using iNKORE.UI.WPF.Modern;
 using System;
+using Ink_Canvas.Helpers;
 using System.Windows;
 using System.Windows.Media;
 using Application = System.Windows.Application;
@@ -17,10 +18,8 @@ namespace Ink_Canvas
             {
                 return Settings.Canvas.UsingWhiteboard ? "Light" : "Dark";
             }
-            else
-            {
-                return (ThemeManager.GetRequestedTheme(window).ToString() == "Light") ? "Light" : "Dark";
-            }
+
+            return ThemeManager.GetRequestedTheme(window) == ElementTheme.Light ? "Light" : "Dark";
         }
 
         void RemoveResourceDictionary(Uri uri)
@@ -112,20 +111,25 @@ namespace Ink_Canvas
 
         private bool IsSystemThemeLight()
         {
-            bool light = false;
             try
             {
-                RegistryKey registryKey = Registry.CurrentUser;
-                RegistryKey themeKey = registryKey.OpenSubKey("software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
-                int keyValue = 0;
-                if (themeKey != null)
-                {
-                    keyValue = (int)themeKey.GetValue("SystemUsesLightTheme");
-                }
-                if (keyValue == 1) light = true;
+                using RegistryKey themeKey = Registry.CurrentUser.OpenSubKey("software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize");
+                return themeKey?.GetValue("SystemUsesLightTheme") is int keyValue && keyValue == 1;
             }
-            catch { }
-            return light;
+            catch (InvalidCastException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Theme | Invalid registry value for SystemUsesLightTheme");
+            }
+            catch (System.IO.IOException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Theme | Failed to read system theme registry key");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Theme | Access denied while reading system theme registry key");
+            }
+
+            return false;
         }
     }
 }

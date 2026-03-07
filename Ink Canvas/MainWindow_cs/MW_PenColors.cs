@@ -54,11 +54,7 @@ namespace Ink_Canvas
             {
                 foreach (Stroke stroke in strokes)
                 {
-                    try
-                    {
-                        stroke.DrawingAttributes.Color = inkCanvas.DefaultDrawingAttributes.Color;
-                    }
-                    catch { }
+                    stroke.DrawingAttributes.Color = inkCanvas.DefaultDrawingAttributes.Color;
                 }
             }
             if (DrawingAttributesHistory.Count > 0)
@@ -85,7 +81,7 @@ namespace Ink_Canvas
 
         bool isUselightThemeColor = false, isDesktopUselightThemeColor = false;
         int lastDesktopInkColor = 1, lastBoardInkColor = 5;
-        Dictionary<int, Color> inkColorLightThemeMapping = new Dictionary<int, Color>
+        private readonly Dictionary<int, Color> inkColorLightThemeMapping = new Dictionary<int, Color>
         {
             { 0, Colors.Black }, // Black
             { 1, Color.FromRgb(239, 68, 68) }, // Red
@@ -97,7 +93,7 @@ namespace Ink_Canvas
             { 7, Color.FromRgb(20, 184, 166) }, // Teal
             { 8, Color.FromRgb(249, 115, 22) }, // Orange
         };
-        Dictionary<int, Color> inkColorDarkThemeMapping = new Dictionary<int, Color>
+        private readonly Dictionary<int, Color> inkColorDarkThemeMapping = new Dictionary<int, Color>
         {
             { 0, Colors.Black }, // Black
             { 1, Color.FromRgb(220, 38, 38) }, // Red

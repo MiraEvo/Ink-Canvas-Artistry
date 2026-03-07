@@ -133,7 +133,7 @@ namespace Ink_Canvas
         }
 
         //记录触摸设备ID
-        private List<int> dec = new List<int>();
+        private readonly List<int> dec = new List<int>();
         //中心点
         Point centerPoint;
         InkCanvasEditingMode lastInkCanvasEditingMode = InkCanvasEditingMode.Ink;
@@ -233,14 +233,7 @@ namespace Ink_Canvas
                     List<UIElement> elements = InkCanvasElementsHelper.GetAllElements(inkCanvas);
                     foreach (UIElement element in elements)
                     {
-                        if (Settings.Gesture.IsEnableTwoFingerTranslate)
-                        {
-                            ApplyElementMatrixTransform(element, m);
-                        }
-                        else
-                        {
-                            ApplyElementMatrixTransform(element, m);
-                        }
+                        ApplyElementMatrixTransform(element, m);
                     }
                 }
                 // handle strokes
@@ -249,12 +242,7 @@ namespace Ink_Canvas
                     foreach (Stroke stroke in inkCanvas.Strokes)
                     {
                         stroke.Transform(m, false);
-                        try
-                        {
-                            stroke.DrawingAttributes.Width *= md.Scale.X;
-                            stroke.DrawingAttributes.Height *= md.Scale.Y;
-                        }
-                        catch { }
+                        ScaleStrokeDrawingAttributes(stroke, md.Scale.X, md.Scale.Y);
                     };
                 }
                 else

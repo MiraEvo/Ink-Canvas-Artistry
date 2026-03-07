@@ -1,12 +1,14 @@
-﻿using System;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Security;
 
 namespace Ink_Canvas.Helpers
 {
-    class LogHelper
+    internal static class LogHelper
     {
-        public static string LogFile = "Log.txt";
+        public static readonly string LogFile = "Log.txt";
 
         public static void NewLog(string str)
         {
@@ -15,80 +17,104 @@ namespace Ink_Canvas.Helpers
 
         public static void NewLog(Exception ex)
         {
-
+            WriteLogToFile(ex, null, LogType.Error);
         }
 
         public static void WriteLogToFile(string str, LogType logType = LogType.Info)
         {
-            string strLogType = "Info";
-            switch (logType)
-            {
-                case LogType.Event:
-                    strLogType = "Event";
-                    break;
-                case LogType.Trace:
-                    strLogType = "Trace";
-                    break;
-                case LogType.Error:
-                    strLogType = "Error";
-                    break;
-            }
             try
             {
-                var file = App.RootPath + LogFile;
-                if (!Directory.Exists(App.RootPath))
-                {
-                    Directory.CreateDirectory(App.RootPath);
-                }
-                StreamWriter sw = new StreamWriter(file, true);
-                sw.WriteLine(string.Format("{0} [{1}] {2}", DateTime.Now.ToString("O"), strLogType, str));
-                sw.Close();
+                WriteLine($"{DateTime.Now:O} [{GetLogTypeName(logType)}] {str}");
             }
-            catch { }
+            catch (IOException ex)
+            {
+                Debug.WriteLine($"LogHelper IO error: {ex}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Debug.WriteLine($"LogHelper access error: {ex}");
+            }
+            catch (SecurityException ex)
+            {
+                Debug.WriteLine($"LogHelper security error: {ex}");
+            }
+        }
+
+        public static void WriteLogToFile(Exception exception, string context = null, LogType logType = LogType.Error)
+        {
+            if (exception == null)
+            {
+                return;
+            }
+
+            string message = string.IsNullOrWhiteSpace(context)
+                ? exception.ToString()
+                : $"{context} | {exception}";
+            WriteLogToFile(message, logType);
         }
 
         public static void WriteObjectLogToFile(object obj, LogType logType = LogType.Info)
         {
-            string strLogType = "Info";
-            switch (logType)
-            {
-                case LogType.Event:
-                    strLogType = "Event";
-                    break;
-                case LogType.Trace:
-                    strLogType = "Trace";
-                    break;
-                case LogType.Error:
-                    strLogType = "Error";
-                    break;
-            }
             try
             {
-                var file = App.RootPath + LogFile;
-                if (!Directory.Exists(App.RootPath))
+                WriteLine($"{DateTime.Now:O} [{GetLogTypeName(logType)}] Object Log:");
+                if (obj == null)
                 {
-                    Directory.CreateDirectory(App.RootPath);
+                    WriteLine("null");
+                    return;
                 }
-                using (StreamWriter sw = new StreamWriter(file, true))
+
+                PropertyInfo[] properties = obj.GetType().GetProperties();
+                foreach (PropertyInfo property in properties)
                 {
-                    sw.WriteLine($"{DateTime.Now:O} [{strLogType}] Object Log:");
-                    if (obj != null)
+                    object value;
+                    try
                     {
-                        Type type = obj.GetType();
-                        PropertyInfo[] properties = type.GetProperties();
-                        foreach (PropertyInfo property in properties)
-                        {
-                            object value = property.GetValue(obj, null);
-                            sw.WriteLine($"{property.Name}: {value}");
-                        }
+                        value = property.GetValue(obj, null);
                     }
-                    else
+                    catch (TargetInvocationException ex)
                     {
-                        sw.WriteLine("null");
+                        value = $"<error: {ex.InnerException?.Message ?? ex.Message}>";
                     }
+
+                    WriteLine($"{property.Name}: {value}");
                 }
             }
-            catch { }
+            catch (IOException ex)
+            {
+                Debug.WriteLine($"LogHelper IO error: {ex}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Debug.WriteLine($"LogHelper access error: {ex}");
+            }
+            catch (SecurityException ex)
+            {
+                Debug.WriteLine($"LogHelper security error: {ex}");
+            }
+        }
+
+        private static string GetLogTypeName(LogType logType)
+        {
+            return logType switch
+            {
+                LogType.Event => "Event",
+                LogType.Trace => "Trace",
+                LogType.Error => "Error",
+                _ => "Info"
+            };
+        }
+
+        private static void WriteLine(string line)
+        {
+            if (!Directory.Exists(App.RootPath))
+            {
+                Directory.CreateDirectory(App.RootPath);
+            }
+
+            string filePath = Path.Combine(App.RootPath, LogFile);
+            using StreamWriter streamWriter = new StreamWriter(filePath, true);
+            streamWriter.WriteLine(line);
         }
 
         public enum LogType

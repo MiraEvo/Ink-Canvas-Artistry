@@ -386,12 +386,8 @@ namespace Ink_Canvas
                 if (dec.Count > 1)
                 {
                     isWaitUntilNextTouchDown = true;
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
+                    RemoveLastTempStroke();
+                    RemoveLastTempStrokeCollection();
                     return;
                 }
                 if (inkCanvas.EditingMode != InkCanvasEditingMode.None)
@@ -428,35 +424,17 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
                     break;
                 case 8:
                     _currentCommitType = CommitReason.ShapeDrawing;
                     strokes.Add(GenerateDashedLineStrokeCollection(iniP, endP));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
                     break;
                 case 18:
                     _currentCommitType = CommitReason.ShapeDrawing;
                     strokes.Add(GenerateDotLineStrokeCollection(iniP, endP));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
                     break;
                 case 2:
                     _currentCommitType = CommitReason.ShapeDrawing;
@@ -478,13 +456,7 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
 
                     break;
                 case 15:
@@ -532,26 +504,14 @@ namespace Ink_Canvas
                     strokes.Add(GenerateLineStroke(new Point(iniP.X - x * sinTheta, iniP.Y - x * cosTheta), new Point(endP.X - x * sinTheta, endP.Y - x * cosTheta)));
                     strokes.Add(GenerateLineStroke(new Point(iniP.X + x * sinTheta, iniP.Y + x * cosTheta), new Point(endP.X + x * sinTheta, endP.Y + x * cosTheta)));
                     strokes.Add(GenerateLineStroke(new Point(iniP.X + 3 * x * sinTheta, iniP.Y + 3 * x * cosTheta), new Point(endP.X + 3 * x * sinTheta, endP.Y + 3 * x * cosTheta)));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 11:
                     _currentCommitType = CommitReason.ShapeDrawing;
                     strokes.Add(GenerateArrowLineStroke(new Point(2 * iniP.X - (endP.X - 20), iniP.Y), new Point(endP.X, iniP.Y)));
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X, 2 * iniP.Y - (endP.Y + 20)), new Point(iniP.X, endP.Y)));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 12:
@@ -559,13 +519,7 @@ namespace Ink_Canvas
                     if (Math.Abs(iniP.X - endP.X) < 0.01) return;
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X + (iniP.X - endP.X) / Math.Abs(iniP.X - endP.X) * 25, iniP.Y), new Point(endP.X, iniP.Y)));
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X, 2 * iniP.Y - (endP.Y + 20)), new Point(iniP.X, endP.Y)));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 13:
@@ -573,13 +527,7 @@ namespace Ink_Canvas
                     if (Math.Abs(iniP.Y - endP.Y) < 0.01) return;
                     strokes.Add(GenerateArrowLineStroke(new Point(2 * iniP.X - (endP.X - 20), iniP.Y), new Point(endP.X, iniP.Y)));
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X, iniP.Y + (iniP.Y - endP.Y) / Math.Abs(iniP.Y - endP.Y) * 25), new Point(iniP.X, endP.Y)));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 14:
@@ -587,13 +535,7 @@ namespace Ink_Canvas
                     if (Math.Abs(iniP.X - endP.X) < 0.01 || Math.Abs(iniP.Y - endP.Y) < 0.01) return;
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X + (iniP.X - endP.X) / Math.Abs(iniP.X - endP.X) * 25, iniP.Y), new Point(endP.X, iniP.Y)));
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X, iniP.Y + (iniP.Y - endP.Y) / Math.Abs(iniP.Y - endP.Y) * 25), new Point(iniP.X, endP.Y)));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 17:
@@ -602,13 +544,7 @@ namespace Ink_Canvas
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X, iniP.Y), new Point(iniP.X, iniP.Y - Math.Abs(endP.Y - iniP.Y))));
                     d = (Math.Abs(iniP.X - endP.X) + Math.Abs(iniP.Y - endP.Y)) / 2;
                     strokes.Add(GenerateArrowLineStroke(new Point(iniP.X, iniP.Y), new Point(iniP.X - d / 1.76, iniP.Y + d / 1.76)));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 3:
@@ -625,13 +561,7 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
 
                     break;
                 case 19:
@@ -650,13 +580,7 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
 
                     break;
                 case 4:
@@ -667,13 +591,7 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
 
                     break;
                 case 5:
@@ -685,13 +603,7 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
 
                     break;
                 case 16:
@@ -704,13 +616,7 @@ namespace Ink_Canvas
                     {
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStroke);
-                    }
-                    catch { }
-                    lastTempStroke = stroke;
-                    inkCanvas.Strokes.Add(stroke);
+                    ReplaceLastTempStroke(stroke);
 
                     break;
                 case 23:
@@ -764,26 +670,14 @@ namespace Ink_Canvas
                         };
                         strokes.Add(stroke.Clone());
                     }
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 10:
                     _currentCommitType = CommitReason.ShapeDrawing;
                     R = GetDistance(iniP, endP);
                     strokes = GenerateDashedLineEllipseStrokeCollection(new Point(iniP.X - R, iniP.Y - R), new Point(iniP.X + R, iniP.Y + R));
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 24:
@@ -866,18 +760,13 @@ namespace Ink_Canvas
                                 strokes.Add(stroke.Clone());
                             }
                         }
-                        catch
+                        catch (ArgumentException ex)
                         {
+                            LogHelper.WriteLogToFile(ex, "Shape Drawing | Failed to create hyperbola preview stroke");
                             return;
                         }
                     }
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 20:
@@ -904,13 +793,7 @@ namespace Ink_Canvas
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
                     strokes.Add(stroke.Clone());
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 21:
@@ -937,13 +820,7 @@ namespace Ink_Canvas
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
                     strokes.Add(stroke.Clone());
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 22:
@@ -979,13 +856,7 @@ namespace Ink_Canvas
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
                     strokes.Add(stroke.Clone());
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 6:
@@ -1037,13 +908,7 @@ namespace Ink_Canvas
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
                     strokes.Add(stroke.Clone());
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 7:
@@ -1086,13 +951,7 @@ namespace Ink_Canvas
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
                     strokes.Add(stroke.Clone());
-                    try
-                    {
-                        inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                    }
-                    catch { }
-                    lastTempStrokeCollection = strokes;
-                    inkCanvas.Strokes.Add(strokes);
+                    ReplaceLastTempStrokeCollection(strokes);
 
                     break;
                 case 9:
@@ -1104,13 +963,7 @@ namespace Ink_Canvas
                         strokes.Add(GenerateLineStroke(new Point(iniP.X, endP.Y), new Point(endP.X, endP.Y)));
                         strokes.Add(GenerateLineStroke(new Point(endP.X, endP.Y), new Point(endP.X, iniP.Y)));
                         strokes.Add(GenerateLineStroke(new Point(iniP.X, iniP.Y), new Point(endP.X, iniP.Y)));
-                        try
-                        {
-                            inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                        }
-                        catch { }
-                        lastTempStrokeCollection = strokes;
-                        inkCanvas.Strokes.Add(strokes);
+                        ReplaceLastTempStrokeCollection(strokes);
                         CuboidFrontRectIniP = iniP;
                         CuboidFrontRectEndP = endP;
                     }
@@ -1169,13 +1022,7 @@ namespace Ink_Canvas
                         stroke = new Stroke(point) { DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone() };
                         strokes.Add(stroke.Clone());
 
-                        try
-                        {
-                            inkCanvas.Strokes.Remove(lastTempStrokeCollection);
-                        }
-                        catch { }
-                        lastTempStrokeCollection = strokes;
-                        inkCanvas.Strokes.Add(strokes);
+                        ReplaceLastTempStrokeCollection(strokes);
                     }
 
                     break;
@@ -1197,6 +1044,43 @@ namespace Ink_Canvas
         Stroke lastTempStroke = null;
         StrokeCollection lastTempStrokeCollection = new StrokeCollection();
         bool isWaitUntilNextTouchDown = false;
+
+        private void RemoveLastTempStroke()
+        {
+            if (lastTempStroke != null)
+            {
+                inkCanvas.Strokes.Remove(lastTempStroke);
+            }
+        }
+
+        private void RemoveLastTempStrokeCollection()
+        {
+            if (lastTempStrokeCollection != null && lastTempStrokeCollection.Count > 0)
+            {
+                inkCanvas.Strokes.Remove(lastTempStrokeCollection);
+            }
+        }
+
+        private void ReplaceLastTempStroke(Stroke stroke)
+        {
+            RemoveLastTempStroke();
+            lastTempStroke = stroke;
+            if (stroke != null)
+            {
+                inkCanvas.Strokes.Add(stroke);
+            }
+        }
+
+        private void ReplaceLastTempStrokeCollection(StrokeCollection strokes)
+        {
+            RemoveLastTempStrokeCollection();
+            lastTempStrokeCollection = strokes;
+            if (strokes != null && strokes.Count > 0)
+            {
+                inkCanvas.Strokes.Add(strokes);
+            }
+        }
+
         private List<System.Windows.Point> GenerateEllipseGeometry(System.Windows.Point st, System.Windows.Point ed, bool isDrawTop = true, bool isDrawBottom = true)
         {
             double a = 0.5 * (ed.X - st.X);

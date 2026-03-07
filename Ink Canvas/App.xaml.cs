@@ -27,7 +27,7 @@ namespace Ink_Canvas
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             Ink_Canvas.MainWindow.ShowNewMessage("抱歉，出现未预期的异常，可能导致 Ink Canvas 画板运行不稳定。\n建议保存墨迹后重启应用。", true);
-            LogHelper.NewLog(e.Exception.ToString());
+            LogHelper.NewLog(e.Exception);
             e.Handled = true;
         }
 
@@ -35,7 +35,7 @@ namespace Ink_Canvas
         {
             /*if (!StoreHelper.IsStoreApp) */RootPath = AppContext.BaseDirectory;
 
-            LogHelper.NewLog(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version.ToString()));
+            LogHelper.NewLog(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version));
 
             bool ret;
             mutex = new System.Threading.Mutex(true, "Ink_Canvas_Artistry", out ret);
@@ -53,20 +53,19 @@ namespace Ink_Canvas
 
         private void ScrollViewer_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
-            try
+            if (System.Windows.Forms.SystemInformation.MouseWheelScrollLines == -1)
             {
-                if (System.Windows.Forms.SystemInformation.MouseWheelScrollLines == -1)
-                    e.Handled = false;
-                else
-                    try
-                    {
-                        ScrollViewerEx SenderScrollViewer = (ScrollViewerEx)sender;
-                        SenderScrollViewer.ScrollToVerticalOffset(SenderScrollViewer.VerticalOffset - e.Delta * 10 * System.Windows.Forms.SystemInformation.MouseWheelScrollLines / (double)120);
-                        e.Handled = true;
-                    }
-                    catch {  }
+                e.Handled = false;
+                return;
             }
-            catch {  }
+
+            if (sender is not ScrollViewerEx senderScrollViewer)
+            {
+                return;
+            }
+
+            senderScrollViewer.ScrollToVerticalOffset(senderScrollViewer.VerticalOffset - e.Delta * 10 * System.Windows.Forms.SystemInformation.MouseWheelScrollLines / 120d);
+            e.Handled = true;
         }
     }
 }

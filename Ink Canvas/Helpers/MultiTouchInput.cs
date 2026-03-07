@@ -78,14 +78,13 @@ namespace Ink_Canvas.Helpers
         /// </summary>
         public void Redraw()
         {
-            try
+            if (Stroke == null)
             {
-                using (var dc = RenderOpen())
-                {
-                    Stroke.Draw(dc);
-                }
+                return;
             }
-            catch { }
+
+            using var dc = RenderOpen();
+            Stroke.Draw(dc);
         }
 
         private readonly DrawingAttributes _drawingAttributes;

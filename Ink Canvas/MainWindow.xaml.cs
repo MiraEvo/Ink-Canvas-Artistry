@@ -64,16 +64,24 @@ namespace Ink_Canvas
                             File.Delete("Log.txt");
                             LogHelper.WriteLogToFile("The Log.txt file has been successfully deleted. Original file size: " + fileSizeInKB + " KB", LogHelper.LogType.Info);
                         }
-                        catch (Exception ex)
+                        catch (IOException ex)
                         {
-                            LogHelper.WriteLogToFile(ex + " | Can not delete the Log.txt file. File size: " + fileSizeInKB + " KB", LogHelper.LogType.Error);
+                            LogHelper.WriteLogToFile(ex, $"MainWindow Init | Cannot delete Log.txt. File size: {fileSizeInKB} KB");
+                        }
+                        catch (UnauthorizedAccessException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"MainWindow Init | Cannot delete Log.txt. File size: {fileSizeInKB} KB");
                         }
                     }
                 }
             }
-            catch (Exception ex)
+            catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed while checking Log.txt");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed while checking Log.txt");
             }
 
             InitTimers();
@@ -86,9 +94,13 @@ namespace Ink_Canvas
             {
                 if (File.Exists("SpecialVersion.ini")) SpecialVersionResetToSuggestion_Click();
             }
-            catch (Exception ex)
+            catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed to load SpecialVersion.ini");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed to load SpecialVersion.ini");
             }
 
             CheckColorTheme(true);
@@ -101,41 +113,35 @@ namespace Ink_Canvas
         DrawingAttributes drawingAttributes;
         private void loadPenCanvas()
         {
-            try
-            {
-                drawingAttributes = inkCanvas.DefaultDrawingAttributes;
-                drawingAttributes.Color = Colors.Red;
+            drawingAttributes = inkCanvas.DefaultDrawingAttributes;
+            drawingAttributes.Color = Colors.Red;
+            drawingAttributes.Height = 2.5;
+            drawingAttributes.Width = 2.5;
 
-                drawingAttributes.Height = 2.5;
-                drawingAttributes.Width = 2.5;
-
-                inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-                inkCanvas.Gesture += InkCanvas_Gesture;
-            }
-            catch { }
+            inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
+            inkCanvas.Gesture += InkCanvas_Gesture;
         }
 
         private void InkCanvas_Gesture(object sender, InkCanvasGestureEventArgs e)
         {
             ReadOnlyCollection<GestureRecognitionResult> gestures = e.GetGestureRecognitionResults();
-            try
+            foreach (GestureRecognitionResult gest in gestures)
             {
-                foreach (GestureRecognitionResult gest in gestures)
+                if (!IsPresentationSlideShowRunning)
                 {
-                    if (IsPresentationSlideShowRunning)
-                    {
-                        if (gest.ApplicationGesture == ApplicationGesture.Left)
-                        {
-                            BtnPPTSlidesDown_Click(null, null);
-                        }
-                        if (gest.ApplicationGesture == ApplicationGesture.Right)
-                        {
-                            BtnPPTSlidesUp_Click(null, null);
-                        }
-                    }
+                    continue;
+                }
+
+                if (gest.ApplicationGesture == ApplicationGesture.Left)
+                {
+                    BtnPPTSlidesDown_Click(null, null);
+                }
+
+                if (gest.ApplicationGesture == ApplicationGesture.Right)
+                {
+                    BtnPPTSlidesUp_Click(null, null);
                 }
             }
-            catch { }
         }
 
         private void inkCanvas_EditingModeChanged(object sender, RoutedEventArgs e)
@@ -166,7 +172,7 @@ namespace Ink_Canvas
         #region Definations and Loading
 
         public static Settings Settings = new Settings();
-        public static string settingsFileName = "Settings.json";
+        public static readonly string settingsFileName = "Settings.json";
         bool isLoaded = false;
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -182,7 +188,7 @@ namespace Ink_Canvas
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
             SystemEvents_UserPreferenceChanged(null, null);
 
-            AppVersionTextBlock.Text = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            AppVersionTextBlock.Text = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
             LogHelper.WriteLogToFile("Ink Canvas Loaded", LogHelper.LogType.Event);
             isLoaded = true;
             RegisterGlobalHotkeys();
@@ -191,7 +197,7 @@ namespace Ink_Canvas
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             LogHelper.WriteLogToFile("Ink Canvas closing", LogHelper.LogType.Event);
-            if (!CloseIsFromButton && Settings.Advanced.IsSecondConfimeWhenShutdownApp)
+            if (!closeIsFromButton && Settings.Advanced.IsSecondConfimeWhenShutdownApp)
             {
                 e.Cancel = true;
                 if (MessageBox.Show("是否继续关闭 Ink Canvas 画板，这将丢失当前未保存的工作。", "Ink Canvas 画板", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)

@@ -51,7 +51,9 @@ namespace Ink_Canvas
             TimeSpan totalTimeSpan = new TimeSpan(hour, minute, second);
             TimeSpan leftTimeSpan = totalTimeSpan - timeSpan;
             if (leftTimeSpan.Milliseconds > 0) leftTimeSpan += new TimeSpan(0, 0, 1);
-            double spentTimePercent = timeSpan.TotalMilliseconds / (totalSeconds * 1000.0);
+            double spentTimePercent = totalSeconds > 0
+                ? timeSpan.TotalMilliseconds / (totalSeconds * 1000.0)
+                : 1;
             Application.Current.Dispatcher.Invoke(() =>
             {
                 ProcessBarTime.CurrentValue = 1 - spentTimePercent;
@@ -84,7 +86,7 @@ namespace Ink_Canvas
             }
         }
 
-        SoundPlayer player = new SoundPlayer();
+        private readonly SoundPlayer player = new SoundPlayer();
 
         int hour = 0;
         int minute = 1;
@@ -97,12 +99,12 @@ namespace Ink_Canvas
         bool isTimerRunning = false;
         bool isPaused = false;
 
-        Timer timer = new Timer();
+        private readonly Timer timer = new Timer();
 
         private void Grid_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (isTimerRunning) return;
-            if (ProcessBarTime.Visibility == Visibility.Visible && isTimerRunning == false)
+            if (ProcessBarTime.Visibility == Visibility.Visible)
             {
                 ProcessBarTime.Visibility = Visibility.Collapsed;
                 GridAdjustHour.Visibility = Visibility.Visible;
@@ -330,6 +332,11 @@ namespace Ink_Canvas
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
             isTimerRunning = false;
+            timer.Stop();
+            timer.Elapsed -= Timer_Elapsed;
+            timer.Dispose();
+            player.Stop();
+            player.Dispose();
         }
 
         private void BtnClose_MouseUp(object sender, MouseButtonEventArgs e)
@@ -351,7 +358,7 @@ namespace Ink_Canvas
                 // Set to center
                 double dpiScaleX = 1, dpiScaleY = 1;
                 PresentationSource source = PresentationSource.FromVisual(this);
-                if (source != null)
+                if (source?.CompositionTarget != null)
                 {
                     dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
                     dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
@@ -359,8 +366,6 @@ namespace Ink_Canvas
                 IntPtr windowHandle = new WindowInteropHelper(this).Handle;
                 System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.FromHandle(windowHandle);
                 double screenWidth = screen.Bounds.Width / dpiScaleX, screenHeight = screen.Bounds.Height / dpiScaleY;
-                Left = (screenWidth / 2) - (Width / 2);
-                Top = (screenHeight / 2) - (Height / 2);
                 Left = (screenWidth / 2) - (Width / 2);
                 Top = (screenHeight / 2) - (Height / 2);
             }

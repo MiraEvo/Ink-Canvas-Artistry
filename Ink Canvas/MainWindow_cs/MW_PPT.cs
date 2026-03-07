@@ -12,6 +12,7 @@ using System.Windows.Media;
 using Application = System.Windows.Application;
 using File = System.IO.File;
 using Microsoft.Office.Core;
+using System.Runtime.InteropServices;
 
 namespace Ink_Canvas
 {
@@ -56,9 +57,17 @@ namespace Ink_Canvas
                                 }
                             }
                         }
-                        catch (Exception ex)
+                        catch (IOException ex)
                         {
-                            LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                            LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to read saved slide position");
+                        }
+                        catch (UnauthorizedAccessException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "PowerPoint | Access denied while reading saved slide position");
+                        }
+                        catch (COMException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to restore previous slide position");
                         }
                     }));
                 }
@@ -121,8 +130,13 @@ namespace Ink_Canvas
                     }
                 }
             }
-            catch
+            catch (COMException ex)
             {
+                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed during presentation connection initialization");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "PowerPoint | Invalid state during presentation connection initialization");
             }
         }
 
@@ -179,11 +193,12 @@ namespace Ink_Canvas
 
                 int slideCount = Wn.Presentation.Slides.Count;
                 previousSlideID = 0;
+                DisposeMemoryStreams();
                 memoryStreams = new MemoryStream[slideCount + 2];
 
                 pptName = Wn.Presentation.Name;
                 LogHelper.NewLog("Name: " + Wn.Presentation.Name);
-                LogHelper.NewLog("Slides Count: " + slideCount.ToString());
+                LogHelper.NewLog("Slides Count: " + slideCount);
 
                 //检查是否有已有墨迹，并加载
                 if (Settings.PowerPointSettings.IsAutoSaveStrokesInPowerPoint)
@@ -205,13 +220,21 @@ namespace Ink_Canvas
                                     memoryStreams[i].Position = 0;
                                     count++;
                                 }
-                                catch (Exception ex)
+                                catch (ArgumentException ex)
                                 {
-                                    LogHelper.WriteLogToFile(string.Format("Failed to load strokes on Slide {0}\n{1}", i, ex.ToString()), LogHelper.LogType.Error);
+                                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to load strokes on slide {i}");
+                                }
+                                catch (IOException ex)
+                                {
+                                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to load strokes on slide {i}");
+                                }
+                                catch (UnauthorizedAccessException ex)
+                                {
+                                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to load strokes on slide {i}");
                                 }
                             }
                         }
-                        LogHelper.WriteLogToFile(string.Format("Loaded {0} saved strokes", count.ToString()));
+                        LogHelper.WriteLogToFile(string.Format("Loaded {0} saved strokes", count));
                     }
                 }
 
@@ -308,21 +331,10 @@ namespace Ink_Canvas
                 {
                     Directory.CreateDirectory(folderPath);
                 }
-                try
-                {
-                    File.WriteAllText(folderPath + "/Position", previousSlideID.ToString());
-                }
-                catch { }
+                TryWritePresentationPosition(folderPath);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    try
-                    {
-                        MemoryStream ms = new MemoryStream();
-                        inkCanvas.Strokes.Save(ms);
-                        ms.Position = 0;
-                        memoryStreams[currentShowPosition] = ms;
-                    }
-                    catch { }
+                    CaptureCurrentInkToMemoryStream(currentShowPosition);
                 });
                 for (int i = 1; i <= Pres.Slides.Count; i++)
                 {
@@ -336,18 +348,19 @@ namespace Ink_Canvas
 
                             if (memoryStreams[i].Length > 8)
                             {
+                                memoryStreams[i].Position = 0;
                                 byte[] srcBuf = new byte[memoryStreams[i].Length];
                                 int byteLength = memoryStreams[i].Read(srcBuf, 0, srcBuf.Length);
 
                                 if (File.Exists(icartFilePath))
                                 {
                                     File.WriteAllBytes(icartFilePath, srcBuf);
-                                    LogHelper.WriteLogToFile(string.Format("Saved strokes for Slide {0} as .icart, size={1}, byteLength={2}", i.ToString(), memoryStreams[i].Length, byteLength));
+                                    LogHelper.WriteLogToFile(string.Format("Saved strokes for Slide {0} as .icart, size={1}, byteLength={2}", i, memoryStreams[i].Length, byteLength));
                                 }
                                 else
                                 {
                                     File.WriteAllBytes(icstkFilePath, srcBuf);
-                                    LogHelper.WriteLogToFile(string.Format("Saved strokes for Slide {0} as .icstk, size={1}, byteLength={2}", i.ToString(), memoryStreams[i].Length, byteLength));
+                                    LogHelper.WriteLogToFile(string.Format("Saved strokes for Slide {0} as .icstk, size={1}, byteLength={2}", i, memoryStreams[i].Length, byteLength));
                                 }
                             }
                             else
@@ -356,9 +369,19 @@ namespace Ink_Canvas
                                 File.Delete(icstkFilePath);
                             }
                         }
-                        catch (Exception ex)
+                        catch (IOException ex)
                         {
-                            LogHelper.WriteLogToFile(string.Format("Failed to save strokes for Slide {0}\n{1}", i, ex.ToString()), LogHelper.LogType.Error);
+                            LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save strokes for slide {i}");
+                            File.Delete(folderPath + @"\" + i.ToString("0000") + ".icstk");
+                        }
+                        catch (UnauthorizedAccessException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save strokes for slide {i}");
+                            File.Delete(folderPath + @"\" + i.ToString("0000") + ".icstk");
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save strokes for slide {i}");
                             File.Delete(folderPath + @"\" + i.ToString("0000") + ".icstk");
                         }
                     }
@@ -402,10 +425,140 @@ namespace Ink_Canvas
 
             await Task.Delay(150);
             ViewboxFloatingBarMarginAnimation();
+            DisposeMemoryStreams();
         }
 
         int previousSlideID = 0;
         MemoryStream[] memoryStreams = new MemoryStream[50];
+
+        private void TryWritePresentationPosition(string folderPath)
+        {
+            string positionFilePath = Path.Combine(folderPath, "Position");
+            try
+            {
+                File.WriteAllText(positionFilePath, previousSlideID.ToString());
+            }
+            catch (IOException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
+            }
+        }
+
+        private void CaptureCurrentInkToMemoryStream(int slideIndex)
+        {
+            if (!IsMemoryStreamIndexValid(slideIndex))
+            {
+                return;
+            }
+
+            try
+            {
+                using MemoryStream memoryStream = new MemoryStream();
+                inkCanvas.Strokes.Save(memoryStream);
+                ReplaceMemoryStream(slideIndex, memoryStream.ToArray());
+            }
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to capture strokes for slide {slideIndex}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to capture strokes for slide {slideIndex}");
+            }
+        }
+
+        private void ReplaceMemoryStream(int index, byte[] buffer)
+        {
+            if (!IsMemoryStreamIndexValid(index) || buffer == null)
+            {
+                return;
+            }
+
+            memoryStreams[index]?.Dispose();
+            MemoryStream stream = new MemoryStream(buffer);
+            stream.Position = 0;
+            memoryStreams[index] = stream;
+        }
+
+        private bool IsMemoryStreamIndexValid(int index)
+        {
+            return memoryStreams != null && index > 0 && index < memoryStreams.Length;
+        }
+
+        private void DisposeMemoryStreams()
+        {
+            if (memoryStreams == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < memoryStreams.Length; i++)
+            {
+                memoryStreams[i]?.Dispose();
+                memoryStreams[i] = null;
+            }
+        }
+
+        private SlideShowWindow TryGetActiveSlideShowWindow()
+        {
+            try
+            {
+                return pptApplication?.SlideShowWindows.Count >= 1 ? pptApplication.SlideShowWindows[1] : null;
+            }
+            catch (COMException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to get active slide show window");
+                return null;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to get active slide show window");
+                return null;
+            }
+        }
+
+        private void RunSlideShowWindowAction(Action<SlideShowWindow> action, string actionName, LogHelper.LogType failureLogType = LogHelper.LogType.Error)
+        {
+            new Thread(() =>
+            {
+                SlideShowWindow slideShowWindow = TryGetActiveSlideShowWindow();
+                if (slideShowWindow == null)
+                {
+                    LogHelper.WriteLogToFile($"PowerPoint | Skipped '{actionName}' because no active slide show window was found.", failureLogType);
+                    return;
+                }
+
+                try
+                {
+                    slideShowWindow.Activate();
+                }
+                catch (COMException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to activate slide show window before '{actionName}'", failureLogType);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to activate slide show window before '{actionName}'", failureLogType);
+                }
+
+                try
+                {
+                    action(slideShowWindow);
+                }
+                catch (COMException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to {actionName}", failureLogType);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to {actionName}", failureLogType);
+                }
+            }).Start();
+        }
 
         private void PptApplication_SlideShowNextSlide(SlideShowWindow Wn)
         {
@@ -414,10 +567,7 @@ namespace Ink_Canvas
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MemoryStream ms = new MemoryStream();
-                    inkCanvas.Strokes.Save(ms);
-                    ms.Position = 0;
-                    memoryStreams[previousSlideID] = ms;
+                    CaptureCurrentInkToMemoryStream(previousSlideID);
 
                     if (inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber && Settings.PowerPointSettings.IsAutoSaveScreenShotInPowerPoint && !_isPptClickingBtnTurned)
                         SavePPTScreenshot(Wn.Presentation.Name + "/" + Wn.View.CurrentShowPosition);
@@ -426,15 +576,14 @@ namespace Ink_Canvas
                     ClearStrokes(true);
                     timeMachine.ClearStrokeHistory();
 
-                    try
+                    if (IsMemoryStreamIndexValid(Wn.View.CurrentShowPosition)
+                        && memoryStreams[Wn.View.CurrentShowPosition] != null
+                        && memoryStreams[Wn.View.CurrentShowPosition].Length > 0)
                     {
-                        if (memoryStreams[Wn.View.CurrentShowPosition] != null && memoryStreams[Wn.View.CurrentShowPosition].Length > 0)
-                        {
-                            inkCanvas.Strokes.Add(new StrokeCollection(memoryStreams[Wn.View.CurrentShowPosition]));
-                        }
-                        currentShowPosition = Wn.View.CurrentShowPosition;
+                        memoryStreams[Wn.View.CurrentShowPosition].Position = 0;
+                        inkCanvas.Strokes.Add(new StrokeCollection(memoryStreams[Wn.View.CurrentShowPosition]));
                     }
-                    catch { }
+                    currentShowPosition = Wn.View.CurrentShowPosition;
 
                     PptNavigationTextBlockBottom.Text = $"{Wn.View.CurrentShowPosition}/{Wn.Presentation.Slides.Count}";
                 });
@@ -458,23 +607,7 @@ namespace Ink_Canvas
                 Settings.PowerPointSettings.IsAutoSaveScreenShotInPowerPoint)
                 SavePPTScreenshot(CurrentPresentationName + "/" + CurrentPresentationSlideIndex);
 
-            try
-            {
-                new Thread(new ThreadStart(() =>
-                {
-                    try
-                    {
-                        pptApplication.SlideShowWindows[1].Activate();
-                    }
-                    catch { }
-                    try
-                    {
-                        pptApplication.SlideShowWindows[1].View.Previous();
-                    }
-                    catch { } // Without this catch{}, app will crash when click the pre-page button in the fir page in some special env.
-                })).Start();
-            }
-            catch { }
+            RunSlideShowWindowAction(window => window.View.Previous(), "go to previous slide", LogHelper.LogType.Trace);
         }
 
         private void BtnPPTSlidesDown_Click(object sender, RoutedEventArgs e)
@@ -487,23 +620,7 @@ namespace Ink_Canvas
             if (inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber &&
                 Settings.PowerPointSettings.IsAutoSaveScreenShotInPowerPoint)
                 SavePPTScreenshot(CurrentPresentationName + "/" + CurrentPresentationSlideIndex);
-            try
-            {
-                new Thread(new ThreadStart(() =>
-                {
-                    try
-                    {
-                        pptApplication.SlideShowWindows[1].Activate();
-                    }
-                    catch { }
-                    try
-                    {
-                        pptApplication.SlideShowWindows[1].View.Next();
-                    }
-                    catch { }
-                })).Start();
-            }
-            catch { }
+            RunSlideShowWindowAction(window => window.View.Next(), "go to next slide");
         }
 
 
@@ -512,11 +629,11 @@ namespace Ink_Canvas
             if (lastBorderMouseDownObject != sender) return;
             Main_Grid.Background = new SolidColorBrush(StringToColor("#01FFFFFF"));
             CursorIcon_Click(null, null);
-            try
+            SlideShowWindow slideShowWindow = TryGetActiveSlideShowWindow();
+            if (slideShowWindow?.SlideNavigation != null)
             {
-                pptApplication.SlideShowWindows[1].SlideNavigation.Visible = true;
+                slideShowWindow.SlideNavigation.Visible = true;
             }
-            catch { }
             // 控制居中
             if (!isFloatingBarFolded)
             {
@@ -525,30 +642,9 @@ namespace Ink_Canvas
             }
         }
 
-        /*
-        private void BtnPPTSlideShow_Click(object sender, RoutedEventArgs e)
-        {
-            new Thread(new ThreadStart(() =>
-            {
-                try
-                {
-                    presentation.SlideShowSettings.Run();
-                }
-                catch { }
-            })).Start();
-        }
-        */
-
         private async void BtnPPTSlideShowEnd_Click(object sender, RoutedEventArgs e)
         {
-            new Thread(new ThreadStart(() =>
-            {
-                try
-                {
-                    pptApplication.SlideShowWindows[1].View.Exit();
-                }
-                catch { }
-            })).Start();
+            RunSlideShowWindowAction(window => window.View.Exit(), "exit slide show");
 
             HideSubPanels("cursor");
             await Task.Delay(150);

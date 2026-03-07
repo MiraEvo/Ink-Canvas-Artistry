@@ -36,9 +36,13 @@ namespace Ink_Canvas.Helpers
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch (IOException ex)
                     {
-                        LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex.ToString(), LogHelper.LogType.Error);
+                        LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
                     }
                 }
 
@@ -46,9 +50,13 @@ namespace Ink_Canvas.Helpers
                 { // 递归删除空文件夹
                     DeleteEmptyFolders(directoryPath);
                 }
-                catch (Exception ex)
+                catch (IOException ex)
                 {
-                    LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex.ToString(), LogHelper.LogType.Error);
+                    LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
                 }
             }
         }

@@ -14,7 +14,7 @@ namespace Ink_Canvas
     public partial class MainWindow : Window
     {
         StrokeCollection newStrokes = new StrokeCollection();
-        List<Circle> circles = new List<Circle>();
+        private readonly List<Circle> circles = new List<Circle>();
 
         //此函数中的所有代码版权所有 WXRIW，在其他项目中使用前必须提前联系（wxriw@outlook.com），谢谢！
         private void inkCanvas_StrokeCollected(object sender, InkCanvasStrokeCollectedEventArgs e)
@@ -326,7 +326,14 @@ namespace Ink_Canvas
                                 }
                             }
                         }
-                        catch { }
+                        catch (ArgumentException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to recognize collected shape");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply recognized shape");
+                        }
                     }
                     InkToShapeProcess();
                 }
@@ -346,19 +353,16 @@ namespace Ink_Canvas
                         return;
                     }
                 }
-
-
-                try
+                if (e.Stroke.StylusPoints.Count > 3)
                 {
-                    if (e.Stroke.StylusPoints.Count > 3)
-                    {
-                        Random random = new Random();
-                        double _speed = GetPointSpeed(e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint(), e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint(), e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint());
+                    Random random = new Random();
+                    double speed = GetPointSpeed(
+                        e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint(),
+                        e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint(),
+                        e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint());
 
-                        RandWindow.randSeed = (int)(_speed * 100000 * 1000);
-                    }
+                    RandWindow.randSeed = (int)(speed * 100000 * 1000);
                 }
-                catch { }
 
                 switch (Settings.Canvas.InkStyle)
                 {
@@ -367,12 +371,10 @@ namespace Ink_Canvas
                         {
                             StylusPointCollection stylusPoints = new StylusPointCollection();
                             int n = e.Stroke.StylusPoints.Count - 1;
-                            string s = "";
 
                             for (int i = 0; i <= n; i++)
                             {
                                 double speed = GetPointSpeed(e.Stroke.StylusPoints[Math.Max(i - 1, 0)].ToPoint(), e.Stroke.StylusPoints[i].ToPoint(), e.Stroke.StylusPoints[Math.Min(i + 1, n)].ToPoint());
-                                s += speed.ToString() + "\t";
                                 StylusPoint point = new StylusPoint();
                                 if (speed >= 0.25)
                                 {
@@ -392,9 +394,13 @@ namespace Ink_Canvas
                             }
                             e.Stroke.StylusPoints = stylusPoints;
                         }
-                        catch
+                        catch (ArgumentException ex)
                         {
-
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 1 pressure");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 1 pressure");
                         }
                         break;
                     case 0:
@@ -440,9 +446,13 @@ namespace Ink_Canvas
                             }
                             e.Stroke.StylusPoints = stylusPoints;
                         }
-                        catch
+                        catch (ArgumentException ex)
                         {
-
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 0 pressure");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 0 pressure");
                         }
                         break;
                     case 3: //根据 mode == 0 改写，目前暂未完成
@@ -493,14 +503,25 @@ namespace Ink_Canvas
                             }
                             e.Stroke.StylusPoints = stylusPoints;
                         }
-                        catch
+                        catch (ArgumentException ex)
                         {
-
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 3 pressure");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 3 pressure");
                         }
                         break;
                 }
             }
-            catch { }
+            catch (ArgumentException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to process collected stroke");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to process collected stroke");
+            }
         }
 
         private void SetNewBackupOfStroke()

@@ -1,7 +1,9 @@
 ﻿using Ink_Canvas.Helpers;
 using Ink_Canvas.Services;
 using System;
+using System.IO;
 using System.Reflection;
+using System.Security;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -18,9 +20,15 @@ namespace Ink_Canvas
             {
                 Settings = SettingsDefaults.Normalize(settingsService.Load());
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile(ex, "Settings Load | Invalid settings payload");
+                Settings = SettingsDefaults.Normalize(new Settings());
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to normalize settings");
+                Settings = SettingsDefaults.Normalize(new Settings());
             }
             // Startup
             if (isStartup)
@@ -31,9 +39,21 @@ namespace Ink_Canvas
             {
                 runAtStartup = NormalizeStartupRegistration();
             }
-            catch (Exception ex)
+            catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex.ToString(), LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to normalize startup registration");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Settings Load | Access denied while normalizing startup registration");
+            }
+            catch (SecurityException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Settings Load | Security error while normalizing startup registration");
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to normalize startup registration");
             }
 
             SettingsViewModel.Load(Settings, runAtStartup);

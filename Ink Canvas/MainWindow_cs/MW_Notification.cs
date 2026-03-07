@@ -17,23 +17,23 @@ namespace Ink_Canvas
 
         public async void ShowNotificationAsync(string notice, bool isShowImmediately = true)
         {
+            CancellationTokenSource previousTokenSource = ShowNotificationCancellationTokenSource;
+            ShowNotificationCancellationTokenSource = new CancellationTokenSource();
+            previousTokenSource.Cancel();
+            previousTokenSource.Dispose();
+            var token = ShowNotificationCancellationTokenSource.Token;
+
+            TextBlockNotice.Text = notice;
+            AnimationsHelper.ShowWithSlideFromBottomAndFade(GridNotifications);
+
             try
             {
-                ShowNotificationCancellationTokenSource.Cancel();
-                ShowNotificationCancellationTokenSource = new CancellationTokenSource();
-                var token = ShowNotificationCancellationTokenSource.Token;
-
-                TextBlockNotice.Text = notice;
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(GridNotifications);
-
-                try
-                {
-                    await Task.Delay(2000, token);
-                    AnimationsHelper.HideWithSlideAndFade(GridNotifications);
-                }
-                catch (TaskCanceledException) { }
+                await Task.Delay(2000, token);
+                AnimationsHelper.HideWithSlideAndFade(GridNotifications);
             }
-            catch { }
+            catch (TaskCanceledException)
+            {
+            }
         }
     }
 }

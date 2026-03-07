@@ -387,11 +387,10 @@ namespace Ink_Canvas
                             }
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                try
+                                if (s != null && InkCanvasForInkReplay.Strokes.Contains(s))
                                 {
                                     InkCanvasForInkReplay.Strokes.Remove(s);
                                 }
-                                catch { }
                                 stylusPoints.Add(stylusPoint);
                                 s = new Stroke(stylusPoints.Clone());
                                 s.DrawingAttributes = stroke.DrawingAttributes;
@@ -412,11 +411,10 @@ namespace Ink_Canvas
                             }
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                try
+                                if (s != null && InkCanvasForInkReplay.Strokes.Contains(s))
                                 {
                                     InkCanvasForInkReplay.Strokes.Remove(s);
                                 }
-                                catch { }
                                 stylusPoints.Add(stylusPoint);
                                 s = new Stroke(stylusPoints.Clone());
                                 s.DrawingAttributes = stroke.DrawingAttributes;
@@ -477,7 +475,7 @@ namespace Ink_Canvas
 
                 double dpiScaleX = 1, dpiScaleY = 1;
                 PresentationSource source = PresentationSource.FromVisual(this);
-                if (source != null)
+                if (source?.CompositionTarget != null)
                 {
                     dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
                     dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
@@ -686,42 +684,27 @@ namespace Ink_Canvas
         private void Element_IsEnabledChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
             if (!isLoaded) return;
-            try
+
+            if (sender is Button { Content: UIElement content } button)
             {
-                if (sender is Button button)
-                {
-                    if (((Button)sender).IsEnabled)
-                    {
-                        ((UIElement)((Button)sender).Content).Opacity = 1;
-                    }
-                    else
-                    {
-                        ((UIElement)((Button)sender).Content).Opacity = 0.5;
-                    }
-                }
-                else if (sender is FontIcon fontIcon)
-                {
-                    if (((FontIcon)sender).IsEnabled)
-                    {
-                        ((FontIcon)sender).Opacity = 1;
-                    }
-                    else
-                    {
-                        ((FontIcon)sender).Opacity = 0.5;
-                    }
-                }
+                content.Opacity = button.IsEnabled ? 1 : 0.5;
+                return;
             }
-            catch { }
+
+            if (sender is FontIcon fontIcon)
+            {
+                fontIcon.Opacity = fontIcon.IsEnabled ? 1 : 0.5;
+            }
         }
 
         #endregion Left Side Panel
 
         #region Right Side Panel
 
-        public static bool CloseIsFromButton = false;
+        private bool closeIsFromButton;
         private void BtnExit_Click(object sender, RoutedEventArgs e)
         {
-            CloseIsFromButton = true;
+            closeIsFromButton = true;
             Close();
         }
 
@@ -729,7 +712,7 @@ namespace Ink_Canvas
         {
             ProcessHelper.StartWithShell(System.Windows.Forms.Application.ExecutablePath, "-m");
 
-            CloseIsFromButton = true;
+            closeIsFromButton = true;
             Application.Current.Shutdown();
         }
 

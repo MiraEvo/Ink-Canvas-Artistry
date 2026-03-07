@@ -424,7 +424,13 @@ namespace Ink_Canvas
         private void ComboBoxAutoDelSavedFilesDaysThreshold_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isLoaded) return;
-            Settings.Automation.AutoDelSavedFilesDaysThreshold = int.Parse(((ComboBoxItem)ComboBoxAutoDelSavedFilesDaysThreshold.SelectedItem).Content.ToString());
+            if (ComboBoxAutoDelSavedFilesDaysThreshold.SelectedItem is not ComboBoxItem { Content: string thresholdText }
+                || !int.TryParse(thresholdText, out int threshold))
+            {
+                return;
+            }
+
+            Settings.Automation.AutoDelSavedFilesDaysThreshold = threshold;
             SaveSettingsToFile();
         }
 
@@ -460,11 +466,11 @@ namespace Ink_Canvas
         private async void SpecialVersionResetToSuggestion_Click()
         {
             await Task.Delay(1000);
-            try
+            var command = SettingsViewModel.ResetToSpecialVersionRecommendedSettingsCommand;
+            if (command?.CanExecute(null) == true)
             {
-                SettingsViewModel.ResetToSpecialVersionRecommendedSettingsCommand.Execute(null);
+                command.Execute(null);
             }
-            catch { }
         }
 
         #endregion
@@ -510,7 +516,9 @@ namespace Ink_Canvas
         {
             if (!isLoaded) return;
             Settings.Advanced.NibModeBoundsWidth = (int)e.NewValue;
-            BoundsWidth = Settings.Startup.IsEnableNibMode ? BoundsWidth = Settings.Advanced.NibModeBoundsWidth : BoundsWidth = Settings.Advanced.FingerModeBoundsWidth;
+            BoundsWidth = Settings.Startup.IsEnableNibMode
+                ? Settings.Advanced.NibModeBoundsWidth
+                : Settings.Advanced.FingerModeBoundsWidth;
             SaveSettingsToFile();
         }
 
@@ -518,7 +526,9 @@ namespace Ink_Canvas
         {
             if (!isLoaded) return;
             Settings.Advanced.FingerModeBoundsWidth = (int)e.NewValue;
-            BoundsWidth = Settings.Startup.IsEnableNibMode ? BoundsWidth = Settings.Advanced.NibModeBoundsWidth : BoundsWidth = Settings.Advanced.FingerModeBoundsWidth;
+            BoundsWidth = Settings.Startup.IsEnableNibMode
+                ? Settings.Advanced.NibModeBoundsWidth
+                : Settings.Advanced.FingerModeBoundsWidth;
             SaveSettingsToFile();
         }
 
