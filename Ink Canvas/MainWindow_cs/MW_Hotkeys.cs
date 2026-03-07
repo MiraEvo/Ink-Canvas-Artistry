@@ -18,49 +18,45 @@ namespace Ink_Canvas
 
         private void HotKey_ExitPPTSlideShow()
         {
-            if (IsPresentationSlideShowRunning)
+            if (PresentationViewModel.CanNavigateSlides)
             {
-                BtnPPTSlideShowEnd_Click(null, null);
+                hotkeyController?.ExitPresentation();
             }
         }
 
         private void HotKey_Clear()
         {
-            SymbolIconDelete_MouseUp(null, null);
+            hotkeyController?.ClearCanvas();
         }
 
         private void HotKey_Capture()
         {
-            SaveScreenShotToDesktop();
+            hotkeyController?.CaptureScreen();
         }
         
         private void HotKey_Hide()
         {
-            SymbolIconEmoji_MouseUp(null, null);
+            hotkeyController?.ToggleCanvasVisibility();
         }
 
         private void HotKey_DrawTool()
         {
-            PenIcon_Click(null, null);
+            hotkeyController?.ActivatePen();
         }
 
         private void HotKey_QuitDrawMode()
         {
-            if (ShellViewModel.IsBlackboardMode)
-            {
-                ImageBlackboard_Click(null, null);
-            }
-            CursorIcon_Click(null, null);
+            hotkeyController?.ExitDrawMode();
         }
 
         private void HotKey_Board()
         {
-            ImageBlackboard_Click(null, null);
+            hotkeyController?.ToggleBlackboard();
         }
 
         private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (!IsPresentationSlideShowRunning || ShellViewModel.IsBlackboardMode) return;
+            if (!PresentationViewModel.CanNavigateSlides || !WorkspaceSessionViewModel.IsDesktopSession) return;
             if (e.Delta >= 120)
             {
                 BtnPPTSlidesUp_Click(null, null);
@@ -73,7 +69,7 @@ namespace Ink_Canvas
 
         private void Main_Grid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!IsPresentationSlideShowRunning || ShellViewModel.IsBlackboardMode) return;
+            if (!PresentationViewModel.CanNavigateSlides || !WorkspaceSessionViewModel.IsDesktopSession) return;
 
             if (e.Key == Key.Down || e.Key == Key.PageDown || e.Key == Key.Right || e.Key == Key.N || e.Key == Key.Space)
             {

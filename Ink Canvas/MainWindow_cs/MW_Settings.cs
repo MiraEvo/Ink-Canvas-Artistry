@@ -244,14 +244,7 @@ namespace Ink_Canvas
 
         private void StartOrStoptimerCheckAutoFold()
         {
-            if (Settings.Automation.IsEnableAutoFold)
-            {
-                timerCheckAutoFold.Start();
-            }
-            else
-            {
-                timerCheckAutoFold.Stop();
-            }
+            RefreshAutoFoldMonitoring();
         }
 
         private void ToggleSwitchAutoFoldInEasiNote_Toggled(object sender, RoutedEventArgs e)
@@ -346,15 +339,7 @@ namespace Ink_Canvas
             if (!isLoaded) return;
             Settings.Automation.IsAutoKillPptService = ToggleSwitchAutoKillPptService.IsOn;
             SaveSettingsToFile();
-
-            if (Settings.Automation.IsAutoKillEasiNote || Settings.Automation.IsAutoKillPptService)
-            {
-                timerKillProcess.Start();
-            }
-            else
-            {
-                timerKillProcess.Stop();
-            }
+            RefreshProcessKillMonitoring();
         }
 
         private void ToggleSwitchAutoKillEasiNote_Toggled(object sender, RoutedEventArgs e)
@@ -362,14 +347,7 @@ namespace Ink_Canvas
             if (!isLoaded) return;
             Settings.Automation.IsAutoKillEasiNote = ToggleSwitchAutoKillEasiNote.IsOn;
             SaveSettingsToFile();
-            if (Settings.Automation.IsAutoKillEasiNote || Settings.Automation.IsAutoKillPptService)
-            {
-                timerKillProcess.Start();
-            }
-            else
-            {
-                timerKillProcess.Stop();
-            }
+            RefreshProcessKillMonitoring();
         }
 
         private void ToggleSwitchSaveScreenshotsInDateFolders_Toggled(object sender, RoutedEventArgs e)

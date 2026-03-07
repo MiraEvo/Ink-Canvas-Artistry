@@ -12,7 +12,7 @@ namespace Ink_Canvas
 
         private PresentationSessionViewModel PresentationViewModel => mainWindowViewModel.Presentation;
 
-        private AutomationStateViewModel AutomationStateViewModel => mainWindowViewModel.AutomationState;
+        private AutomationStateViewModel AutomationViewModel => mainWindowViewModel.Automation;
 
         private bool IsPresentationSlideShowRunning => PresentationViewModel?.IsSlideShowRunning == true;
 
@@ -36,20 +36,20 @@ namespace Ink_Canvas
 
         private bool foldFloatingBarByUser
         {
-            get => AutomationStateViewModel?.IsFloatingBarFoldedByUser == true;
-            set => AutomationStateViewModel?.SetFloatingBarFoldedByUser(value);
+            get => AutomationViewModel?.IsFloatingBarFoldedByUser == true;
+            set => AutomationViewModel?.SetFloatingBarFoldedByUser(value);
         }
 
         private bool unfoldFloatingBarByUser
         {
-            get => AutomationStateViewModel?.IsFloatingBarUnfoldedByUser == true;
-            set => AutomationStateViewModel?.SetFloatingBarUnfoldedByUser(value);
+            get => AutomationViewModel?.IsFloatingBarUnfoldedByUser == true;
+            set => AutomationViewModel?.SetFloatingBarUnfoldedByUser(value);
         }
 
         private bool isHidingSubPanelsWhenInking
         {
-            get => AutomationStateViewModel?.IsHidingSubPanelsWhenInking == true;
-            set => AutomationStateViewModel?.SetHidingSubPanelsWhenInking(value);
+            get => AutomationViewModel?.IsHidingSubPanelsWhenInking == true;
+            set => AutomationViewModel?.SetHidingSubPanelsWhenInking(value);
         }
 
         private void InitializePresentationController()

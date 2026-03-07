@@ -7,49 +7,43 @@ namespace Ink_Canvas
     {
         private async void AutoUpdate()
         {
-            AvailableLatestVersion = await AutoUpdateHelper.CheckForUpdates();
+            string availableLatestVersion = await AutoUpdateHelper.CheckForUpdates();
 
-            if (AvailableLatestVersion != null)
+            if (availableLatestVersion != null)
             {
                 bool IsDownloadSuccessful = false;
-                IsDownloadSuccessful = await AutoUpdateHelper.DownloadSetupFileAndSaveStatus(AvailableLatestVersion);
+                IsDownloadSuccessful = await AutoUpdateHelper.DownloadSetupFileAndSaveStatus(availableLatestVersion);
 
                 if (IsDownloadSuccessful)
                 {
                     if (!Settings.Startup.IsAutoUpdateWithSilence)
                     {
                         MessageBoxResult result = MessageBox.Show(
-                            $"Ink Canvas Artistry 新版本 (v{AvailableLatestVersion}) 安装包已下载完成，是否立即更新？",
+                            $"Ink Canvas Artistry 新版本 (v{availableLatestVersion}) 安装包已下载完成，是否立即更新？",
                             "Ink Canvas Artistry - 新版本可用",
                             MessageBoxButton.YesNo,
                             MessageBoxImage.Question);
 
                         if (result == MessageBoxResult.Yes)
                         {
-                            AutoUpdateHelper.InstallNewVersionApp(AvailableLatestVersion, false);
+                            AutoUpdateHelper.InstallNewVersionApp(availableLatestVersion, false);
                         }
                     }
                     else
                     {
-                        if (timerCheckAutoUpdateWithSilence != null)
-                        {
-                            timerCheckAutoUpdateWithSilence.Enabled = true;
-                            timerCheckAutoUpdateWithSilence.Start();
-                            LogHelper.WriteLogToFile($"AutoUpdate | Silent update timer started for version {AvailableLatestVersion}.");
-                        }
-                        else
-                        {
-                            LogHelper.WriteLogToFile($"AutoUpdate | timerCheckAutoUpdateWithSilence is null.", LogHelper.LogType.Error);
-                        }
+                        ScheduleSilentUpdate(availableLatestVersion);
+                        LogHelper.WriteLogToFile($"AutoUpdate | Silent update timer started for version {availableLatestVersion}.");
                     }
                 }
                 else
                 {
-                    LogHelper.WriteLogToFile($"AutoUpdate | Download failed for version {AvailableLatestVersion}.");
+                    CancelSilentUpdate();
+                    LogHelper.WriteLogToFile($"AutoUpdate | Download failed for version {availableLatestVersion}.");
                 }
             }
             else
             {
+                CancelSilentUpdate();
                 LogHelper.WriteLogToFile($"AutoUpdate | No new version found or failed to check.");
                 AutoUpdateHelper.DeleteUpdatesFolder();
             }

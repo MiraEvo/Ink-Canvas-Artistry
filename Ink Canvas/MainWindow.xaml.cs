@@ -213,6 +213,8 @@ namespace Ink_Canvas
 
         private void Window_Closed(object sender, EventArgs e)
         {
+            StopPresentationMonitoring();
+            DisposeAutomationControllers();
             LogHelper.WriteLogToFile("Ink Canvas closed", LogHelper.LogType.Event);
         }
 

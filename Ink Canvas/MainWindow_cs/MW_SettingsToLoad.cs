@@ -423,7 +423,7 @@ namespace Ink_Canvas
             // Automation
             if (Settings.Automation != null)
             {
-                StartOrStoptimerCheckAutoFold();
+                RefreshAutoFoldMonitoring();
                 if (Settings.Automation.IsAutoFoldInEasiNote)
                 {
                     ToggleSwitchAutoFoldInEasiNote.IsOn = true;
@@ -504,14 +504,7 @@ namespace Ink_Canvas
                 {
                     ToggleSwitchAutoFoldInPPTSlideShow.IsOn = false;
                 }
-                if (Settings.Automation.IsAutoKillEasiNote || Settings.Automation.IsAutoKillPptService)
-                {
-                    timerKillProcess.Start();
-                }
-                else
-                {
-                    timerKillProcess.Stop();
-                }
+                RefreshProcessKillMonitoring();
 
                 if (Settings.Automation.IsAutoKillEasiNote)
                 {

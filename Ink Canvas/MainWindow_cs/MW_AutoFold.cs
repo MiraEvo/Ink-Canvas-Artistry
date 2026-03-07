@@ -14,10 +14,12 @@ namespace Ink_Canvas
             if (sender == null)
             {
                 foldFloatingBarByUser = false;
+                AutomationViewModel?.SetFloatingBarFoldRequestedByAutomation(true);
             }
             else
             {
                 foldFloatingBarByUser = true;
+                AutomationViewModel?.SetFloatingBarFoldRequestedByAutomation(false);
             }
             unfoldFloatingBarByUser = false;
 
@@ -66,6 +68,7 @@ namespace Ink_Canvas
                 unfoldFloatingBarByUser = true;
             }
             foldFloatingBarByUser = false;
+            AutomationViewModel?.SetFloatingBarFoldRequestedByAutomation(false);
 
             if (isFloatingBarChangingHideMode) return;
 

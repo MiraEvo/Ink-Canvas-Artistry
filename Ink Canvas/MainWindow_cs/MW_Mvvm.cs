@@ -48,6 +48,7 @@ namespace Ink_Canvas
             InitializeInputController();
             InitializePresentationController();
             InitializeWorkspaceSessionController();
+            InitializeAutomationControllers();
 
             ConfigureSettingsBindings();
         }
@@ -157,6 +158,18 @@ namespace Ink_Canvas
 
             switch (e.PropertyName)
             {
+                case nameof(SettingsViewModel.IsAutoUpdate):
+                    if (!SettingsViewModel.IsAutoUpdate)
+                    {
+                        CancelSilentUpdate();
+                    }
+                    break;
+                case nameof(SettingsViewModel.IsAutoUpdateWithSilence):
+                    if (!SettingsViewModel.IsAutoUpdateWithSilence)
+                    {
+                        CancelSilentUpdate();
+                    }
+                    break;
                 case nameof(SettingsViewModel.RunAtStartup):
                     ApplyRunAtStartup();
                     break;
@@ -230,11 +243,11 @@ namespace Ink_Canvas
                 case nameof(SettingsViewModel.IsAutoFoldInOldZyBoard):
                 case nameof(SettingsViewModel.IsAutoFoldInMSWhiteboard):
                 case nameof(SettingsViewModel.IsAutoFoldInPPTSlideShow):
-                    StartOrStoptimerCheckAutoFold();
+                    RefreshAutoFoldMonitoring();
                     break;
                 case nameof(SettingsViewModel.IsAutoKillPptService):
                 case nameof(SettingsViewModel.IsAutoKillEasiNote):
-                    ApplyProcessKillTimer();
+                    RefreshProcessKillMonitoring();
                     break;
                 case nameof(SettingsViewModel.IsAutoSaveStrokesAtScreenshot):
                     ToggleSwitchAutoSaveStrokesAtClear.Header = Settings.Automation.IsAutoSaveStrokesAtScreenshot ? "清屏时自动截图并保存墨迹" : "清屏时自动截图";
@@ -375,14 +388,7 @@ namespace Ink_Canvas
 
         private void ApplyProcessKillTimer()
         {
-            if (Settings.Automation.IsAutoKillEasiNote || Settings.Automation.IsAutoKillPptService)
-            {
-                timerKillProcess.Start();
-            }
-            else
-            {
-                timerKillProcess.Stop();
-            }
+            RefreshProcessKillMonitoring();
         }
 
         private void ApplyMultiTouchMode()
