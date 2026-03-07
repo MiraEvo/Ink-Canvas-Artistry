@@ -1,5 +1,6 @@
 ﻿using Ink_Canvas.Helpers;
 using Microsoft.Win32;
+using Ink_Canvas.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -413,35 +414,7 @@ namespace Ink_Canvas
 
         private void BtnSelect_Click(object sender, RoutedEventArgs e)
         {
-            forceEraser = true;
-            drawingShapeMode = 0;
-            inkCanvas.IsManipulationEnabled = false;
-            if (inkCanvas.EditingMode == InkCanvasEditingMode.Select)
-            {
-                if (inkCanvas.GetSelectedStrokes().Count == inkCanvas.Strokes.Count
-                    && inkCanvas.GetSelectedElements().Count == inkCanvas.Children.Count)
-                {
-                    inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-                    inkCanvas.EditingMode = InkCanvasEditingMode.Select;
-                }
-                else
-                {
-                    StrokeCollection selectedStrokes = new StrokeCollection();
-                    foreach (Stroke stroke in inkCanvas.Strokes)
-                    {
-                        if (stroke.GetBounds().Width > 0 && stroke.GetBounds().Height > 0)
-                        {
-                            selectedStrokes.Add(stroke);
-                        }
-                    }
-                    List<UIElement> selectedElements = InkCanvasElementsHelper.GetAllElements(inkCanvas);
-                    inkCanvas.Select(selectedStrokes, selectedElements);
-                }
-            }
-            else
-            {
-                inkCanvas.EditingMode = InkCanvasEditingMode.Select;
-            }
+            ShellViewModel.SetToolMode(ToolMode.Select, true, true);
         }
         bool isProgramChangeStrokeSelection = false;
 

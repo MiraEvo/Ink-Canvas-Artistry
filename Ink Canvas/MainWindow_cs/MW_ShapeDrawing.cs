@@ -1,5 +1,6 @@
 ﻿using Ink_Canvas.Helpers;
 using iNKORE.UI.WPF.Modern.Controls;
+using Ink_Canvas.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -19,16 +20,7 @@ namespace Ink_Canvas
 
         private void ImageDrawShape_Click(object sender, RoutedEventArgs e)
         {
-            if (BorderDrawShape.Visibility == Visibility.Visible)
-            {
-                AnimationsHelper.HideWithSlideAndFade(BorderDrawShape);
-                AnimationsHelper.HideWithSlideAndFade(BoardBorderDrawShape);
-            }
-            else
-            {
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BorderDrawShape);
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BoardBorderDrawShape);
-            }
+            ShellViewModel.ToggleShapePanelCommand.Execute(null);
         }
 
         #endregion Floating Bar Control
@@ -103,6 +95,7 @@ namespace Ink_Canvas
 
         private void BtnPen_Click(object sender, RoutedEventArgs e)
         {
+            ShellViewModel.SetToolMode(ToolMode.Pen, false);
             forceEraser = false;
             drawingShapeMode = 0;
             inkCanvas.EditingMode = InkCanvasEditingMode.Ink;

@@ -17,6 +17,7 @@ using Point = System.Windows.Point;
 using System.Diagnostics;
 using iNKORE.UI.WPF.Modern.Controls;
 using System.Collections.Generic;
+using Ink_Canvas.ViewModels;
 
 namespace Ink_Canvas
 {
@@ -26,16 +27,7 @@ namespace Ink_Canvas
 
         private void TwoFingerGestureBorder_Click(object sender, RoutedEventArgs e)
         {
-            if (TwoFingerGestureBorder.Visibility == Visibility.Visible)
-            {
-                AnimationsHelper.HideWithSlideAndFade(TwoFingerGestureBorder);
-                AnimationsHelper.HideWithSlideAndFade(BoardTwoFingerGestureBorder);
-            }
-            else
-            {
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(TwoFingerGestureBorder);
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BoardTwoFingerGestureBorder);
-            }
+            ShellViewModel.ToggleTwoFingerPanelCommand.Execute(null);
         }
 
         private void CheckEnableTwoFingerGestureBtnColorPrompt()
@@ -146,6 +138,11 @@ namespace Ink_Canvas
 
         private void HideSubPanelsImmediately()
         {
+            if (!isApplyingShellSubPanelState)
+            {
+                ShellViewModel.SetActiveSubPanel(SubPanelKind.None, false);
+            }
+
             BorderTools.Visibility = Visibility.Collapsed;
             BorderTools.Visibility = Visibility.Collapsed;
             BoardBorderTools.Visibility = Visibility.Collapsed;
@@ -157,6 +154,11 @@ namespace Ink_Canvas
 
         private async void HideSubPanels(String mode = null, bool autoAlignCenter = false)
         {
+            if (!isApplyingShellSubPanelState)
+            {
+                ShellViewModel.SetActiveSubPanel(SubPanelKind.None, false);
+            }
+
             AnimationsHelper.HideWithSlideAndFade(BorderTools);
             AnimationsHelper.HideWithSlideAndFade(BoardBorderTools);
             AnimationsHelper.HideWithSlideAndFade(PenPalette);
@@ -248,7 +250,7 @@ namespace Ink_Canvas
             }
             else
             {
-                BtnHideInkCanvas_Click(null, null);
+                ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
 
                 if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
                 {
@@ -287,14 +289,12 @@ namespace Ink_Canvas
 
         private void SymbolIconSettings_Click(object sender, RoutedEventArgs e)
         {
-            HideSubPanels();
-            BtnSettings_Click(null, null);
+            ShellViewModel.OpenSettingsPanelCommand.Execute(null);
         }
 
         private void SymbolIconSelect_Click(object sender, RoutedEventArgs e)
         {
-            BtnSelect_Click(null, null);
-            HideSubPanels("select");
+            ShellViewModel.SetToolMode(ToolMode.Select, true, true);
         }
 
         private async void SymbolIconScreenshot_Click(object sender, RoutedEventArgs e)
@@ -304,101 +304,9 @@ namespace Ink_Canvas
             SaveScreenShotToDesktop();
         }
 
-        bool isDisplayingOrHidingBlackboard = false;
         private void ImageBlackboard_Click(object sender, RoutedEventArgs e)
         {
-            if (isDisplayingOrHidingBlackboard) return;
-            isDisplayingOrHidingBlackboard = true;
-
-            if (inkCanvas.EditingMode == InkCanvasEditingMode.Select) PenIcon_Click(null, null);
-
-            if (currentMode == 0)
-            {
-                currentMode = 1;
-                //进入画板
-                PPTNavigationBottomLeft.Visibility = Visibility.Collapsed;
-                PPTNavigationBottomRight.Visibility = Visibility.Collapsed;
-                PPTNavigationSidesLeft.Visibility = Visibility.Collapsed;
-                PPTNavigationSidesRight.Visibility = Visibility.Collapsed;
-
-                new Thread(new ThreadStart(() =>
-                {
-                    Thread.Sleep(100);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ViewboxFloatingBarMarginAnimation();
-                    });
-                })).Start();
-
-                if (Pen_Icon.Background == null)
-                {
-                    PenIcon_Click(BoardPenIcon, null);
-                }
-
-                if (Settings.Gesture.AutoSwitchTwoFingerGesture) // 自动关闭多指书写、开启双指移动
-                {
-                    SettingsViewModel.SetIsEnableTwoFingerTranslate(true, false);
-                    SettingsViewModel.SetIsEnableMultiTouchMode(false, false);
-                }
-            }
-            else
-            {
-                currentMode = 0;
-                //退出画板
-                HideSubPanelsImmediately();
-
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
-                {
-                    if (Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel)
-                    {
-                        AnimationsHelper.ShowWithScaleFromBottom(PPTNavigationBottomLeft);
-                        AnimationsHelper.ShowWithScaleFromBottom(PPTNavigationBottomRight);
-                    }
-                    if (Settings.PowerPointSettings.IsShowSidePPTNavigationPanel)
-                    {
-                        AnimationsHelper.ShowWithScaleFromLeft(PPTNavigationSidesLeft);
-                        AnimationsHelper.ShowWithScaleFromRight(PPTNavigationSidesRight);
-                    }
-                }
-
-                if (Settings.Automation.IsAutoSaveStrokesAtClear && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
-                {
-                    SaveScreenshot(true);
-                }
-
-                ViewboxFloatingBarMarginAnimation();
-
-                if (Pen_Icon.Background == null)
-                {
-                    PenIcon_Click(null, null);
-                }
-
-                if (Settings.Gesture.AutoSwitchTwoFingerGesture) // 自动启用多指书写
-                {
-                    SettingsViewModel.SetIsEnableTwoFingerTranslate(false, false);
-                    SettingsViewModel.SetIsEnableMultiTouchMode(true, false);
-                }
-            }
-
-            BtnSwitch_Click(null, null);
-
-            if (currentMode == 0 && inkCanvas.Strokes.Count == 0 && BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
-            {
-                CursorIcon_Click(null, null);
-            }
-
-            ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
-
-            new Thread(new ThreadStart(() =>
-            {
-                Thread.Sleep(200);
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    isDisplayingOrHidingBlackboard = false;
-                });
-            })).Start();
-
-            CheckColorTheme(true);
+            ShellViewModel.ToggleBlackboardModeCommand.Execute(null);
         }
 
         private void ImageCountdownTimer_Click(object sender, RoutedEventArgs e)
@@ -524,16 +432,7 @@ namespace Ink_Canvas
 
         private void SymbolIconTools_Click(object sender, RoutedEventArgs e)
         {
-            if (BorderTools.Visibility == Visibility.Visible)
-            {
-                AnimationsHelper.HideWithSlideAndFade(BorderTools);
-                AnimationsHelper.HideWithSlideAndFade(BoardBorderTools);
-            }
-            else
-            {
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BorderTools);
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BoardBorderTools);
-            }
+            ShellViewModel.ToggleToolsPanelCommand.Execute(null);
         }
 
         bool isViewboxFloatingBarMarginAnimationRunning = false;
@@ -626,108 +525,20 @@ namespace Ink_Canvas
             });
         }
 
-        private async void CursorIcon_Click(object sender, RoutedEventArgs e)
+        private void CursorIcon_Click(object sender, RoutedEventArgs e)
         {
-            // 切换前自动截图保存墨迹
-            if (inkCanvas.Strokes.Count > 0 && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
-            {
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible) SavePPTScreenshot($"{pptName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
-                else SaveScreenshot(true);
-            }
-
-            if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
-            {
-                if (Settings.Canvas.HideStrokeWhenSelecting)
-                    inkCanvas.Visibility = Visibility.Collapsed;
-                else
-                {
-                    inkCanvas.IsHitTestVisible = false;
-                    inkCanvas.Visibility = Visibility.Visible;
-                }
-            }
-            else
-            {
-                if (Settings.PowerPointSettings.IsShowStrokeOnSelectInPowerPoint)
-                {
-                    inkCanvas.Visibility = Visibility.Visible;
-                    inkCanvas.IsHitTestVisible = true;
-                }
-                else
-                {
-                    if (Settings.Canvas.HideStrokeWhenSelecting)
-                        inkCanvas.Visibility = Visibility.Collapsed;
-                    else
-                    {
-                        inkCanvas.IsHitTestVisible = false;
-                        inkCanvas.Visibility = Visibility.Visible;
-                    }
-                }
-            }
-
-
-            Main_Grid.Background = Brushes.Transparent;
-
-
-            GridBackgroundCoverHolder.Visibility = Visibility.Collapsed;
-            inkCanvas.Select(new StrokeCollection());
-            GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
-
-            if (currentMode != 0)
-            {
-                SaveStrokes();
-                RestoreStrokes(true);
-            }
-
-            CheckEnableTwoFingerGestureBtnVisibility(false);
-
-
-            StackPanelCanvasControls.Visibility = Visibility.Collapsed;
-
-            if (!isFloatingBarFolded)
-            {
-                HideSubPanels("cursor", true);
-                await Task.Delay(50);
-                ViewboxFloatingBarMarginAnimation();
-            }
+            ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
         }
 
         private void PenIcon_Click(object sender, RoutedEventArgs e)
         {
-            if (Pen_Icon.Background == null || StackPanelCanvasControls.Visibility == Visibility.Collapsed)
+            if (ShellViewModel.IsPenMode && StackPanelCanvasControls.Visibility != Visibility.Collapsed)
             {
-                if (isFloatingBarFolded)
-                {
-                    UnFoldFloatingBar_MouseUp(LeftSidePanel, null);
-                }
-                inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-
-                Main_Grid.Background = new SolidColorBrush(StringToColor("#01FFFFFF"));
-
-                inkCanvas.IsHitTestVisible = true;
-                inkCanvas.Visibility = Visibility.Visible;
-
-                GridBackgroundCoverHolder.Visibility = Visibility.Visible;
-                GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
-
-                StackPanelCanvasControls.Visibility = Visibility.Visible;
-
-                CheckEnableTwoFingerGestureBtnVisibility(true);
-                inkCanvas.EditingMode = InkCanvasEditingMode.Ink;
-                ColorSwitchCheck();
-                HideSubPanels("pen", true);
+                ShellViewModel.TogglePenPaletteCommand.Execute(null);
             }
             else
             {
-                if (PenPalette.Visibility == Visibility.Visible)
-                {
-                    AnimationsHelper.HideWithSlideAndFade(PenPalette);
-                    AnimationsHelper.HideWithSlideAndFade(BoardPenPalette);
-                }
-                else
-                {
-                    AnimationsHelper.ShowWithSlideFromBottomAndFade(PenPalette);
-                    AnimationsHelper.ShowWithSlideFromBottomAndFade(BoardPenPalette);
-                }
+                ShellViewModel.SetToolMode(ToolMode.Pen, true, true);
             }
         }
 
@@ -743,47 +554,12 @@ namespace Ink_Canvas
 
         private void EraserIcon_Click(object sender, RoutedEventArgs e)
         {
-            forceEraser = true;
-            forcePointEraser = true;
-            double k = 1;
-            switch (Settings.Canvas.EraserSize)
-            {
-                case 0:
-                    k = 0.5;
-                    break;
-                case 1:
-                    k = 0.8;
-                    break;
-                case 3:
-                    k = 1.25;
-                    break;
-                case 4:
-                    k = 1.8;
-                    break;
-            }
-            inkCanvas.EraserShape = new EllipseStylusShape(k * 90, k * 90);
-            inkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
-            drawingShapeMode = 0;
-
-            inkCanvas_EditingModeChanged(inkCanvas, null);
-            CancelSingleFingerDragMode();
-
-            HideSubPanels("eraser");
+            ShellViewModel.SetToolMode(ToolMode.Eraser, true, true);
         }
 
         private void EraserIconByStrokes_Click(object sender, RoutedEventArgs e)
         {
-            forceEraser = true;
-            forcePointEraser = false;
-
-            inkCanvas.EraserShape = new EllipseStylusShape(5, 5);
-            inkCanvas.EditingMode = InkCanvasEditingMode.EraseByStroke;
-            drawingShapeMode = 0;
-
-            inkCanvas_EditingModeChanged(inkCanvas, null);
-            CancelSingleFingerDragMode();
-
-            HideSubPanels("eraserByStrokes");
+            ShellViewModel.SetToolMode(ToolMode.EraserByStrokes, true, true);
         }
 
         private void CursorWithDelIcon_Click(object sender, RoutedEventArgs e)
@@ -817,6 +593,11 @@ namespace Ink_Canvas
 
         private void CollapseBorderDrawShape(bool isLongPressSelected = false)
         {
+            if (!isApplyingShellSubPanelState && ShellViewModel.IsShapePanelOpen)
+            {
+                ShellViewModel.SetActiveSubPanel(SubPanelKind.None, false);
+            }
+
             AnimationsHelper.HideWithSlideAndFade(BorderDrawShape);
             AnimationsHelper.HideWithSlideAndFade(BoardBorderDrawShape);
         }
@@ -935,14 +716,7 @@ namespace Ink_Canvas
 
         private void BtnSettings_Click(object sender, RoutedEventArgs e)
         {
-            if (BorderSettings.Visibility == Visibility.Visible)
-            {
-                AnimationsHelper.HideWithSlideAndFade(BorderSettings, 0.5);
-            }
-            else
-            {
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BorderSettings, 0.5);
-            }
+            ShellViewModel.ToggleSettingsPanelCommand.Execute(null);
         }
 
         bool forceEraser = false;
@@ -1002,8 +776,6 @@ namespace Ink_Canvas
             }
             isLongPressSelected = false;
         }
-
-        int currentMode = 0;
 
         private void BtnSwitch_Click(object sender, RoutedEventArgs e)
         {

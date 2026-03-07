@@ -1,5 +1,6 @@
 ﻿using Ink_Canvas.Helpers;
 using System.Windows;
+using Ink_Canvas.ViewModels;
 using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Media;
@@ -44,60 +45,25 @@ namespace Ink_Canvas
 
         private void BoardEraserIcon_Click(object sender, RoutedEventArgs e)
         {
-            if (BoardEraser.Opacity != 1)
+            if (ShellViewModel.IsEraserMode)
             {
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BoardDeleteIcon);
+                ShellViewModel.ToggleDeletePanelCommand.Execute(null);
             }
             else
             {
-                forceEraser = true;
-                forcePointEraser = true;
-                double k = 1;
-                switch (Settings.Canvas.EraserSize)
-                {
-                    case 0:
-                        k = 0.5;
-                        break;
-                    case 1:
-                        k = 0.8;
-                        break;
-                    case 3:
-                        k = 1.25;
-                        break;
-                    case 4:
-                        k = 1.8;
-                        break;
-                }
-                inkCanvas.EraserShape = new EllipseStylusShape(k * 90, k * 90);
-                inkCanvas.EditingMode = InkCanvasEditingMode.EraseByPoint;
-                drawingShapeMode = 0;
-
-                inkCanvas_EditingModeChanged(inkCanvas, null);
-                CancelSingleFingerDragMode();
-
-                HideSubPanels("eraser");
+                ShellViewModel.SetToolMode(ToolMode.Eraser, true, true);
             }
         }
 
         private void BoardEraserIconByStrokes_Click(object sender, RoutedEventArgs e)
         {
-            if (BoardEraserByStrokes.Opacity != 1)
+            if (ShellViewModel.IsEraserByStrokesMode)
             {
-                AnimationsHelper.ShowWithSlideFromBottomAndFade(BoardDeleteIcon);
+                ShellViewModel.ToggleDeletePanelCommand.Execute(null);
             }
             else
             {
-                forceEraser = true;
-                forcePointEraser = false;
-
-                inkCanvas.EraserShape = new EllipseStylusShape(5, 5);
-                inkCanvas.EditingMode = InkCanvasEditingMode.EraseByStroke;
-                drawingShapeMode = 0;
-
-                inkCanvas_EditingModeChanged(inkCanvas, null);
-                CancelSingleFingerDragMode();
-
-                HideSubPanels("eraserByStrokes");
+                ShellViewModel.SetToolMode(ToolMode.EraserByStrokes, true, true);
             }
         }
 

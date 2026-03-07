@@ -23,14 +23,21 @@ namespace Ink_Canvas
 
         private SettingsViewModel SettingsViewModel => mainWindowViewModel.Settings;
 
+        private ShellViewModel ShellViewModel => mainWindowViewModel.Shell;
+
         private void InitializeMvvm()
         {
-            mainWindowViewModel = new MainWindowViewModel(new SettingsViewModel(
-                settingsService,
-                pathPickerService,
-                settings => Settings = settings));
+            mainWindowViewModel = new MainWindowViewModel(
+                new SettingsViewModel(
+                    settingsService,
+                    pathPickerService,
+                    settings => Settings = settings),
+                new ShellViewModel());
             mainWindowViewModel.Settings.PropertyChanged += SettingsViewModel_PropertyChanged;
             mainWindowViewModel.Settings.ReloadRequested += SettingsViewModel_ReloadRequested;
+            mainWindowViewModel.Shell.WorkspaceModeChanged += ShellViewModel_WorkspaceModeChanged;
+            mainWindowViewModel.Shell.ToolModeChanged += ShellViewModel_ToolModeChanged;
+            mainWindowViewModel.Shell.ActiveSubPanelChanged += ShellViewModel_ActiveSubPanelChanged;
 
             DataContext = mainWindowViewModel;
 

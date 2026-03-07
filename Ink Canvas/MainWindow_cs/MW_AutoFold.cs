@@ -9,8 +9,6 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        bool isFloatingBarFolded = false, isFloatingBarChangingHideMode = false;
-
         private async void FoldFloatingBar_Click(object sender, RoutedEventArgs e)
         {
             if (sender == null)

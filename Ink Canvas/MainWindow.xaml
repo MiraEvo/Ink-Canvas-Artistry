@@ -958,7 +958,7 @@
                             Margin="5,0,0,0"
                             Padding="0"
                             BorderThickness="0"
-                            Click="ImageBlackboard_Click">
+                            Command="{Binding Shell.ToggleBlackboardModeCommand}">
                             <Border
                                 Width="55"
                                 Height="55"
@@ -1041,7 +1041,7 @@
                             Height="55"
                             Padding="0"
                             BorderThickness="0"
-                            Click="TwoFingerGestureBorder_Click">
+                            Command="{Binding Shell.ToggleTwoFingerPanelCommand}">
                             <Border
                                 Width="60"
                                 Height="55"
@@ -2007,7 +2007,7 @@
                             Height="55"
                             Padding="0"
                             BorderThickness="0"
-                            Click="ImageDrawShape_Click">
+                            Command="{Binding Shell.ToggleShapePanelCommand}">
                             <Border
                                 x:Name="BoardGeometry"
                                 Width="60"
@@ -2376,7 +2376,7 @@
                             Margin="5,0,0,0"
                             Padding="0"
                             BorderThickness="0"
-                            Click="SymbolIconTools_Click">
+                            Command="{Binding Shell.ToggleToolsPanelCommand}">
                             <Border
                                 Width="60"
                                 Height="55"
@@ -2384,8 +2384,7 @@
                                 BorderBrush="{DynamicResource BoardBarBorderBrush}"
                                 BorderThickness="1,1,0.25,1"
                                 CornerRadius="5,0,0,5"
-                                MouseDown="Border_MouseDown"
-                                MouseUp="SymbolIconTools_Click">
+                                MouseDown="Border_MouseDown">
                                 <Grid Margin="5">
                                     <ui:FontIcon
                                         Width="26"
@@ -2654,7 +2653,7 @@
                                                         Height="45"
                                                         Padding="0"
                                                         BorderThickness="0"
-                                                        Click="SymbolIconSettings_Click">
+                                                        Command="{Binding Shell.OpenSettingsPanelCommand}">
                                                         <ikw:SimpleStackPanel
                                                             Width="40"
                                                             Height="40"
@@ -2751,7 +2750,7 @@
                             Height="55"
                             Padding="0"
                             BorderThickness="0"
-                            Click="ImageBlackboard_Click">
+                            Command="{Binding Shell.ToggleBlackboardModeCommand}">
                             <Border
                                 Width="60"
                                 Height="55"
@@ -4953,7 +4952,7 @@
                         Width="120"
                         Margin="10"
                         HorizontalAlignment="Right"
-                        Click="BtnSettings_Click"
+                        Command="{Binding Shell.ToggleSettingsPanelCommand}"
                         Content="关闭" />
                 </Grid>
             </Grid>
@@ -6151,7 +6150,7 @@
                                 Height="32"
                                 Padding="0"
                                 BorderThickness="0"
-                                Click="ImageDrawShape_Click">
+                                Command="{Binding Shell.ToggleShapePanelCommand}">
                                 <ikw:SimpleStackPanel
                                     HorizontalAlignment="Center"
                                     Background="Transparent"
@@ -6568,7 +6567,7 @@
                                 Margin="1,0,0,0"
                                 Padding="0"
                                 BorderThickness="0"
-                                Click="ImageBlackboard_Click">
+                                Command="{Binding Shell.ToggleBlackboardModeCommand}">
                                 <Border
                                     Margin="0,2"
                                     BorderBrush="{DynamicResource FloatBarForeground}"
@@ -6601,7 +6600,7 @@
                                 Height="32"
                                 Padding="0"
                                 BorderThickness="0"
-                                Click="SymbolIconTools_Click">
+                                Command="{Binding Shell.ToggleToolsPanelCommand}">
                                 <ikw:SimpleStackPanel
                                     HorizontalAlignment="Center"
                                     Background="Transparent"
@@ -6894,7 +6893,7 @@
                                                     Height="45"
                                                     Padding="0"
                                                     BorderThickness="0"
-                                                    Click="SymbolIconSettings_Click">
+                                                    Command="{Binding Shell.OpenSettingsPanelCommand}">
                                                     <ikw:SimpleStackPanel
                                                         Width="40"
                                                         Height="40"
@@ -6937,7 +6936,7 @@
                         Height="34"
                         Padding="0"
                         BorderThickness="0"
-                        Click="TwoFingerGestureBorder_Click">
+                        Command="{Binding Shell.ToggleTwoFingerPanelCommand}">
                         <ikw:SimpleStackPanel>
                             <ui:FontIcon
                                 x:Name="EnableTwoFingerGestureBtn"

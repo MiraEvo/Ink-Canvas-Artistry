@@ -1,5 +1,6 @@
 ﻿using Ink_Canvas.Helpers;
 using System;
+using Ink_Canvas.ViewModels;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +35,7 @@ namespace Ink_Canvas
         private void ColorSwitchCheck()
         {
             forceEraser = false;
+            ShellViewModel.SetToolMode(ToolMode.Pen, false);
             HideSubPanels("color");
             if (Main_Grid.Background == Brushes.Transparent)
             {
