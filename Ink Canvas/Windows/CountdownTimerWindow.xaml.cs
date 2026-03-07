@@ -6,6 +6,7 @@ using System.Timers;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
+using Timer = System.Timers.Timer;
 
 namespace Ink_Canvas
 {

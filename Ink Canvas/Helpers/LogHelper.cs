@@ -40,7 +40,7 @@ namespace Ink_Canvas.Helpers
             }
         }
 
-        public static void WriteLogToFile(Exception exception, string context = null, LogType logType = LogType.Error)
+        public static void WriteLogToFile(Exception exception, string? context = null, LogType logType = LogType.Error)
         {
             if (exception == null)
             {

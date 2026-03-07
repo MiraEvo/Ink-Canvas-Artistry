@@ -62,7 +62,7 @@ namespace Ink_Canvas.Helpers
             NotifyUndoRedoState();
         }
 
-        public void CommitStrokeEraseHistory(StrokeCollection stroke, StrokeCollection sourceStroke = null)
+        public void CommitStrokeEraseHistory(StrokeCollection stroke, StrokeCollection? sourceStroke = null)
         {
             CheckHistoryIndex();
             _currentStrokeHistory.Add(new TimeMachineHistory(stroke, TimeMachineHistoryType.Clear, true, sourceStroke));

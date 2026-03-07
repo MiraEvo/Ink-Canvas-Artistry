@@ -6,10 +6,10 @@ namespace Ink_Canvas
 {
     public partial class YesOrNoNotificationWindow : Window
     {
-        private readonly Action _yesAction;
-        private readonly Action _noAction;
+        private readonly Action? _yesAction;
+        private readonly Action? _noAction;
 
-        public YesOrNoNotificationWindow(string text, Action yesAction = null, Action noAction = null)
+        public YesOrNoNotificationWindow(string text, Action? yesAction = null, Action? noAction = null)
         {
             _yesAction = yesAction;
             _noAction = noAction;

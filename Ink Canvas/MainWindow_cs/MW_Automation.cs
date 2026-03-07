@@ -9,8 +9,8 @@ namespace Ink_Canvas
 {
     public partial class MainWindow
     {
-        private IAutomationController automationController;
-        private IHotkeyController hotkeyController;
+        private IAutomationController? automationController;
+        private IHotkeyController? hotkeyController;
 
         private void InitializeAutomationControllers()
         {
@@ -53,7 +53,7 @@ namespace Ink_Canvas
             automationController?.RefreshProcessKillMonitoring();
         }
 
-        private void ScheduleSilentUpdate(string version)
+        private void ScheduleSilentUpdate(string? version)
         {
             automationController?.ScheduleSilentUpdate(version);
         }

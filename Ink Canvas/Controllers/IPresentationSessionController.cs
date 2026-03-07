@@ -5,23 +5,23 @@ namespace Ink_Canvas.Controllers
 {
     public interface IPresentationSessionController
     {
-        event Action<Presentation> PresentationConnected;
+        event Action<Presentation>? PresentationConnected;
 
-        event Action<Presentation> PresentationClosed;
+        event Action<Presentation>? PresentationClosed;
 
-        event Action<SlideShowWindow> SlideShowBegin;
+        event Action<SlideShowWindow>? SlideShowBegin;
 
-        event Action<SlideShowWindow> SlideShowNextSlide;
+        event Action<SlideShowWindow>? SlideShowNextSlide;
 
-        event Action<Presentation> SlideShowEnd;
+        event Action<Presentation>? SlideShowEnd;
 
-        Microsoft.Office.Interop.PowerPoint.Application PowerPointApplication { get; }
+        Microsoft.Office.Interop.PowerPoint.Application? PowerPointApplication { get; }
 
-        Presentation Presentation { get; }
+        Presentation? Presentation { get; }
 
-        Slides Slides { get; }
+        Slides? Slides { get; }
 
-        Slide Slide { get; }
+        Slide? Slide { get; }
 
         void StartMonitoring();
 

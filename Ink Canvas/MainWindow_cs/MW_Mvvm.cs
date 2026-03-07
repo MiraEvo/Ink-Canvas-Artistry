@@ -19,7 +19,7 @@ namespace Ink_Canvas
             System.IO.Path.Combine(App.RootPath, settingsFileName));
         private static readonly IPathPickerService pathPickerService = new PathPickerService();
 
-        private MainWindowViewModel mainWindowViewModel;
+        private MainWindowViewModel mainWindowViewModel = null!;
 
         private SettingsViewModel SettingsViewModel => mainWindowViewModel.Settings;
 
@@ -129,7 +129,7 @@ namespace Ink_Canvas
             BindComboBoxSelectedIndex(ComboBoxAutoDelSavedFilesDaysThreshold, "Settings.AutoDelSavedFilesDaysThresholdIndex", ComboBoxAutoDelSavedFilesDaysThreshold_SelectionChanged);
         }
 
-        private void SettingsViewModel_ReloadRequested(string notificationMessage)
+        private void SettingsViewModel_ReloadRequested(string? notificationMessage)
         {
             bool previousIsLoaded = isLoaded;
 
@@ -149,7 +149,7 @@ namespace Ink_Canvas
             }
         }
 
-        private void SettingsViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void SettingsViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (!isLoaded)
             {

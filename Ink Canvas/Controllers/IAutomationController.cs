@@ -10,7 +10,7 @@ namespace Ink_Canvas.Controllers
 
         void RefreshProcessKillMonitoring();
 
-        void ScheduleSilentUpdate(string version);
+        void ScheduleSilentUpdate(string? version);
 
         void CancelSilentUpdate();
     }

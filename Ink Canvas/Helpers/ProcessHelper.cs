@@ -6,7 +6,7 @@ namespace Ink_Canvas.Helpers
 {
     internal static class ProcessHelper
     {
-        public static void StartWithShell(string fileName, string arguments = null)
+        public static void StartWithShell(string fileName, string? arguments = null)
         {
             if (string.IsNullOrWhiteSpace(fileName))
             {

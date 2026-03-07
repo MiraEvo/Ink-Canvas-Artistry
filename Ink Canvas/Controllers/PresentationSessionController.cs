@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Timers;
+using Timer = System.Timers.Timer;
+
 namespace Ink_Canvas.Controllers
 {
     public sealed class PresentationSessionController : IPresentationSessionController
@@ -31,23 +33,23 @@ namespace Ink_Canvas.Controllers
             monitorTimer.Elapsed += MonitorTimer_Elapsed;
         }
 
-        public event Action<Presentation> PresentationConnected;
+        public event Action<Presentation>? PresentationConnected;
 
-        public event Action<Presentation> PresentationClosed;
+        public event Action<Presentation>? PresentationClosed;
 
-        public event Action<SlideShowWindow> SlideShowBegin;
+        public event Action<SlideShowWindow>? SlideShowBegin;
 
-        public event Action<SlideShowWindow> SlideShowNextSlide;
+        public event Action<SlideShowWindow>? SlideShowNextSlide;
 
-        public event Action<Presentation> SlideShowEnd;
+        public event Action<Presentation>? SlideShowEnd;
 
-        public Microsoft.Office.Interop.PowerPoint.Application PowerPointApplication { get; private set; }
+        public Microsoft.Office.Interop.PowerPoint.Application? PowerPointApplication { get; private set; }
 
-        public Presentation Presentation { get; private set; }
+        public Presentation? Presentation { get; private set; }
 
-        public Slides Slides { get; private set; }
+        public Slides? Slides { get; private set; }
 
-        public Slide Slide { get; private set; }
+        public Slide? Slide { get; private set; }
 
         public void StartMonitoring()
         {
@@ -61,7 +63,7 @@ namespace Ink_Canvas.Controllers
             Disconnect();
         }
 
-        private void MonitorTimer_Elapsed(object sender, ElapsedEventArgs e)
+        private void MonitorTimer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             TryConnect();
         }
@@ -130,7 +132,7 @@ namespace Ink_Canvas.Controllers
                 return;
             }
 
-            Presentation presentation = application.ActivePresentation;
+            Presentation? presentation = application.ActivePresentation;
             if (presentation == null)
             {
                 monitorTimer.Start();
@@ -138,7 +140,7 @@ namespace Ink_Canvas.Controllers
             }
 
             Slides slides = presentation.Slides;
-            Slide slide;
+            Slide? slide;
 
             try
             {
@@ -289,7 +291,7 @@ namespace Ink_Canvas.Controllers
                 : PresentationProvider.PowerPoint;
         }
 
-        private static Slide GetCurrentSlide(Microsoft.Office.Interop.PowerPoint.Application application, Slides slides)
+        private static Slide? GetCurrentSlide(Microsoft.Office.Interop.PowerPoint.Application application, Slides slides)
         {
             try
             {
@@ -311,7 +313,7 @@ namespace Ink_Canvas.Controllers
             }
         }
 
-        private static void RunOnUiThread(Action action)
+        private static void RunOnUiThread(Action? action)
         {
             if (action == null)
             {

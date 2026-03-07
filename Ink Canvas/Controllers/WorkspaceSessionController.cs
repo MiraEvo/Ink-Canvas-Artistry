@@ -2,19 +2,10 @@ using Ink_Canvas.ViewModels;
 
 namespace Ink_Canvas.Controllers
 {
-    public sealed class WorkspaceSessionController : IWorkspaceSessionController
+    public sealed class WorkspaceSessionController(
+        WorkspaceSessionViewModel workspaceSessionViewModel,
+        ShellViewModel shellViewModel) : IWorkspaceSessionController
     {
-        private readonly WorkspaceSessionViewModel workspaceSessionViewModel;
-        private readonly ShellViewModel shellViewModel;
-
-        public WorkspaceSessionController(
-            WorkspaceSessionViewModel workspaceSessionViewModel,
-            ShellViewModel shellViewModel)
-        {
-            this.workspaceSessionViewModel = workspaceSessionViewModel;
-            this.shellViewModel = shellViewModel;
-        }
-
         public void Initialize(bool isCanvasVisible)
         {
             ApplyWorkspaceMode(shellViewModel.WorkspaceMode, isCanvasVisible);

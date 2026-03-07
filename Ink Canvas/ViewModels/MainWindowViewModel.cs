@@ -2,36 +2,26 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Ink_Canvas.ViewModels
 {
-    public sealed class MainWindowViewModel : ObservableObject
+    public sealed class MainWindowViewModel(
+        SettingsViewModel settings,
+        ShellViewModel shell,
+        InputStateViewModel input,
+        PresentationSessionViewModel presentation,
+        AutomationStateViewModel automation,
+        WorkspaceSessionViewModel workspaceSession) : ObservableObject
     {
-        public MainWindowViewModel(
-            SettingsViewModel settings,
-            ShellViewModel shell,
-            InputStateViewModel input,
-            PresentationSessionViewModel presentation,
-            AutomationStateViewModel automation,
-            WorkspaceSessionViewModel workspaceSession)
-        {
-            Settings = settings;
-            Shell = shell;
-            Input = input;
-            Presentation = presentation;
-            Automation = automation;
-            WorkspaceSession = workspaceSession;
-        }
+        public SettingsViewModel Settings { get; } = settings;
 
-        public SettingsViewModel Settings { get; }
+        public ShellViewModel Shell { get; } = shell;
 
-        public ShellViewModel Shell { get; }
+        public InputStateViewModel Input { get; } = input;
 
-        public InputStateViewModel Input { get; }
+        public PresentationSessionViewModel Presentation { get; } = presentation;
 
-        public PresentationSessionViewModel Presentation { get; }
-
-        public AutomationStateViewModel Automation { get; }
+        public AutomationStateViewModel Automation { get; } = automation;
 
         public AutomationStateViewModel AutomationState => Automation;
 
-        public WorkspaceSessionViewModel WorkspaceSession { get; }
+        public WorkspaceSessionViewModel WorkspaceSession { get; } = workspaceSession;
     }
 }

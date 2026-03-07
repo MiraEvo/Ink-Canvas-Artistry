@@ -2,7 +2,7 @@ namespace Ink_Canvas.Services
 {
     public static class SettingsDefaults
     {
-        public static Settings CreateRecommended(Settings currentSettings = null)
+        public static Settings CreateRecommended(Settings? currentSettings = null)
         {
             Settings current = Normalize(currentSettings ?? new Settings());
             Settings settings = new Settings();

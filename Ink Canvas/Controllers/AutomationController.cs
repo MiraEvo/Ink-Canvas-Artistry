@@ -109,7 +109,7 @@ namespace Ink_Canvas.Controllers
             }
         }
 
-        public void ScheduleSilentUpdate(string version)
+        public void ScheduleSilentUpdate(string? version)
         {
             if (string.IsNullOrWhiteSpace(version))
             {

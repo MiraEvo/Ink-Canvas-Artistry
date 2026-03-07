@@ -5,7 +5,8 @@
 		<OutputType>WinExe</OutputType>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
 		<AssemblyName>Ink Canvas Artistry</AssemblyName>
-		<ImplicitUsings>disable</ImplicitUsings>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>annotations</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
 		<UseWPF>true</UseWPF>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -17,6 +18,10 @@
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<UserSecretsId>f49ced3b-26c5-4244-91af-88faafb1a4e5</UserSecretsId>
 	</PropertyGroup>
+	<ItemGroup>
+		<Using Remove="System.Drawing" />
+		<Using Remove="System.Windows.Forms" />
+	</ItemGroup>
 	<ItemGroup>
 		<Reference Include="IACore">
 			<HintPath>.\IACore.dll</HintPath>

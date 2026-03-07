@@ -8,48 +8,50 @@ namespace Ink_Canvas
 {
     public partial class MainWindow
     {
-        private IPresentationSessionController presentationSessionController;
+        private IPresentationSessionController? presentationSessionController;
 
         private PresentationSessionViewModel PresentationViewModel => mainWindowViewModel.Presentation;
 
         private AutomationStateViewModel AutomationViewModel => mainWindowViewModel.Automation;
 
-        private bool IsPresentationSlideShowRunning => PresentationViewModel?.IsSlideShowRunning == true;
+        private bool IsPresentationSlideShowRunning => PresentationViewModel.IsSlideShowRunning;
 
-        private bool IsPresentationConnected => PresentationViewModel?.IsPresentationConnected == true;
+        private bool IsPresentationConnected => PresentationViewModel.IsPresentationConnected;
 
-        private string CurrentPresentationName => string.IsNullOrWhiteSpace(PresentationViewModel?.PresentationName)
+        private string CurrentPresentationName => string.IsNullOrWhiteSpace(PresentationViewModel.PresentationName)
             ? pptName
             : PresentationViewModel.PresentationName;
 
-        private int CurrentPresentationSlideIndex => PresentationViewModel?.CurrentSlideIndex ?? previousSlideID;
+        private int CurrentPresentationSlideIndex => PresentationViewModel.CurrentSlideIndex != 0
+            ? PresentationViewModel.CurrentSlideIndex
+            : previousSlideID;
 
         public static bool IsShowingRestoreHiddenSlidesWindow = false;
 
-        public Microsoft.Office.Interop.PowerPoint.Application pptApplication => presentationSessionController?.PowerPointApplication;
+        public Microsoft.Office.Interop.PowerPoint.Application? pptApplication => presentationSessionController?.PowerPointApplication;
 
-        public Presentation presentation => presentationSessionController?.Presentation;
+        public Presentation? presentation => presentationSessionController?.Presentation;
 
-        public Slides slides => presentationSessionController?.Slides;
+        public Slides? slides => presentationSessionController?.Slides;
 
-        public Slide slide => presentationSessionController?.Slide;
+        public Slide? slide => presentationSessionController?.Slide;
 
         private bool foldFloatingBarByUser
         {
-            get => AutomationViewModel?.IsFloatingBarFoldedByUser == true;
-            set => AutomationViewModel?.SetFloatingBarFoldedByUser(value);
+            get => AutomationViewModel.IsFloatingBarFoldedByUser;
+            set => AutomationViewModel.SetFloatingBarFoldedByUser(value);
         }
 
         private bool unfoldFloatingBarByUser
         {
-            get => AutomationViewModel?.IsFloatingBarUnfoldedByUser == true;
-            set => AutomationViewModel?.SetFloatingBarUnfoldedByUser(value);
+            get => AutomationViewModel.IsFloatingBarUnfoldedByUser;
+            set => AutomationViewModel.SetFloatingBarUnfoldedByUser(value);
         }
 
         private bool isHidingSubPanelsWhenInking
         {
-            get => AutomationViewModel?.IsHidingSubPanelsWhenInking == true;
-            set => AutomationViewModel?.SetHidingSubPanelsWhenInking(value);
+            get => AutomationViewModel.IsHidingSubPanelsWhenInking;
+            set => AutomationViewModel.SetHidingSubPanelsWhenInking(value);
         }
 
         private void InitializePresentationController()
@@ -65,7 +67,7 @@ namespace Ink_Canvas
             presentationSessionController.SlideShowEnd += PptApplication_SlideShowEnd;
         }
 
-        private void PresentationViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void PresentationViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             if (!Dispatcher.CheckAccess())
             {

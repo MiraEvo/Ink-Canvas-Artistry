@@ -4,7 +4,7 @@ using System;
 
 namespace Ink_Canvas.ViewModels
 {
-    public sealed class ShellViewModel : ObservableObject
+    public sealed partial class ShellViewModel : ObservableObject
     {
         private WorkspaceMode workspaceMode = WorkspaceMode.DesktopAnnotation;
         private ToolMode toolMode = ToolMode.Cursor;
@@ -15,57 +15,18 @@ namespace Ink_Canvas.ViewModels
 
         public ShellViewModel()
         {
-            ToggleBlackboardModeCommand = new RelayCommand(ToggleWorkspaceMode);
-            SetToolModeCommand = new RelayCommand<string>(value =>
-            {
-                if (TryParseToolMode(value, out ToolMode mode))
-                {
-                    SetToolMode(mode, true, true);
-                }
-            });
-            ToggleToolsPanelCommand = new RelayCommand(() => ToggleSubPanel(SubPanelKind.Tools));
-            TogglePenPaletteCommand = new RelayCommand(() => ToggleSubPanel(SubPanelKind.PenPalette));
-            ToggleSettingsPanelCommand = new RelayCommand(() => ToggleSubPanel(SubPanelKind.Settings));
-            OpenSettingsPanelCommand = new RelayCommand(() => SetActiveSubPanel(SubPanelKind.Settings));
-            ToggleTwoFingerPanelCommand = new RelayCommand(() => ToggleSubPanel(SubPanelKind.TwoFingerGesture));
-            ToggleShapePanelCommand = new RelayCommand(() => ToggleSubPanel(SubPanelKind.ShapePanel));
-            ToggleDeletePanelCommand = new RelayCommand(() => ToggleSubPanel(SubPanelKind.DeletePanel));
-            HideAllSubPanelsCommand = new RelayCommand(() => SetActiveSubPanel(SubPanelKind.None));
-            FoldFloatingBarCommand = new RelayCommand(() => RequestFloatingBarFold(true));
-            UnfoldFloatingBarCommand = new RelayCommand(() => RequestFloatingBarFold(false));
+            SetToolModeCommand = new RelayCommand<string?>(SetToolModeFromString);
         }
 
-        public event Action<WorkspaceMode> WorkspaceModeChanged;
+        public event Action<WorkspaceMode>? WorkspaceModeChanged;
 
-        public event Action<ToolMode> ToolModeChanged;
+        public event Action<ToolMode>? ToolModeChanged;
 
-        public event Action<SubPanelKind> ActiveSubPanelChanged;
+        public event Action<SubPanelKind>? ActiveSubPanelChanged;
 
-        public event Action<bool> FloatingBarFoldChanged;
+        public event Action<bool>? FloatingBarFoldChanged;
 
-        public IRelayCommand ToggleBlackboardModeCommand { get; }
-
-        public IRelayCommand<string> SetToolModeCommand { get; }
-
-        public IRelayCommand ToggleToolsPanelCommand { get; }
-
-        public IRelayCommand TogglePenPaletteCommand { get; }
-
-        public IRelayCommand ToggleSettingsPanelCommand { get; }
-
-        public IRelayCommand OpenSettingsPanelCommand { get; }
-
-        public IRelayCommand ToggleTwoFingerPanelCommand { get; }
-
-        public IRelayCommand ToggleShapePanelCommand { get; }
-
-        public IRelayCommand ToggleDeletePanelCommand { get; }
-
-        public IRelayCommand HideAllSubPanelsCommand { get; }
-
-        public IRelayCommand FoldFloatingBarCommand { get; }
-
-        public IRelayCommand UnfoldFloatingBarCommand { get; }
+        public IRelayCommand<string?> SetToolModeCommand { get; }
 
         public WorkspaceMode WorkspaceMode => workspaceMode;
 
@@ -79,9 +40,9 @@ namespace Ink_Canvas.ViewModels
 
         public bool IsBlackboardTransitioning => isBlackboardTransitioning;
 
-        public bool IsDesktopAnnotationMode => workspaceMode == WorkspaceMode.DesktopAnnotation;
+        public bool IsDesktopAnnotationMode => workspaceMode is WorkspaceMode.DesktopAnnotation;
 
-        public bool IsBlackboardMode => workspaceMode == WorkspaceMode.Blackboard;
+        public bool IsBlackboardMode => workspaceMode is WorkspaceMode.Blackboard;
 
         public bool IsCursorMode => toolMode == ToolMode.Cursor;
 
@@ -97,17 +58,17 @@ namespace Ink_Canvas.ViewModels
 
         public bool IsCanvasControlsVisible => toolMode != ToolMode.Cursor;
 
-        public bool IsToolsPanelOpen => activeSubPanel == SubPanelKind.Tools;
+        public bool IsToolsPanelOpen => activeSubPanel is SubPanelKind.Tools;
 
-        public bool IsPenPaletteOpen => activeSubPanel == SubPanelKind.PenPalette;
+        public bool IsPenPaletteOpen => activeSubPanel is SubPanelKind.PenPalette;
 
-        public bool IsSettingsPanelOpen => activeSubPanel == SubPanelKind.Settings;
+        public bool IsSettingsPanelOpen => activeSubPanel is SubPanelKind.Settings;
 
-        public bool IsTwoFingerPanelOpen => activeSubPanel == SubPanelKind.TwoFingerGesture;
+        public bool IsTwoFingerPanelOpen => activeSubPanel is SubPanelKind.TwoFingerGesture;
 
-        public bool IsShapePanelOpen => activeSubPanel == SubPanelKind.ShapePanel;
+        public bool IsShapePanelOpen => activeSubPanel is SubPanelKind.ShapePanel;
 
-        public bool IsDeletePanelOpen => activeSubPanel == SubPanelKind.DeletePanel;
+        public bool IsDeletePanelOpen => activeSubPanel is SubPanelKind.DeletePanel;
 
         public void ToggleWorkspaceMode()
         {
@@ -217,7 +178,81 @@ namespace Ink_Canvas.ViewModels
             SetProperty(ref isBlackboardTransitioning, value);
         }
 
-        private static bool TryParseToolMode(string value, out ToolMode mode)
+        private void SetToolModeFromString(string? value)
+        {
+            if (TryParseToolMode(value, out ToolMode mode))
+            {
+                SetToolMode(mode, true, true);
+            }
+        }
+
+        [RelayCommand]
+        private void ToggleBlackboardMode()
+        {
+            ToggleWorkspaceMode();
+        }
+
+        [RelayCommand]
+        private void ToggleToolsPanel()
+        {
+            ToggleSubPanel(SubPanelKind.Tools);
+        }
+
+        [RelayCommand]
+        private void TogglePenPalette()
+        {
+            ToggleSubPanel(SubPanelKind.PenPalette);
+        }
+
+        [RelayCommand]
+        private void ToggleSettingsPanel()
+        {
+            ToggleSubPanel(SubPanelKind.Settings);
+        }
+
+        [RelayCommand]
+        private void OpenSettingsPanel()
+        {
+            SetActiveSubPanel(SubPanelKind.Settings);
+        }
+
+        [RelayCommand]
+        private void ToggleTwoFingerPanel()
+        {
+            ToggleSubPanel(SubPanelKind.TwoFingerGesture);
+        }
+
+        [RelayCommand]
+        private void ToggleShapePanel()
+        {
+            ToggleSubPanel(SubPanelKind.ShapePanel);
+        }
+
+        [RelayCommand]
+        private void ToggleDeletePanel()
+        {
+            ToggleSubPanel(SubPanelKind.DeletePanel);
+        }
+
+        [RelayCommand]
+        private void HideAllSubPanels()
+        {
+            SetActiveSubPanel(SubPanelKind.None);
+        }
+
+        [RelayCommand]
+        private void FoldFloatingBar()
+        {
+            RequestFloatingBarFold(true);
+        }
+
+        [RelayCommand]
+        private void UnfoldFloatingBar()
+        {
+            RequestFloatingBarFold(false);
+        }
+
+        private static bool TryParseToolMode(string? value, out ToolMode mode)
         {
             return Enum.TryParse(value, true, out mode);
         }

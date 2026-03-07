@@ -9,9 +9,9 @@ using System.Windows;
 
 namespace Ink_Canvas.ViewModels
 {
-    public sealed class SettingsViewModel : ObservableObject
+    public sealed partial class SettingsViewModel : ObservableObject
     {
-        private static readonly int[] AutoDeleteDaysOptions = new[] { 1, 3, 5, 7, 15, 30, 60, 100, 365 };
+        private static readonly int[] AutoDeleteDaysOptions = [1, 3, 5, 7, 15, 30, 60, 100, 365];
 
         private readonly ISettingsService settingsService;
         private readonly IPathPickerService pathPickerService;
@@ -26,47 +26,27 @@ namespace Ink_Canvas.ViewModels
             IPathPickerService pathPickerService,
             Action<Settings> settingsModelChanged)
         {
+            ArgumentNullException.ThrowIfNull(settingsService);
+            ArgumentNullException.ThrowIfNull(pathPickerService);
+            ArgumentNullException.ThrowIfNull(settingsModelChanged);
+
             this.settingsService = settingsService;
             this.pathPickerService = pathPickerService;
             this.settingsModelChanged = settingsModelChanged;
-
-            ApplyFloatingBarScalePresetCommand = new RelayCommand<string>(value => ApplyDoublePreset(value, v => FloatingBarScale = v));
-            ApplyBlackboardScalePresetCommand = new RelayCommand<string>(value => ApplyDoublePreset(value, v => BlackboardScale = v));
-            ApplyFloatingBarMarginPresetCommand = new RelayCommand<string>(value => ApplyDoublePreset(value, v => FloatingBarBottomMargin = v));
-            ResetToRecommendedSettingsCommand = new RelayCommand(ResetToRecommendedSettings);
-            ResetToSpecialVersionRecommendedSettingsCommand = new RelayCommand(ResetToSpecialVersionRecommendedSettings);
-            PickAutoSavedStrokesLocationCommand = new RelayCommand(PickAutoSavedStrokesLocation);
-            SetAutoSavedStrokesLocationToDiskDCommand = new RelayCommand(() => AutoSavedStrokesLocation = @"D:\Ink Canvas");
-            SetAutoSavedStrokesLocationToDocumentsCommand = new RelayCommand(() =>
-                AutoSavedStrokesLocation = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\Ink Canvas");
         }
 
-        public event Action<string> ReloadRequested;
+        public event Action<string?>? ReloadRequested;
 
         public Settings Model => settings;
 
-        public IRelayCommand<string> ApplyFloatingBarScalePresetCommand { get; }
-
-        public IRelayCommand<string> ApplyBlackboardScalePresetCommand { get; }
-
-        public IRelayCommand<string> ApplyFloatingBarMarginPresetCommand { get; }
-
-        public IRelayCommand ResetToRecommendedSettingsCommand { get; }
-
-        public IRelayCommand ResetToSpecialVersionRecommendedSettingsCommand { get; }
-
-        public IRelayCommand PickAutoSavedStrokesLocationCommand { get; }
-
-        public IRelayCommand SetAutoSavedStrokesLocationToDiskDCommand { get; }
-
-        public IRelayCommand SetAutoSavedStrokesLocationToDocumentsCommand { get; }
-
         public void Load(Settings loadedSettings, bool isRunAtStartup)
         {
+            ArgumentNullException.ThrowIfNull(loadedSettings);
+
             isHydrating = true;
             settings = SettingsDefaults.Normalize(loadedSettings);
             runAtStartup = isRunAtStartup;
-            settingsModelChanged?.Invoke(settings);
+            settingsModelChanged(settings);
             RaiseAllPropertiesChanged();
             isHydrating = false;
         }
@@ -553,7 +533,25 @@ namespace Ink_Canvas.ViewModels
             }
         }
 
-        private void ApplyDoublePreset(string rawValue, Action<double> apply)
+        [RelayCommand]
+        private void ApplyFloatingBarScalePreset(string? rawValue)
+        {
+            ApplyDoublePreset(rawValue, value => FloatingBarScale = value);
+        }
+
+        [RelayCommand]
+        private void ApplyBlackboardScalePreset(string? rawValue)
+        {
+            ApplyDoublePreset(rawValue, value => BlackboardScale = value);
+        }
+
+        [RelayCommand]
+        private void ApplyFloatingBarMarginPreset(string? rawValue)
+        {
+            ApplyDoublePreset(rawValue, value => FloatingBarBottomMargin = value);
+        }
+
+        private void ApplyDoublePreset(string? rawValue, Action<double> apply)
         {
             if (TryParseDouble(rawValue, out double value))
             {
@@ -561,21 +559,38 @@ namespace Ink_Canvas.ViewModels
             }
         }
 
+        [RelayCommand]
         private void PickAutoSavedStrokesLocation()
         {
-            string selectedPath = pathPickerService.PickFolder(AutoSavedStrokesLocation);
+            string? selectedPath = pathPickerService.PickFolder(AutoSavedStrokesLocation);
             if (!string.IsNullOrWhiteSpace(selectedPath))
             {
                 AutoSavedStrokesLocation = selectedPath;
             }
         }
 
+        [RelayCommand]
+        private void SetAutoSavedStrokesLocationToDiskD()
+        {
+            AutoSavedStrokesLocation = @"D:\Ink Canvas";
+        }
+
+        [RelayCommand]
+        private void SetAutoSavedStrokesLocationToDocuments()
+        {
+            AutoSavedStrokesLocation = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "Ink Canvas");
+        }
+
+        [RelayCommand]
         private void ResetToRecommendedSettings()
         {
             ReplaceSettings(SettingsDefaults.CreateRecommended(settings), true);
             ReloadRequested?.Invoke("设置已重置为默认推荐设置~");
         }
 
+        [RelayCommand]
         private void ResetToSpecialVersionRecommendedSettings()
         {
             Settings recommendedSettings = SettingsDefaults.CreateRecommended(settings);
@@ -597,15 +612,21 @@ namespace Ink_Canvas.ViewModels
                 runAtStartup = newRunAtStartup.Value;
             }
 
-            settingsModelChanged?.Invoke(settings);
+            settingsModelChanged(settings);
             RaiseAllPropertiesChanged();
 
             isHydrating = false;
             settingsService.Save(settings);
         }
 
-        private static bool TryParseDouble(string rawValue, out double value)
+        private static bool TryParseDouble(string? rawValue, out double value)
         {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                value = default;
+                return false;
+            }
+
             return double.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
                 || double.TryParse(rawValue, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
         }
@@ -634,9 +655,9 @@ namespace Ink_Canvas.ViewModels
 
             setter(newValue);
             OnPropertyChanged(propertyName);
-            for (int i = 0; i < dependentProperties.Length; i++)
+            foreach (string dependentProperty in dependentProperties)
             {
-                OnPropertyChanged(dependentProperties[i]);
+                OnPropertyChanged(dependentProperty);
             }
 
             if (persist)
