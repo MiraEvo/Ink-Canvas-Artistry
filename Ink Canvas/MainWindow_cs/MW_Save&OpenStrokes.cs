@@ -6,7 +6,6 @@ using System.IO.Compression;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
-using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 using System.Threading.Tasks;
 
@@ -53,7 +52,7 @@ namespace Ink_Canvas
                     var elementsEntry = archive.CreateEntry("elements.xaml");
                     using (var elementsStream = elementsEntry.Open())
                     {
-                        XamlWriter.Save(inkCanvas, elementsStream);
+                        InkCanvasArchiveElementsSerializer.SaveElements(inkCanvas, elementsStream);
                     }
 
                     // Save related URL files
@@ -74,17 +73,13 @@ namespace Ink_Canvas
 
         private void SaveRelatedUrlFiles(ZipArchive archive)
         {
-            string dependencyFolder = "File Dependency";
+            string dependencyFolder = InkCanvasArchiveElementsSerializer.DependencyFolderName;
             var folderEntry = archive.CreateEntry(dependencyFolder + "/");
             foreach (UIElement element in inkCanvas.Children)
             {
-                if (element is Image image && image.Source is BitmapImage bitmapImage && bitmapImage.UriSource != null)
+                if (InkCanvasArchiveElementsSerializer.TryGetDependencySourcePath(element, out string sourcePath))
                 {
-                    AddFileToArchive(archive, bitmapImage.UriSource.LocalPath, dependencyFolder);
-                }
-                else if (element is MediaElement mediaElement && mediaElement.Source != null)
-                {
-                    AddFileToArchive(archive, mediaElement.Source.LocalPath, dependencyFolder);
+                    AddFileToArchive(archive, sourcePath, dependencyFolder);
                 }
                 else
                 {
@@ -154,43 +149,29 @@ namespace Ink_Canvas
 
                                 // load UI Elements
                                 var elementsEntry = archive.GetEntry("elements.xaml");
-                                using (var elementsStream = elementsEntry.Open())
+                                if (elementsEntry != null)
                                 {
-                                    try
+                                    using (var elementsStream = elementsEntry.Open())
                                     {
-                                        var loadedCanvas = XamlReader.Load(elementsStream) as InkCanvas;
-                                        if (loadedCanvas != null)
+                                        try
                                         {
+                                            var loadedElements = InkCanvasArchiveElementsSerializer.LoadElements(
+                                                elementsStream,
+                                                Path.Combine(saveDirectory, InkCanvasArchiveElementsSerializer.DependencyFolderName));
+
                                             inkCanvas.Children.Clear();
-                                            foreach (UIElement child in loadedCanvas.Children)
+                                            foreach (UIElement child in loadedElements)
                                             {
-                                                var xaml = XamlWriter.Save(child);
-                                                UIElement clonedChild = (UIElement)XamlReader.Parse(xaml);
-                                                if (clonedChild is MediaElement mediaElement)
-                                                {
-                                                    mediaElement.LoadedBehavior = MediaState.Manual;
-                                                    mediaElement.UnloadedBehavior = MediaState.Manual;
-                                                    mediaElement.Loaded += async (_, args) =>
-                                                    {
-                                                        mediaElement.Play();
-                                                        await Task.Delay(100);
-                                                        mediaElement.Pause();
-                                                    };
-                                                }
-                                                inkCanvas.Children.Add(clonedChild);
+                                                inkCanvas.Children.Add(child);
                                             }
+
                                             LogHelper.NewLog($"Elements Insert: Elements Count: {inkCanvas.Children.Count}");
                                         }
-                                    }
-                                    catch (XamlParseException xamlEx)
-                                    {
-                                        LogHelper.WriteLogToFile($"XAML 解析错误: {xamlEx.Message}", LogHelper.LogType.Error);
-                                        ShowNotificationAsync("加载 UI 元素时出现 XAML 解析错误");
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        LogHelper.WriteLogToFile($"加载 UI 元素失败: {ex.Message}", LogHelper.LogType.Error);
-                                        ShowNotificationAsync("加载 UI 元素失败");
+                                        catch (Exception ex)
+                                        {
+                                            LogHelper.WriteLogToFile($"加载 UI 元素失败: {ex.Message}", LogHelper.LogType.Error);
+                                            ShowNotificationAsync("加载 UI 元素失败");
+                                        }
                                     }
                                 }
                             }
@@ -230,26 +211,55 @@ namespace Ink_Canvas
 
         private void ExtractUrlFiles(ZipArchive archive, string outputDirectory)
         {
+            string outputRoot = Path.GetFullPath(outputDirectory);
             foreach (var entry in archive.Entries)
             {
-                if (entry.FullName.StartsWith("File Dependency/", StringComparison.OrdinalIgnoreCase))
+                if (entry.FullName.StartsWith(InkCanvasArchiveElementsSerializer.DependencyFolderName + "/", StringComparison.OrdinalIgnoreCase))
                 {
                     if (!string.IsNullOrEmpty(entry.Name))
                     {
-                        string fileName = Path.Combine(outputDirectory, entry.FullName);
+                        try
+                        {
+                            string relativePath = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
+                            string fileName = Path.GetFullPath(Path.Combine(outputRoot, relativePath));
+                            string normalizedRoot = AppendDirectorySeparator(outputRoot);
 
-                        string directoryPath = Path.GetDirectoryName(fileName);
-                        if (!Directory.Exists(directoryPath))
-                        {
-                            Directory.CreateDirectory(directoryPath);
+                            if (!fileName.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
+                            {
+                                LogHelper.WriteLogToFile($"Elements Load | Rejected archive entry outside dependency directory: {entry.FullName}", LogHelper.LogType.Error);
+                                continue;
+                            }
+
+                            string directoryPath = Path.GetDirectoryName(fileName);
+                            if (!Directory.Exists(directoryPath))
+                            {
+                                Directory.CreateDirectory(directoryPath);
+                            }
+
+                            if (!File.Exists(fileName))
+                            {
+                                entry.ExtractToFile(fileName, overwrite: false);
+                            }
                         }
-                        if (!File.Exists(fileName))
+                        catch (Exception ex)
                         {
-                            entry.ExtractToFile(fileName, overwrite: false);
+                            LogHelper.WriteLogToFile($"Elements Load | Failed to extract archive entry '{entry.FullName}': {ex.Message}", LogHelper.LogType.Error);
                         }
                     }
                 }
             }
+        }
+
+        private static string AppendDirectorySeparator(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return path;
+            }
+
+            return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                ? path
+                : path + Path.DirectorySeparatorChar;
         }
     }
 }

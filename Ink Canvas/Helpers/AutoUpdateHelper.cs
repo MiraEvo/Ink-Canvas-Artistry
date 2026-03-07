@@ -8,12 +8,14 @@ using System.Windows;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
+using System.Text.RegularExpressions;
 
 namespace Ink_Canvas.Helpers
 {
     internal class AutoUpdateHelper
     {
         private const string UpdateServerBaseUrl = "http://8.134.100.248:8080";
+        private static readonly Regex VersionPattern = new Regex(@"^\d+(\.\d+){1,3}$", RegexOptions.Compiled);
 
         public static async Task<string> CheckForUpdates()
         {
@@ -21,7 +23,7 @@ namespace Ink_Canvas.Helpers
             {
                 string localVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
                 string remoteAddress = $"{UpdateServerBaseUrl}/version";
-                string remoteVersion = await GetRemoteVersion(remoteAddress);
+                string remoteVersion = ValidateVersionOrNull(await GetRemoteVersion(remoteAddress));
 
                 if (remoteVersion != null)
                 {
@@ -92,7 +94,8 @@ namespace Ink_Canvas.Helpers
         {
             try
             {
-                statusFilePath = Path.Combine(updatesFolderPath, $"DownloadV{version}Status.txt");
+                string validatedVersion = ValidateVersionOrThrow(version);
+                statusFilePath = ResolvePathWithinUpdatesFolder($"DownloadV{validatedVersion}Status.txt");
 
                 if (File.Exists(statusFilePath) && File.ReadAllText(statusFilePath).Trim().ToLower() == "true")
                 {
@@ -100,9 +103,9 @@ namespace Ink_Canvas.Helpers
                     return true;
                 }
 
-                string setupFileName = $"Ink.Canvas.Artistry.V{version}.Setup.exe";
+                string setupFileName = GetSetupFileName(validatedVersion);
                 string downloadUrl = $"{UpdateServerBaseUrl}/download/{setupFileName}";
-                string destinationPath = Path.Combine(updatesFolderPath, setupFileName);
+                string destinationPath = ResolvePathWithinUpdatesFolder(setupFileName);
 
                 LogHelper.WriteLogToFile($"AutoUpdate | Attempting download from: {downloadUrl} to {destinationPath}");
 
@@ -119,8 +122,7 @@ namespace Ink_Canvas.Helpers
                 SaveDownloadStatus(false);
                 try
                 {
-                    string setupFileName = $"Ink.Canvas.Artistry.V{version}.Setup.exe";
-                    string destinationPath = Path.Combine(updatesFolderPath, setupFileName);
+                    string destinationPath = ResolvePathWithinUpdatesFolder(GetSetupFileName(ValidateVersionOrThrow(version)));
                     if (File.Exists(destinationPath))
                     {
                         File.Delete(destinationPath);
@@ -209,8 +211,8 @@ namespace Ink_Canvas.Helpers
         {
             try
             {
-                string setupFileName = $"Ink.Canvas.Artistry.V{version}.Setup.exe";
-                string setupFilePath = Path.Combine(updatesFolderPath, setupFileName);
+                string validatedVersion = ValidateVersionOrThrow(version);
+                string setupFilePath = ResolvePathWithinUpdatesFolder(GetSetupFileName(validatedVersion));
 
                 if (!File.Exists(setupFilePath))
                 {
@@ -218,11 +220,8 @@ namespace Ink_Canvas.Helpers
                     return;
                 }
 
-                string InstallCommand = $"\"{setupFilePath}\" /SILENT";
-                if (isInSilence) InstallCommand += " /VERYSILENT";
-
-                LogHelper.WriteLogToFile($"AutoUpdate | Executing install command: {InstallCommand}");
-                ExecuteCommandLine(InstallCommand);
+                LogHelper.WriteLogToFile($"AutoUpdate | Starting installer: {setupFilePath}");
+                StartInstaller(setupFilePath, isInSilence);
             }
             catch (Exception ex)
             {
@@ -230,24 +229,24 @@ namespace Ink_Canvas.Helpers
             }
         }
 
-        private static void ExecuteCommandLine(string command)
+        private static void StartInstaller(string setupFilePath, bool isInSilence)
         {
             try
             {
+                string arguments = isInSilence ? "/SILENT /VERYSILENT" : "/SILENT";
                 ProcessStartInfo processStartInfo = new ProcessStartInfo
                 {
-                    FileName = "cmd.exe",
-                    Arguments = $"/c {command}",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
+                    FileName = setupFilePath,
+                    Arguments = arguments,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(setupFilePath)
                 };
 
                 using (Process process = new Process { StartInfo = processStartInfo })
                 {
                     process.Start();
-                    LogHelper.WriteLogToFile($"AutoUpdate | Started process for command: {command}");
+                    LogHelper.WriteLogToFile($"AutoUpdate | Started installer with arguments: {arguments}");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         LogHelper.WriteLogToFile($"AutoUpdate | Shutting down application for update.");
@@ -257,7 +256,7 @@ namespace Ink_Canvas.Helpers
             }
             catch (Exception ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error executing command line '{command}': {ex.Message}", LogHelper.LogType.Error);
+                LogHelper.WriteLogToFile($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}", LogHelper.LogType.Error);
             }
         }
 
@@ -275,6 +274,71 @@ namespace Ink_Canvas.Helpers
             {
                 LogHelper.WriteLogToFile($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}", LogHelper.LogType.Error);
             }
+        }
+
+        private static string GetSetupFileName(string version)
+        {
+            return $"Ink.Canvas.Artistry.V{ValidateVersionOrThrow(version)}.Setup.exe";
+        }
+
+        private static string ValidateVersionOrThrow(string version)
+        {
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                throw new ArgumentException("Version cannot be empty.", nameof(version));
+            }
+
+            string trimmedVersion = version.Trim();
+            if (!VersionPattern.IsMatch(trimmedVersion))
+            {
+                throw new ArgumentException($"Unsupported version format '{version}'.", nameof(version));
+            }
+
+            _ = new Version(trimmedVersion);
+            return trimmedVersion;
+        }
+
+        private static string ValidateVersionOrNull(string version)
+        {
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                return null;
+            }
+
+            try
+            {
+                return ValidateVersionOrThrow(version);
+            }
+            catch (Exception ex)
+            {
+                LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
+                return null;
+            }
+        }
+
+        private static string ResolvePathWithinUpdatesFolder(string fileName)
+        {
+            string rootPath = AppendDirectorySeparator(Path.GetFullPath(updatesFolderPath));
+            string fullPath = Path.GetFullPath(Path.Combine(rootPath, fileName));
+
+            if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Resolved update path escaped the updates directory.");
+            }
+
+            return fullPath;
+        }
+
+        private static string AppendDirectorySeparator(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return path;
+            }
+
+            return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                ? path
+                : path + Path.DirectorySeparatorChar;
         }
     }
 
