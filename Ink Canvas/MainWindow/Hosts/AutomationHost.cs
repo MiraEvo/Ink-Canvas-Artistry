@@ -1,6 +1,5 @@
 using Ink_Canvas.Controllers;
 using Ink_Canvas.Features.Automation;
-using Ink_Canvas.Helpers;
 using System;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
@@ -27,7 +26,8 @@ namespace Ink_Canvas
                 automationExperienceCoordinator.HandleRequestFoldFloatingBar,
                 automationExperienceCoordinator.HandleRequestUnfoldFloatingBar,
                 automationExperienceCoordinator.HandleAutoKilledEasiNote,
-                automationExperienceCoordinator.HandleInstallSilentUpdate);
+                automationExperienceCoordinator.HandleInstallSilentUpdate,
+                appLogger);
 
             hotkeyController = new HotkeyController(
                 automationExperienceCoordinator.HandleExitPresentation,
@@ -76,12 +76,12 @@ namespace Ink_Canvas
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Automation | Dispatcher call was canceled while checking silent update readiness");
+                mainWindowLogger.Error(ex, "Automation | Dispatcher call was canceled while checking silent update readiness");
                 return false;
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Automation | Dispatcher call failed while checking silent update readiness");
+                mainWindowLogger.Error(ex, "Automation | Dispatcher call failed while checking silent update readiness");
                 return false;
             }
         }
@@ -108,7 +108,7 @@ namespace Ink_Canvas
 
         void IAutomationUiHost.ShowAutoKilledEasiNoteMessage() => MessageBox.Show("“希沃白板 5”已自动关闭");
 
-        void IAutomationUiHost.InstallSilentUpdate(string version) => AutoUpdateHelper.InstallNewVersionApp(version, true);
+        void IAutomationUiHost.InstallSilentUpdate(string version) => autoUpdateHelper.InstallNewVersionApp(version, true);
 
         private void DisposeAutomationControllers()
         {

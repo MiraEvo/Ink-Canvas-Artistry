@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using Ink_Canvas.ViewModels;
 using System;
 using System.Collections.Generic;
@@ -17,11 +17,13 @@ namespace Ink_Canvas.Controllers.Input
         private readonly Dictionary<int, InkCanvasEditingMode> touchDownPointsList = new Dictionary<int, InkCanvasEditingMode>();
         private readonly Dictionary<int, StrokeVisual> strokeVisualList = new Dictionary<int, StrokeVisual>();
         private readonly Dictionary<int, VisualCanvas> visualCanvasList = new Dictionary<int, VisualCanvas>();
+        private readonly IAppLogger logger;
 
-        public InkCanvasInteractionController(InkCanvas inkCanvas, InputStateViewModel inputStateViewModel)
+        public InkCanvasInteractionController(InkCanvas inkCanvas, InputStateViewModel inputStateViewModel, IAppLogger logger)
         {
             this.inkCanvas = inkCanvas;
             this.inputStateViewModel = inputStateViewModel;
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkCanvasInteractionController));
         }
 
         public void ConfigureMultiTouchMode(
@@ -204,11 +206,11 @@ namespace Ink_Canvas.Controllers.Input
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Ink Interaction | Invalid stylus point data during move");
+                logger.Error(ex, "Ink Interaction | Invalid stylus point data during move");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Ink Interaction | Failed to redraw stroke preview during move");
+                logger.Error(ex, "Ink Interaction | Failed to redraw stroke preview during move");
             }
         }
 
@@ -231,11 +233,11 @@ namespace Ink_Canvas.Controllers.Input
                 }
                 catch (ArgumentException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, "Ink Interaction | Invalid stylus point data during stylus up");
+                    logger.Error(ex, "Ink Interaction | Invalid stylus point data during stylus up");
                 }
                 catch (InvalidOperationException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, "Ink Interaction | Failed to finalize stroke preview during stylus up");
+                    logger.Error(ex, "Ink Interaction | Failed to finalize stroke preview during stylus up");
                 }
             }
 

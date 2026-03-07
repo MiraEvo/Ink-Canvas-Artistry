@@ -1,4 +1,5 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Features.Automation.Services;
+using Ink_Canvas.Services.Logging;
 using iNKORE.UI.WPF.Modern;
 using System;
 using System.Collections.ObjectModel;
@@ -15,10 +16,21 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
+        private readonly FileAppLogger appLogger;
+        private readonly IAppLogger mainWindowLogger;
+        private readonly AutoUpdateHelper autoUpdateHelper;
+        private readonly DelAutoSavedFiles autoSavedFilesCleaner;
+
         #region Window Initialization
 
         public MainWindow()
         {
+            appLogger = (Application.Current as App)?.Logger
+                ?? throw new InvalidOperationException("App logger is not available.");
+            mainWindowLogger = appLogger.ForCategory(nameof(MainWindow));
+            autoUpdateHelper = new AutoUpdateHelper(appLogger);
+            autoSavedFilesCleaner = new DelAutoSavedFiles(appLogger);
+
             /*
                 处于画板模式内：Topmost == false / Shell.IsBlackboardMode
                 处于 PPT 放映内：Presentation.IsSlideShowRunning
@@ -51,39 +63,6 @@ namespace Ink_Canvas
             ViewboxFloatingBar.Margin = new Thickness((SystemParameters.WorkArea.Width - 284) / 2, SystemParameters.WorkArea.Height - 60, -2000, -200);
             ViewboxFloatingBarMarginAnimation();
 
-            try
-            {
-                if (File.Exists("Log.txt"))
-                {
-                    FileInfo fileInfo = new FileInfo("Log.txt");
-                    long fileSizeInKB = fileInfo.Length / 1024;
-                    if (fileSizeInKB > 512)
-                    {
-                        try
-                        {
-                            File.Delete("Log.txt");
-                            LogHelper.WriteLogToFile("The Log.txt file has been successfully deleted. Original file size: " + fileSizeInKB + " KB", LogHelper.LogType.Info);
-                        }
-                        catch (IOException ex)
-                        {
-                            LogHelper.WriteLogToFile(ex, $"MainWindow Init | Cannot delete Log.txt. File size: {fileSizeInKB} KB");
-                        }
-                        catch (UnauthorizedAccessException ex)
-                        {
-                            LogHelper.WriteLogToFile(ex, $"MainWindow Init | Cannot delete Log.txt. File size: {fileSizeInKB} KB");
-                        }
-                    }
-                }
-            }
-            catch (IOException ex)
-            {
-                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed while checking Log.txt");
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed while checking Log.txt");
-            }
-
             InitTimers();
             timeMachine.OnRedoStateChanged += TimeMachine_OnRedoStateChanged;
             timeMachine.OnUndoStateChanged += TimeMachine_OnUndoStateChanged;
@@ -96,11 +75,11 @@ namespace Ink_Canvas
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed to load SpecialVersion.ini");
+                mainWindowLogger.Error(ex, "MainWindow Init | Failed to load SpecialVersion.ini");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "MainWindow Init | Failed to load SpecialVersion.ini");
+                mainWindowLogger.Error(ex, "MainWindow Init | Failed to load SpecialVersion.ini");
             }
 
             CheckColorTheme(true);
@@ -178,7 +157,6 @@ namespace Ink_Canvas
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             loadPenCanvas();
-            //加载设置
             LoadSettings(true);
             if (Environment.Is64BitProcess)
             {
@@ -189,14 +167,14 @@ namespace Ink_Canvas
             SystemEvents_UserPreferenceChanged(null, null);
 
             AppVersionTextBlock.Text = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "Unknown";
-            LogHelper.WriteLogToFile("Ink Canvas Loaded", LogHelper.LogType.Event);
+            mainWindowLogger.Event("Ink Canvas Loaded");
             isLoaded = true;
             RegisterGlobalHotkeys();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            LogHelper.WriteLogToFile("Ink Canvas closing", LogHelper.LogType.Event);
+            mainWindowLogger.Event("Ink Canvas closing");
             if (!closeIsFromButton && Settings.Advanced.IsSecondConfimeWhenShutdownApp)
             {
                 e.Cancel = true;
@@ -213,7 +191,7 @@ namespace Ink_Canvas
             }
             if (e.Cancel)
             {
-                LogHelper.WriteLogToFile("Ink Canvas closing cancelled", LogHelper.LogType.Event);
+                mainWindowLogger.Event("Ink Canvas closing cancelled");
             }
         }
 
@@ -221,7 +199,7 @@ namespace Ink_Canvas
         {
             StopPresentationMonitoring();
             DisposeAutomationControllers();
-            LogHelper.WriteLogToFile("Ink Canvas closed", LogHelper.LogType.Event);
+            mainWindowLogger.Event("Ink Canvas closed");
         }
 
         #endregion Definations and Loading

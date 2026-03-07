@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +16,12 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         private const float DefaultPressureFactor = 0.5f;
         private const double DoubleComparisonTolerance = 0.000001;
         private const float PressureComparisonTolerance = 0.001f;
+        private readonly IAppLogger logger;
+
+        public InkRecognitionService(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkRecognitionService));
+        }
 
         public void HandleStrokeCollected(
             IInkCanvasHost inkCanvasHost,
@@ -37,11 +43,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to process collected stroke");
+                logger.Error(ex, "InkToShape | Failed to process collected stroke");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to process collected stroke");
+                logger.Error(ex, "InkToShape | Failed to process collected stroke");
             }
         }
 
@@ -113,11 +119,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to recognize collected shape");
+                logger.Error(ex, "InkToShape | Failed to recognize collected shape");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply recognized shape");
+                logger.Error(ex, "InkToShape | Failed to apply recognized shape");
             }
         }
 
@@ -409,7 +415,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
         }
 
-        private static void ApplyInkStyleOne(InkCanvasStrokeCollectedEventArgs e)
+        private void ApplyInkStyleOne(InkCanvasStrokeCollectedEventArgs e)
         {
             try
             {
@@ -440,15 +446,15 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 1 pressure");
+                logger.Error(ex, "InkToShape | Failed to apply pen style 1 pressure");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 1 pressure");
+                logger.Error(ex, "InkToShape | Failed to apply pen style 1 pressure");
             }
         }
 
-        private static void ApplyInkStyleZero(InkCanvasStrokeCollectedEventArgs e)
+        private void ApplyInkStyleZero(InkCanvasStrokeCollectedEventArgs e)
         {
             try
             {
@@ -491,15 +497,15 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 0 pressure");
+                logger.Error(ex, "InkToShape | Failed to apply pen style 0 pressure");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 0 pressure");
+                logger.Error(ex, "InkToShape | Failed to apply pen style 0 pressure");
             }
         }
 
-        private static void ApplyInkStyleThree(ShapeDrawingSessionState shapeDrawingState, InkCanvasStrokeCollectedEventArgs e)
+        private void ApplyInkStyleThree(ShapeDrawingSessionState shapeDrawingState, InkCanvasStrokeCollectedEventArgs e)
         {
             try
             {
@@ -543,11 +549,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 3 pressure");
+                logger.Error(ex, "InkToShape | Failed to apply pen style 3 pressure");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "InkToShape | Failed to apply pen style 3 pressure");
+                logger.Error(ex, "InkToShape | Failed to apply pen style 3 pressure");
             }
         }
 

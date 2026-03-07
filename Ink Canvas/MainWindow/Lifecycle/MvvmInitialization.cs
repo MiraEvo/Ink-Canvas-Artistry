@@ -14,9 +14,8 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        private static readonly ISettingsService settingsService = new JsonSettingsService(() =>
-            System.IO.Path.Combine(App.RootPath, settingsFileName));
-        private static readonly IPathPickerService pathPickerService = new PathPickerService();
+        private ISettingsService settingsService = null!;
+        private readonly IPathPickerService pathPickerService = new PathPickerService();
 
         private MainWindowViewModel mainWindowViewModel = null!;
         private SettingsApplicationCoordinator settingsApplicationCoordinator = null!;
@@ -29,6 +28,10 @@ namespace Ink_Canvas
 
         private void InitializeMvvm()
         {
+            settingsService = new JsonSettingsService(
+                () => System.IO.Path.Combine(App.RootPath, settingsFileName),
+                appLogger);
+
             mainWindowViewModel = new MainWindowViewModel(
                 new SettingsViewModel(
                     settingsService,

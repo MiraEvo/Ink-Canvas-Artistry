@@ -90,13 +90,15 @@ namespace Ink_Canvas
             presentationSessionController = new PresentationSessionController(
                 mainWindowViewModel.Presentation,
                 () => Settings.PowerPointSettings.IsSupportWPS,
-                () => IsShowingRestoreHiddenSlidesWindow);
+                () => IsShowingRestoreHiddenSlidesWindow,
+                appLogger);
             presentationExperienceCoordinator = new PresentationExperienceCoordinator(
                 presentationSessionController!,
                 mainWindowViewModel.Settings,
                 mainWindowViewModel.Presentation,
                 this,
-                new PresentationInkArchiveService());
+                new PresentationInkArchiveService(appLogger),
+                appLogger);
             presentationSessionController.PresentationConnected += PresentationSessionController_PresentationConnected;
             presentationSessionController.PresentationClosed += PptApplication_PresentationClose;
             presentationSessionController.SlideShowBegin += PptApplication_SlideShowBegin;

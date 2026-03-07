@@ -1,63 +1,67 @@
+using Ink_Canvas.Services.Logging;
 using System;
 using System.IO;
-using System.Windows;
 
 namespace Ink_Canvas.Features.Automation.Services
 {
-    internal class DelAutoSavedFiles
+    internal sealed class DelAutoSavedFiles
     {
-        public static void DeleteFilesOlder(string directoryPath, int daysThreshold)
+        private readonly IAppLogger logger;
+
+        public DelAutoSavedFiles(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(DelAutoSavedFiles));
+        }
+
+        public void DeleteFilesOlder(string directoryPath, int daysThreshold)
         {
             string[] extensionsToDel = { ".icstk", ".icart", ".png" };
-            if (Directory.Exists(directoryPath))
+            if (!Directory.Exists(directoryPath))
             {
-                // 获取目录中的所有子目录
-                string[] subDirectories = Directory.GetDirectories(directoryPath, "*", SearchOption.AllDirectories);
-                foreach (string subDirectory in subDirectories)
+                return;
+            }
+
+            string[] subDirectories = Directory.GetDirectories(directoryPath, "*", SearchOption.AllDirectories);
+            foreach (string subDirectory in subDirectories)
+            {
+                try
                 {
-                    try
+                    string[] files = Directory.GetFiles(subDirectory);
+                    foreach (string filePath in files)
                     {
-                        // 获取子目录下的所有文件
-                        string[] files = Directory.GetFiles(subDirectory);
-                        foreach (string filePath in files)
+                        DateTime creationDate = File.GetCreationTime(filePath);
+                        string fileExtension = Path.GetExtension(filePath);
+                        if (creationDate < DateTime.Now.AddDays(-daysThreshold))
                         {
-                            // 获取文件的创建日期
-                            DateTime creationDate = File.GetCreationTime(filePath);
-                            // 获取文件的扩展名
-                            string fileExtension = Path.GetExtension(filePath);
-                            // 如果文件的创建日期早于指定天数且是要删除的扩展名，则删除文件
-                            if (creationDate < DateTime.Now.AddDays(-daysThreshold))
+                            if (Array.Exists(extensionsToDel, ext => ext.Equals(fileExtension, StringComparison.OrdinalIgnoreCase))
+                                || Path.GetFileName(filePath).Equals("Position", StringComparison.OrdinalIgnoreCase))
                             {
-                                if (Array.Exists(extensionsToDel, ext => ext.Equals(fileExtension, StringComparison.OrdinalIgnoreCase))
-                                    || Path.GetFileName(filePath).Equals("Position", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    File.Delete(filePath);
-                                }
+                                File.Delete(filePath);
                             }
                         }
                     }
-                    catch (IOException ex)
-                    {
-                        LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
-                    }
-                    catch (UnauthorizedAccessException ex)
-                    {
-                        LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
-                    }
-                }
-
-                try
-                { // 递归删除空文件夹
-                    DeleteEmptyFolders(directoryPath);
                 }
                 catch (IOException ex)
                 {
-                    LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
+                    logger.Error($"DelAutoSavedFiles | 处理文件时出错: {ex}");
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    LogHelper.WriteLogToFile("DelAutoSavedFiles | 处理文件时出错: " + ex, LogHelper.LogType.Error);
+                    logger.Error($"DelAutoSavedFiles | 处理文件时出错: {ex}");
                 }
+            }
+
+            try
+            {
+                DeleteEmptyFolders(directoryPath);
+            }
+            catch (IOException ex)
+            {
+                logger.Error($"DelAutoSavedFiles | 处理文件时出错: {ex}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                logger.Error($"DelAutoSavedFiles | 处理文件时出错: {ex}");
             }
         }
 
@@ -74,4 +78,3 @@ namespace Ink_Canvas.Features.Automation.Services
         }
     }
 }
-

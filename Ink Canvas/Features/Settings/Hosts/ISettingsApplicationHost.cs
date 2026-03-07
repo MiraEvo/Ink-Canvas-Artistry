@@ -36,6 +36,8 @@ namespace Ink_Canvas.Features.Settings.Hosts
 
         void ApplyMultiTouchMode();
 
+        void ApplyLoggingEnabled();
+
         void CheckEnableTwoFingerGestureBtnColorPrompt();
 
         void RefreshAutoFoldMonitoring();

@@ -7,11 +7,11 @@ namespace Ink_Canvas
     {
         private async void AutoUpdate()
         {
-            string? availableLatestVersion = await AutoUpdateHelper.CheckForUpdates();
+            string? availableLatestVersion = await autoUpdateHelper.CheckForUpdates();
 
             if (availableLatestVersion is not null)
             {
-                bool isDownloadSuccessful = await AutoUpdateHelper.DownloadSetupFileAndSaveStatus(availableLatestVersion);
+                bool isDownloadSuccessful = await autoUpdateHelper.DownloadSetupFileAndSaveStatus(availableLatestVersion);
 
                 if (isDownloadSuccessful)
                 {
@@ -25,26 +25,26 @@ namespace Ink_Canvas
 
                         if (result == MessageBoxResult.Yes)
                         {
-                            AutoUpdateHelper.InstallNewVersionApp(availableLatestVersion, false);
+                            autoUpdateHelper.InstallNewVersionApp(availableLatestVersion, false);
                         }
                     }
                     else
                     {
                         ScheduleSilentUpdate(availableLatestVersion);
-                        LogHelper.WriteLogToFile($"AutoUpdate | Silent update timer started for version {availableLatestVersion}.");
+                        mainWindowLogger.Info($"AutoUpdate | Silent update timer started for version {availableLatestVersion}.");
                     }
                 }
                 else
                 {
                     CancelSilentUpdate();
-                    LogHelper.WriteLogToFile($"AutoUpdate | Download failed for version {availableLatestVersion}.");
+                    mainWindowLogger.Info($"AutoUpdate | Download failed for version {availableLatestVersion}.");
                 }
             }
             else
             {
                 CancelSilentUpdate();
-                LogHelper.WriteLogToFile($"AutoUpdate | No new version found or failed to check.");
-                AutoUpdateHelper.DeleteUpdatesFolder();
+                mainWindowLogger.Info("AutoUpdate | No new version found or failed to check.");
+                autoUpdateHelper.DeleteUpdatesFolder();
             }
         }
     }

@@ -32,7 +32,7 @@ namespace Ink_Canvas
             }
         }
 
-        public static bool StartAutomaticallyCreate(string exeName)
+        public bool StartAutomaticallyCreate(string exeName)
         {
             try
             {
@@ -44,25 +44,25 @@ namespace Ink_Canvas
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Invalid startup entry name '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Invalid startup entry name '{exeName}'");
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Failed to create startup entry '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Failed to create startup entry '{exeName}'");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Access denied while creating startup entry '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Access denied while creating startup entry '{exeName}'");
             }
             catch (SecurityException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Security error while creating startup entry '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Security error while creating startup entry '{exeName}'");
             }
 
             return false;
         }
 
-        public static bool StartAutomaticallyDel(string exeName)
+        public bool StartAutomaticallyDel(string exeName)
         {
             try
             {
@@ -73,25 +73,25 @@ namespace Ink_Canvas
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Invalid startup entry name '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Invalid startup entry name '{exeName}'");
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Failed to delete startup entry '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Failed to delete startup entry '{exeName}'");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Access denied while deleting startup entry '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Access denied while deleting startup entry '{exeName}'");
             }
             catch (SecurityException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"Startup | Security error while deleting startup entry '{exeName}'");
+                mainWindowLogger.Error(ex, $"Startup | Security error while deleting startup entry '{exeName}'");
             }
 
             return false;
         }
 
-        public static bool NormalizeStartupRegistration()
+        public bool NormalizeStartupRegistration()
         {
             bool hasLegacyRegistration = StartupEntryExists("InkCanvas")
                 || StartupEntryExists("Ink Canvas Annotation")

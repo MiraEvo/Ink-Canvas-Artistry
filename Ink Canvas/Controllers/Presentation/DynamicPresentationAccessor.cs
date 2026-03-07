@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using Ink_Canvas.ViewModels;
 using Microsoft.Office.Interop.PowerPoint;
 using System;
@@ -8,9 +8,16 @@ using System.Runtime.InteropServices;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
-    internal static class DynamicPresentationAccessor
+    internal sealed class DynamicPresentationAccessor
     {
-        internal static bool TryBuildCandidate(object applicationObject, bool isWpsSupportEnabled, out PresentationBindingCandidate? candidate)
+        private readonly IAppLogger logger;
+
+        public DynamicPresentationAccessor(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(DynamicPresentationAccessor));
+        }
+
+        internal bool TryBuildCandidate(object applicationObject, bool isWpsSupportEnabled, out PresentationBindingCandidate? candidate)
         {
             candidate = null;
             if (!TryReadState(applicationObject, isWpsSupportEnabled, out PresentationRuntimeState state, out int priority))
@@ -22,7 +29,7 @@ namespace Ink_Canvas.Controllers.Presentation
             return true;
         }
 
-        internal static bool TryReadState(
+        internal bool TryReadState(
             object applicationObject,
             bool isWpsSupportEnabled,
             out PresentationRuntimeState state,
@@ -95,12 +102,12 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (COMException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Dynamic state read failed");
+                logger.Error(ex, "Presentation Session | Dynamic state read failed");
                 return false;
             }
             catch (TargetInvocationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Dynamic state invocation failed");
+                logger.Error(ex, "Presentation Session | Dynamic state invocation failed");
                 return false;
             }
             finally
@@ -110,7 +117,7 @@ namespace Ink_Canvas.Controllers.Presentation
             }
         }
 
-        internal static bool TryGoToSlide(object applicationObject, int slideNumber)
+        internal bool TryGoToSlide(object applicationObject, int slideNumber)
         {
             object? presentationObject = null;
             object? slideShowWindowObject = null;
@@ -161,22 +168,22 @@ namespace Ink_Canvas.Controllers.Presentation
             }
         }
 
-        internal static bool TryGoToPreviousSlide(object applicationObject)
+        internal bool TryGoToPreviousSlide(object applicationObject)
         {
             return TryExecuteSlideShowViewAction(applicationObject, "Previous");
         }
 
-        internal static bool TryGoToNextSlide(object applicationObject)
+        internal bool TryGoToNextSlide(object applicationObject)
         {
             return TryExecuteSlideShowViewAction(applicationObject, "Next");
         }
 
-        internal static bool TryExitSlideShow(object applicationObject)
+        internal bool TryExitSlideShow(object applicationObject)
         {
             return TryExecuteSlideShowViewAction(applicationObject, "Exit");
         }
 
-        internal static bool TryShowSlideNavigation(object applicationObject)
+        internal bool TryShowSlideNavigation(object applicationObject)
         {
             object? presentationObject = null;
             object? slideShowWindowObject = null;
@@ -209,12 +216,12 @@ namespace Ink_Canvas.Controllers.Presentation
             }
         }
 
-        internal static bool HasHiddenSlides(object applicationObject)
+        internal bool HasHiddenSlides(object applicationObject)
         {
             return VisitSlides(applicationObject, slideObject => IsSlideHidden(slideObject), false);
         }
 
-        internal static bool TryUnhideHiddenSlides(object applicationObject)
+        internal bool TryUnhideHiddenSlides(object applicationObject)
         {
             return VisitSlides(
                 applicationObject,
@@ -231,12 +238,12 @@ namespace Ink_Canvas.Controllers.Presentation
                 true);
         }
 
-        internal static bool HasAutomaticAdvance(object applicationObject)
+        internal bool HasAutomaticAdvance(object applicationObject)
         {
             return VisitSlides(applicationObject, slideObject => SlideHasAutomaticAdvance(slideObject), false);
         }
 
-        internal static bool TryDisableAutomaticAdvance(object applicationObject)
+        internal bool TryDisableAutomaticAdvance(object applicationObject)
         {
             object? presentationObject = null;
             object? slideShowSettingsObject = null;
@@ -266,7 +273,7 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (COMException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to disable automatic advance");
+                logger.Error(ex, "Presentation Session | Failed to disable automatic advance");
                 return false;
             }
             finally

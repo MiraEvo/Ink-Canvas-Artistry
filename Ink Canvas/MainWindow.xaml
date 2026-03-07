@@ -4207,7 +4207,7 @@
                                 </ikw:SimpleStackPanel>
                                 <TextBlock
                                     Foreground="{DynamicResource SettingsPageAnnotationForeground}"
-                                    Text="# 日志文件超过 512 KB 时会自动删除。"
+                                    Text="# 日志文件超过 512 KB 时会自动归档。"
                                     TextWrapping="Wrap" />
                                 <ikw:SimpleStackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                                     <ikw:SimpleStackPanel Width="50">

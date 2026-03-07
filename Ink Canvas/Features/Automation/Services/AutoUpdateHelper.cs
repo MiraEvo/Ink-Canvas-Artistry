@@ -12,10 +12,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using Ink_Canvas.Services.Logging;
 
 namespace Ink_Canvas.Features.Automation.Services
 {
-    internal static class AutoUpdateHelper
+    internal sealed class AutoUpdateHelper
     {
         private const string UpdateServerBaseUrl = "http://8.134.100.248:8080";
 
@@ -27,8 +28,14 @@ namespace Ink_Canvas.Features.Automation.Services
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Ink Canvas Artistry",
             "AutoUpdate");
+        private readonly IAppLogger logger;
 
-        public static async Task<string?> CheckForUpdates()
+        public AutoUpdateHelper(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(AutoUpdateHelper));
+        }
+
+        public async Task<string?> CheckForUpdates()
         {
             try
             {
@@ -38,7 +45,7 @@ namespace Ink_Canvas.Features.Automation.Services
 
                 if (remoteVersion is null)
                 {
-                    LogHelper.WriteLogToFile("AutoUpdate | Failed to retrieve remote version.", LogHelper.LogType.Error);
+                    logger.Error("AutoUpdate | Failed to retrieve remote version.");
                     return null;
                 }
 
@@ -46,34 +53,34 @@ namespace Ink_Canvas.Features.Automation.Services
                 Version remote = new(remoteVersion);
                 if (remote > local)
                 {
-                    LogHelper.WriteLogToFile($"AutoUpdate | New version Available: {remoteVersion}");
+                    logger.Info($"AutoUpdate | New version Available: {remoteVersion}");
                     return remoteVersion;
                 }
 
-                LogHelper.WriteLogToFile("AutoUpdate | Local version is up-to-date or newer.");
+                logger.Info("AutoUpdate | Local version is up-to-date or newer.");
                 return null;
             }
             catch (FormatException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Version format error: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Version format error: {ex.Message}");
                 return null;
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error checking for updates: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error checking for updates: {ex.Message}");
                 return null;
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error checking for updates: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error checking for updates: {ex.Message}");
                 return null;
             }
         }
 
-        public static Task<string?> GetRemoteVersion(string fileUrl) =>
+        public Task<string?> GetRemoteVersion(string fileUrl) =>
             TryGetStringAsync(fileUrl, VersionRequestTimeout, "getting version");
 
-        public static async Task<bool> DownloadSetupFileAndSaveStatus(string version)
+        public async Task<bool> DownloadSetupFileAndSaveStatus(string version)
         {
             string? validatedVersion = null;
             string? statusFilePath = null;
@@ -85,7 +92,7 @@ namespace Ink_Canvas.Features.Automation.Services
 
                 if (IsSetupFileMarkedAsDownloaded(statusFilePath))
                 {
-                    LogHelper.WriteLogToFile("AutoUpdate | Setup file already downloaded.");
+                    logger.Info("AutoUpdate | Setup file already downloaded.");
                     return true;
                 }
 
@@ -93,7 +100,7 @@ namespace Ink_Canvas.Features.Automation.Services
                 string destinationPath = ResolvePathWithinUpdatesFolder(setupFileName);
                 string downloadUrl = $"{UpdateServerBaseUrl}/download/{setupFileName}";
 
-                LogHelper.WriteLogToFile($"AutoUpdate | Attempting download from: {downloadUrl} to {destinationPath}");
+                logger.Info($"AutoUpdate | Attempting download from: {downloadUrl} to {destinationPath}");
 
                 SaveDownloadStatus(statusFilePath, false);
                 bool isDownloaded = await TryDownloadFile(downloadUrl, destinationPath).ConfigureAwait(false);
@@ -105,7 +112,7 @@ namespace Ink_Canvas.Features.Automation.Services
                     return false;
                 }
 
-                LogHelper.WriteLogToFile("AutoUpdate | Setup file successfully downloaded.");
+                logger.Info("AutoUpdate | Setup file successfully downloaded.");
                 return true;
             }
             catch (ArgumentException ex)
@@ -130,7 +137,7 @@ namespace Ink_Canvas.Features.Automation.Services
             }
         }
 
-        public static void InstallNewVersionApp(string version, bool isInSilence)
+        public void InstallNewVersionApp(string version, bool isInSilence)
         {
             try
             {
@@ -139,52 +146,52 @@ namespace Ink_Canvas.Features.Automation.Services
 
                 if (!File.Exists(setupFilePath))
                 {
-                    LogHelper.WriteLogToFile($"AutoUpdate | Setup file not found: {setupFilePath}", LogHelper.LogType.Error);
+                    logger.Error($"AutoUpdate | Setup file not found: {setupFilePath}");
                     return;
                 }
 
-                LogHelper.WriteLogToFile($"AutoUpdate | Starting installer: {setupFilePath}");
+                logger.Info($"AutoUpdate | Starting installer: {setupFilePath}");
                 StartInstaller(setupFilePath, isInSilence);
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error installing update: {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error installing update: {ex.Message}");
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error installing update: {ex.Message}");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error installing update: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error installing update: {ex.Message}");
             }
         }
 
-        public static void DeleteUpdatesFolder()
+        public void DeleteUpdatesFolder()
         {
             try
             {
                 if (Directory.Exists(updatesFolderPath))
                 {
                     Directory.Delete(updatesFolderPath, true);
-                    LogHelper.WriteLogToFile($"AutoUpdate | Deleted updates folder: {updatesFolderPath}");
+                    logger.Info($"AutoUpdate | Deleted updates folder: {updatesFolderPath}");
                 }
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate clearing| Error deleting updates folder: {ex.Message}");
             }
         }
 
-        private static async Task<string?> TryGetStringAsync(string fileUrl, TimeSpan timeout, string operationName)
+        private async Task<string?> TryGetStringAsync(string fileUrl, TimeSpan timeout, string operationName)
         {
             using CancellationTokenSource timeoutCts = new(timeout);
 
@@ -197,21 +204,21 @@ namespace Ink_Canvas.Features.Automation.Services
             }
             catch (HttpRequestException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | HTTP request error {operationName} from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | HTTP request error {operationName} from {fileUrl}: {ex.Message}");
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Timeout {operationName} from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Timeout {operationName} from {fileUrl}: {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error {operationName} from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error {operationName} from {fileUrl}: {ex.Message}");
             }
 
             return null;
         }
 
-        private static async Task<bool> TryDownloadFile(string fileUrl, string destinationPath)
+        private async Task<bool> TryDownloadFile(string fileUrl, string destinationPath)
         {
             using CancellationTokenSource timeoutCts = new(DownloadRequestTimeout);
 
@@ -228,36 +235,36 @@ namespace Ink_Canvas.Features.Automation.Services
                 await using FileStream fileStream = File.Create(destinationPath);
                 await response.Content.CopyToAsync(fileStream, timeoutCts.Token).ConfigureAwait(false);
 
-                LogHelper.WriteLogToFile($"AutoUpdate | File downloaded successfully to {destinationPath}");
+                logger.Info($"AutoUpdate | File downloaded successfully to {destinationPath}");
                 return true;
             }
             catch (HttpRequestException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | HTTP request error downloading from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | HTTP request error downloading from {fileUrl}: {ex.Message}");
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Timeout downloading from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Timeout downloading from {fileUrl}: {ex.Message}");
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | IO error saving to {destinationPath}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | IO error saving to {destinationPath}: {ex.Message}");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Access denied saving to {destinationPath}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Access denied saving to {destinationPath}: {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Invalid operation downloading from {fileUrl}: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Invalid operation downloading from {fileUrl}: {ex.Message}");
             }
 
             return false;
         }
 
-        private static void HandleDownloadFailure(Exception ex, string version, string? validatedVersion, string? statusFilePath)
+        private void HandleDownloadFailure(Exception ex, string version, string? validatedVersion, string? statusFilePath)
         {
-            LogHelper.WriteLogToFile($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}", LogHelper.LogType.Error);
+            logger.Error($"AutoUpdate | Error downloading setup file for version {version}: {ex.Message}");
 
             if (!string.IsNullOrWhiteSpace(statusFilePath))
             {
@@ -277,29 +284,29 @@ namespace Ink_Canvas.Features.Automation.Services
                 && isDownloaded;
         }
 
-        private static void SaveDownloadStatus(string statusFilePath, bool isSuccess)
+        private void SaveDownloadStatus(string statusFilePath, bool isSuccess)
         {
             try
             {
                 EnsureDirectoryExists(statusFilePath);
                 File.WriteAllText(statusFilePath, isSuccess.ToString());
-                LogHelper.WriteLogToFile($"AutoUpdate | Saved download status ({isSuccess}) to {statusFilePath}");
+                logger.Info($"AutoUpdate | Saved download status ({isSuccess}) to {statusFilePath}");
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error saving download status: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error saving download status: {ex.Message}");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error saving download status: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error saving download status: {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error saving download status: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error saving download status: {ex.Message}");
             }
         }
 
-        private static void StartInstaller(string setupFilePath, bool isInSilence)
+        private void StartInstaller(string setupFilePath, bool isInSilence)
         {
             string arguments = isInSilence ? "/SILENT /VERYSILENT" : "/SILENT";
             ProcessStartInfo processStartInfo = new()
@@ -315,20 +322,20 @@ namespace Ink_Canvas.Features.Automation.Services
             {
                 using Process process = new() { StartInfo = processStartInfo };
                 process.Start();
-                LogHelper.WriteLogToFile($"AutoUpdate | Started installer with arguments: {arguments}");
+                logger.Info($"AutoUpdate | Started installer with arguments: {arguments}");
                 ShutdownCurrentApplication();
             }
             catch (Win32Exception ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error starting installer '{setupFilePath}': {ex.Message}");
             }
         }
 
-        private static void ShutdownCurrentApplication()
+        private void ShutdownCurrentApplication()
         {
             Application? application = Application.Current;
             if (application?.Dispatcher is not { } dispatcher)
@@ -340,24 +347,24 @@ namespace Ink_Canvas.Features.Automation.Services
             {
                 if (dispatcher.CheckAccess())
                 {
-                    LogHelper.WriteLogToFile("AutoUpdate | Shutting down application for update.");
+                    logger.Info("AutoUpdate | Shutting down application for update.");
                     application.Shutdown();
                     return;
                 }
 
                 dispatcher.Invoke(() =>
                 {
-                    LogHelper.WriteLogToFile("AutoUpdate | Shutting down application for update.");
+                    logger.Info("AutoUpdate | Shutting down application for update.");
                     application.Shutdown();
                 });
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error shutting down application for update: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error shutting down application for update: {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error shutting down application for update: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error shutting down application for update: {ex.Message}");
             }
         }
 
@@ -384,7 +391,7 @@ namespace Ink_Canvas.Features.Automation.Services
             return trimmedVersion;
         }
 
-        private static string? ValidateVersionOrNull(string? version)
+        private string? ValidateVersionOrNull(string? version)
         {
             if (string.IsNullOrWhiteSpace(version))
             {
@@ -397,22 +404,22 @@ namespace Ink_Canvas.Features.Automation.Services
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Invalid remote version '{version}': {ex.Message}");
                 return null;
             }
             catch (FormatException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Invalid remote version '{version}': {ex.Message}");
                 return null;
             }
             catch (OverflowException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Invalid remote version '{version}': {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Invalid remote version '{version}': {ex.Message}");
                 return null;
             }
         }
 
-        private static void CleanupIncompleteDownload(string validatedVersion)
+        private void CleanupIncompleteDownload(string validatedVersion)
         {
             try
             {
@@ -424,19 +431,19 @@ namespace Ink_Canvas.Features.Automation.Services
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error deleting incomplete download: {ex.Message}");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error deleting incomplete download: {ex.Message}");
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error deleting incomplete download: {ex.Message}");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile($"AutoUpdate | Error deleting incomplete download: {ex.Message}", LogHelper.LogType.Error);
+                logger.Error($"AutoUpdate | Error deleting incomplete download: {ex.Message}");
             }
         }
 
@@ -466,13 +473,13 @@ namespace Ink_Canvas.Features.Automation.Services
             return fullPath;
         }
 
-        private static void EnsureDirectoryExists(string filePath)
+        private void EnsureDirectoryExists(string filePath)
         {
             string directory = GetRequiredDirectoryPath(filePath);
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
-                LogHelper.WriteLogToFile($"AutoUpdate | Created directory: {directory}");
+                logger.Info($"AutoUpdate | Created directory: {directory}");
             }
         }
 
@@ -533,9 +540,7 @@ namespace Ink_Canvas.Features.Automation.Services
             if (!TryParseTime(startTime, out TimeSpan startTimeOfDay)
                 || !TryParseTime(endTime, out TimeSpan endTimeOfDay))
             {
-                LogHelper.WriteLogToFile(
-                    $"AutoUpdate | Invalid time format for silence period: Start='{startTime}', End='{endTime}'",
-                    LogHelper.LogType.Error);
+                Debug.WriteLine($"AutoUpdate | Invalid time format for silence period: Start='{startTime}', End='{endTime}'");
                 return false;
             }
 

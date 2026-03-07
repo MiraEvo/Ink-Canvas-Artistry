@@ -121,11 +121,11 @@ namespace Ink_Canvas
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to capture current strokes");
+                mainWindowLogger.Error(ex, "PowerPoint | Failed to capture current strokes");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to capture current strokes");
+                mainWindowLogger.Error(ex, "PowerPoint | Failed to capture current strokes");
             }
 
             return [];
@@ -145,11 +145,11 @@ namespace Ink_Canvas
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to restore presentation strokes");
+                mainWindowLogger.Error(ex, "PowerPoint | Failed to restore presentation strokes");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to restore presentation strokes");
+                mainWindowLogger.Error(ex, "PowerPoint | Failed to restore presentation strokes");
             }
         }
 

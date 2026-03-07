@@ -598,7 +598,7 @@ namespace Ink_Canvas
                         }
                         catch (ArgumentException ex)
                         {
-                            LogHelper.WriteLogToFile(ex, "Shape Drawing | Failed to create hyperbola preview stroke");
+                mainWindowLogger.Error(ex, "Shape Drawing | Failed to create hyperbola preview stroke");
                             return;
                         }
                     }

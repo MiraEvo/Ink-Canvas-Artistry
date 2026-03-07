@@ -18,6 +18,7 @@ namespace Ink_Canvas.Features.Settings.Coordinators
                 new AppearanceSettingsChangeApplier(host),
                 new PresentationSettingsChangeApplier(host),
                 new InputSettingsChangeApplier(host),
+                new LoggingSettingsChangeApplier(host),
                 new AutomationSettingsChangeApplier(host, settingsViewModel)
             ];
         }
@@ -160,6 +161,22 @@ namespace Ink_Canvas.Features.Settings.Coordinators
                 case nameof(SettingsViewModel.IsEnableTwoFingerRotation):
                     host.CheckEnableTwoFingerGestureBtnColorPrompt();
                     break;
+            }
+        }
+    }
+
+    internal sealed class LoggingSettingsChangeApplier(ISettingsApplicationHost host) : ISettingsChangeApplier
+    {
+        public void ApplyAll()
+        {
+            host.ApplyLoggingEnabled();
+        }
+
+        public void ApplyPropertyChange(string propertyName)
+        {
+            if (propertyName == nameof(SettingsViewModel.IsLogEnabled))
+            {
+                host.ApplyLoggingEnabled();
             }
         }
     }

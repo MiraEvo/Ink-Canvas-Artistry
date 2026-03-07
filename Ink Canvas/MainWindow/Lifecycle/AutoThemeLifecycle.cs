@@ -1,7 +1,6 @@
 using Microsoft.Win32;
 using iNKORE.UI.WPF.Modern;
 using System;
-using Ink_Canvas.Helpers;
 using System.Windows;
 using System.Windows.Media;
 using Application = System.Windows.Application;
@@ -141,15 +140,15 @@ namespace Ink_Canvas
             }
             catch (InvalidCastException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Theme | Invalid registry value for SystemUsesLightTheme");
+                mainWindowLogger.Error(ex, "Theme | Invalid registry value for SystemUsesLightTheme");
             }
             catch (System.IO.IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Theme | Failed to read system theme registry key");
+                mainWindowLogger.Error(ex, "Theme | Failed to read system theme registry key");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Theme | Access denied while reading system theme registry key");
+                mainWindowLogger.Error(ex, "Theme | Access denied while reading system theme registry key");
             }
 
             return false;

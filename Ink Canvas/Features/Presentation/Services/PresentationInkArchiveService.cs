@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +8,13 @@ namespace Ink_Canvas.Features.Presentation.Services
 {
     internal sealed class PresentationInkArchiveService
     {
+        private readonly IAppLogger logger;
+
+        public PresentationInkArchiveService(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(PresentationInkArchiveService));
+        }
+
         public string GetPresentationStoragePath(string autoSavedStrokesLocation, string presentationName, int slideCount)
         {
             return Path.Combine(
@@ -29,15 +36,15 @@ namespace Ink_Canvas.Features.Presentation.Services
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to read saved slide position");
+                logger.Error(ex, "PowerPoint | Failed to read saved slide position");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Access denied while reading saved slide position");
+                logger.Error(ex, "PowerPoint | Access denied while reading saved slide position");
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to resolve saved slide position path");
+                logger.Error(ex, "PowerPoint | Failed to resolve saved slide position path");
             }
 
             return false;
@@ -70,11 +77,11 @@ namespace Ink_Canvas.Features.Presentation.Services
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Failed to load saved presentation strokes");
+                logger.Error(ex, "PowerPoint | Failed to load saved presentation strokes");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "PowerPoint | Access denied while loading presentation strokes");
+                logger.Error(ex, "PowerPoint | Access denied while loading presentation strokes");
             }
 
             return slideInkBuffers;
@@ -88,17 +95,17 @@ namespace Ink_Canvas.Features.Presentation.Services
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to create presentation storage folder '{folderPath}'");
+                logger.Error(ex, $"PowerPoint | Failed to create presentation storage folder '{folderPath}'");
                 return;
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Access denied while creating presentation storage folder '{folderPath}'");
+                logger.Error(ex, $"PowerPoint | Access denied while creating presentation storage folder '{folderPath}'");
                 return;
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to resolve presentation storage folder '{folderPath}'");
+                logger.Error(ex, $"PowerPoint | Failed to resolve presentation storage folder '{folderPath}'");
                 return;
             }
 
@@ -118,11 +125,11 @@ namespace Ink_Canvas.Features.Presentation.Services
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
+                logger.Error(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
+                logger.Error(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
             }
         }
 
@@ -146,7 +153,7 @@ namespace Ink_Canvas.Features.Presentation.Services
             return (baseFilePath + ".icart", baseFilePath + ".icstk");
         }
 
-        private static void TrySaveSlideInk(string folderPath, int slideIndex, byte[] inkData)
+        private void TrySaveSlideInk(string folderPath, int slideIndex, byte[] inkData)
         {
             (string icartFilePath, string icstkFilePath) = GetInkFilePaths(folderPath, slideIndex);
 
@@ -171,17 +178,17 @@ namespace Ink_Canvas.Features.Presentation.Services
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
+                logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
                 File.Delete(icstkFilePath);
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
+                logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
                 File.Delete(icstkFilePath);
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
+                logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
                 File.Delete(icstkFilePath);
             }
         }

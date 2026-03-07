@@ -1,5 +1,4 @@
 using Ink_Canvas.Features.Ink;
-using Ink_Canvas.Helpers;
 using Ink_Canvas.ViewModels;
 using Microsoft.Win32;
 using System;
@@ -31,7 +30,7 @@ namespace Ink_Canvas
         private InkPaletteCoordinator inkPaletteCoordinator = null!;
         private InkArchiveCoordinator inkArchiveCoordinator = null!;
         private InkHistoryCoordinator inkHistoryCoordinator = null!;
-        private readonly InkArchiveService inkArchiveService = new();
+        private InkArchiveService inkArchiveService = null!;
 
         private ShapeDrawingSessionState ShapeDrawingState => inkInteractionCoordinator?.ShapeDrawingState ?? shapeDrawingFallbackState;
 
@@ -47,8 +46,9 @@ namespace Ink_Canvas
 
         private void InitializeInkFeature()
         {
-            inkHistoryCoordinator = new InkHistoryCoordinator(this);
-            inkRecognitionService = new InkRecognitionService();
+            inkArchiveService = new InkArchiveService(appLogger);
+            inkHistoryCoordinator = new InkHistoryCoordinator(this, appLogger);
+            inkRecognitionService = new InkRecognitionService(appLogger);
             inkInteractionCoordinator = new InkInteractionCoordinator(
                 this,
                 this,
@@ -58,7 +58,7 @@ namespace Ink_Canvas
                 inkRecognitionService);
             inkGestureCoordinator = new InkGestureCoordinator(this);
             inkPaletteCoordinator = new InkPaletteCoordinator(this);
-            inkArchiveCoordinator = new InkArchiveCoordinator(this, inkHistoryCoordinator, inkArchiveService);
+            inkArchiveCoordinator = new InkArchiveCoordinator(this, inkHistoryCoordinator, inkArchiveService, appLogger);
         }
 
         private bool isLongPressSelected

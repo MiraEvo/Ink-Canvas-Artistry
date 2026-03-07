@@ -40,11 +40,11 @@ namespace Ink_Canvas
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Invalid settings payload");
+                mainWindowLogger.Error(ex, "Settings Load | Invalid settings payload");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to normalize settings");
+                mainWindowLogger.Error(ex, "Settings Load | Failed to normalize settings");
             }
 
             return SettingsDefaults.Normalize(new Settings());
@@ -58,19 +58,19 @@ namespace Ink_Canvas
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to normalize startup registration");
+                mainWindowLogger.Error(ex, "Settings Load | Failed to normalize startup registration");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Access denied while normalizing startup registration");
+                mainWindowLogger.Error(ex, "Settings Load | Access denied while normalizing startup registration");
             }
             catch (SecurityException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Security error while normalizing startup registration");
+                mainWindowLogger.Error(ex, "Settings Load | Security error while normalizing startup registration");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to normalize startup registration");
+                mainWindowLogger.Error(ex, "Settings Load | Failed to normalize startup registration");
             }
 
             return false;
@@ -90,7 +90,7 @@ namespace Ink_Canvas
 
             if (Settings.Automation.AutoDelSavedFiles)
             {
-                DelAutoSavedFiles.DeleteFilesOlder(
+                autoSavedFilesCleaner.DeleteFilesOlder(
                     Settings.Automation.AutoSavedStrokesLocation,
                     Settings.Automation.AutoDelSavedFilesDaysThreshold);
             }

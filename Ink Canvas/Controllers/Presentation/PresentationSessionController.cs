@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using Ink_Canvas.ViewModels;
 using Microsoft.Office.Interop.PowerPoint;
 using System;
@@ -18,6 +18,9 @@ namespace Ink_Canvas.Controllers.Presentation
         private readonly PresentationSessionViewModel presentationSessionViewModel;
         private readonly Func<bool> isWpsSupportEnabled;
         private readonly Func<bool> shouldSkipDetection;
+        private readonly IAppLogger logger;
+        private readonly DynamicPresentationAccessor dynamicPresentationAccessor;
+        private readonly RotPresentationDiscovery rotPresentationDiscovery;
         private readonly Timer monitorTimer;
 
         private int isMonitoring;
@@ -32,15 +35,20 @@ namespace Ink_Canvas.Controllers.Presentation
         public PresentationSessionController(
             PresentationSessionViewModel presentationSessionViewModel,
             Func<bool> isWpsSupportEnabled,
-            Func<bool> shouldSkipDetection)
+            Func<bool> shouldSkipDetection,
+            IAppLogger logger)
         {
             ArgumentNullException.ThrowIfNull(presentationSessionViewModel);
             ArgumentNullException.ThrowIfNull(isWpsSupportEnabled);
             ArgumentNullException.ThrowIfNull(shouldSkipDetection);
+            ArgumentNullException.ThrowIfNull(logger);
 
             this.presentationSessionViewModel = presentationSessionViewModel;
             this.isWpsSupportEnabled = isWpsSupportEnabled;
             this.shouldSkipDetection = shouldSkipDetection;
+            this.logger = logger.ForCategory(nameof(PresentationSessionController));
+            dynamicPresentationAccessor = new DynamicPresentationAccessor(this.logger);
+            rotPresentationDiscovery = new RotPresentationDiscovery(dynamicPresentationAccessor, this.logger);
 
             monitorTimer = CreateTimer(MonitorIntervalMs, MonitorTimer_Elapsed);
         }
@@ -80,31 +88,31 @@ namespace Ink_Canvas.Controllers.Presentation
         }
 
         public bool TryGoToSlide(int slideNumber) =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryGoToSlide(boundApplicationObject, slideNumber);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryGoToSlide(boundApplicationObject, slideNumber);
 
         public bool TryGoToPreviousSlide() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryGoToPreviousSlide(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryGoToPreviousSlide(boundApplicationObject);
 
         public bool TryGoToNextSlide() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryGoToNextSlide(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryGoToNextSlide(boundApplicationObject);
 
         public bool TryExitSlideShow() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryExitSlideShow(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryExitSlideShow(boundApplicationObject);
 
         public bool TryShowSlideNavigation() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryShowSlideNavigation(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryShowSlideNavigation(boundApplicationObject);
 
         public bool HasHiddenSlides() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.HasHiddenSlides(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.HasHiddenSlides(boundApplicationObject);
 
         public bool TryUnhideHiddenSlides() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryUnhideHiddenSlides(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryUnhideHiddenSlides(boundApplicationObject);
 
         public bool HasAutomaticAdvance() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.HasAutomaticAdvance(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.HasAutomaticAdvance(boundApplicationObject);
 
         public bool TryDisableAutomaticAdvance() =>
-            boundApplicationObject != null && DynamicPresentationAccessor.TryDisableAutomaticAdvance(boundApplicationObject);
+            boundApplicationObject != null && dynamicPresentationAccessor.TryDisableAutomaticAdvance(boundApplicationObject);
 
         private void MonitorTimer_Elapsed(object? sender, ElapsedEventArgs e) => QueueImmediateDetection();
 
@@ -157,15 +165,15 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (COMException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Detection failed during COM access");
+                logger.Error(ex, "Presentation Session | Detection failed during COM access");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Detection failed due to invalid state");
+                logger.Error(ex, "Presentation Session | Detection failed due to invalid state");
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Detection failed due to invalid arguments");
+                logger.Error(ex, "Presentation Session | Detection failed due to invalid arguments");
             }
         }
 
@@ -174,7 +182,7 @@ namespace Ink_Canvas.Controllers.Presentation
             PresentationBindingCandidate? bestCandidate = null;
             try
             {
-                bestCandidate = RotPresentationDiscovery.FindBestCandidate(isWpsSupportEnabled());
+                bestCandidate = rotPresentationDiscovery.FindBestCandidate(isWpsSupportEnabled());
                 if (!IsMonitoringEnabled())
                 {
                     return;
@@ -363,12 +371,12 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (COMException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to bind interop events");
+                logger.Error(ex, "Presentation Session | Failed to bind interop events");
                 areInteropEventsBound = false;
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Invalid state while binding interop events");
+                logger.Error(ex, "Presentation Session | Invalid state while binding interop events");
                 areInteropEventsBound = false;
             }
         }
@@ -389,11 +397,11 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (COMException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Failed to unbind interop events");
+                logger.Error(ex, "Presentation Session | Failed to unbind interop events");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Presentation Session | Invalid state while unbinding interop events");
+                logger.Error(ex, "Presentation Session | Invalid state while unbinding interop events");
             }
             finally
             {
@@ -467,7 +475,7 @@ namespace Ink_Canvas.Controllers.Presentation
             return timer;
         }
 
-        private static void RunOnUiThread(Action action, string failureContext)
+        private void RunOnUiThread(Action action, string failureContext)
         {
             ArgumentNullException.ThrowIfNull(action);
 
@@ -489,11 +497,11 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (TaskCanceledException ex)
             {
-                LogHelper.WriteLogToFile(ex, failureContext);
+                logger.Error(ex, failureContext);
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, failureContext);
+                logger.Error(ex, failureContext);
             }
         }
     }

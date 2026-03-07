@@ -1,5 +1,4 @@
 using Ink_Canvas.Features.Settings;
-using Ink_Canvas.Helpers;
 using System;
 using System.Windows;
 using System.Windows.Interop;
@@ -42,6 +41,8 @@ namespace Ink_Canvas
         void ISettingsApplicationHost.ApplyEdgeGestureSetting() => ApplyEdgeGestureSetting();
 
         void ISettingsApplicationHost.ApplyMultiTouchMode() => ApplyMultiTouchMode();
+
+        void ISettingsApplicationHost.ApplyLoggingEnabled() => ApplyLoggingEnabled();
 
         void ISettingsApplicationHost.CheckEnableTwoFingerGestureBtnColorPrompt() => CheckEnableTwoFingerGestureBtnColorPrompt();
 
@@ -253,6 +254,11 @@ namespace Ink_Canvas
             {
                 BorderMultiTouchMode_MouseUp(null, null);
             }
+        }
+
+        private void ApplyLoggingEnabled()
+        {
+            appLogger.SetEnabled(Settings.Advanced.IsLogEnabled);
         }
 
         private void ApplyAutoSaveStrokesAtClearHeader()

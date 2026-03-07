@@ -1,4 +1,3 @@
-using Ink_Canvas.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,16 +5,19 @@ using System.Windows;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using Ink_Canvas.Services.Logging;
 
 namespace Ink_Canvas.Features.Ink.Coordinators
 {
     internal sealed class InkHistoryCoordinator
     {
         private readonly IInkHistoryHost host;
+        private readonly IAppLogger logger;
 
-        public InkHistoryCoordinator(IInkHistoryHost host)
+        public InkHistoryCoordinator(IInkHistoryHost host, IAppLogger logger)
         {
             this.host = host ?? throw new ArgumentNullException(nameof(host));
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkHistoryCoordinator));
         }
 
         public TimeMachine TimeMachine { get; } = new();
@@ -321,11 +323,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Board | Failed to restore whiteboard history");
+                logger.Error(ex, "Board | Failed to restore whiteboard history");
             }
             catch (InvalidOperationException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Board | Failed to apply restored whiteboard history");
+                logger.Error(ex, "Board | Failed to apply restored whiteboard history");
             }
         }
 

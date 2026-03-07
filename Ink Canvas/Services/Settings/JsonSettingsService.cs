@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -6,9 +6,16 @@ using SettingsModel = global::Ink_Canvas.Settings;
 
 namespace Ink_Canvas.Services.Settings
 {
-    public sealed class JsonSettingsService(Func<string> settingsPathProvider) : ISettingsService
+    public sealed class JsonSettingsService : ISettingsService
     {
-        private readonly Func<string> settingsPathProvider = settingsPathProvider ?? throw new ArgumentNullException(nameof(settingsPathProvider));
+        private readonly Func<string> settingsPathProvider;
+        private readonly IAppLogger logger;
+
+        public JsonSettingsService(Func<string> settingsPathProvider, IAppLogger logger)
+        {
+            this.settingsPathProvider = settingsPathProvider ?? throw new ArgumentNullException(nameof(settingsPathProvider));
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(JsonSettingsService));
+        }
 
         public SettingsModel Load()
         {
@@ -24,22 +31,22 @@ namespace Ink_Canvas.Services.Settings
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Failed to read settings file");
+                logger.Error(ex, "Settings Load | Failed to read settings file");
                 return CreateRecommendedSettings();
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Access denied for settings file");
+                logger.Error(ex, "Settings Load | Access denied for settings file");
                 return CreateRecommendedSettings();
             }
             catch (JsonException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Invalid JSON in settings file");
+                logger.Error(ex, "Settings Load | Invalid JSON in settings file");
                 return CreateRecommendedSettings();
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Load | Invalid settings path");
+                logger.Error(ex, "Settings Load | Invalid settings path");
                 return CreateRecommendedSettings();
             }
         }
@@ -57,15 +64,15 @@ namespace Ink_Canvas.Services.Settings
             }
             catch (IOException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Save | Failed to write settings file");
+                logger.Error(ex, "Settings Save | Failed to write settings file");
             }
             catch (UnauthorizedAccessException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Save | Access denied for settings file");
+                logger.Error(ex, "Settings Save | Access denied for settings file");
             }
             catch (ArgumentException ex)
             {
-                LogHelper.WriteLogToFile(ex, "Settings Save | Invalid settings path");
+                logger.Error(ex, "Settings Save | Invalid settings path");
             }
         }
 
@@ -94,4 +101,3 @@ namespace Ink_Canvas.Services.Settings
         private static SettingsModel CreateRecommendedSettings() => SettingsDefaults.CreateRecommended();
     }
 }
-

@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +12,15 @@ namespace Ink_Canvas.Features.Ink.Services
 {
     internal sealed class InkArchiveService
     {
+        private readonly IAppLogger logger;
+        private readonly InkCanvasArchiveElementsSerializer elementsSerializer;
+
+        public InkArchiveService(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkArchiveService));
+            elementsSerializer = new InkCanvasArchiveElementsSerializer(this.logger);
+        }
+
         public string BuildArchiveDirectory(string rootDirectory, bool saveByUser, bool isDesktopAnnotationMode)
         {
             return Path.Combine(
@@ -43,7 +52,7 @@ namespace Ink_Canvas.Features.Ink.Services
             var elementsEntry = archive.CreateEntry("elements.xaml");
             using (var elementsStream = elementsEntry.Open())
             {
-                InkCanvasArchiveElementsSerializer.SaveElements(inkCanvas, elementsStream);
+                elementsSerializer.SaveElements(inkCanvas, elementsStream);
             }
 
             SaveRelatedDependencies(archive, inkCanvas);
@@ -84,7 +93,7 @@ namespace Ink_Canvas.Features.Ink.Services
             if (elementsEntry != null)
             {
                 using var elementsStream = elementsEntry.Open();
-                elements = InkCanvasArchiveElementsSerializer.LoadElements(
+                elements = elementsSerializer.LoadElements(
                     elementsStream,
                     Path.Combine(dependencyRoot, InkCanvasArchiveElementsSerializer.DependencyFolderName));
             }
@@ -92,25 +101,25 @@ namespace Ink_Canvas.Features.Ink.Services
             return new InkArchiveLoadResult(strokes, elements);
         }
 
-        private static void SaveRelatedDependencies(ZipArchive archive, InkCanvas inkCanvas)
+        private void SaveRelatedDependencies(ZipArchive archive, InkCanvas inkCanvas)
         {
             string dependencyFolder = InkCanvasArchiveElementsSerializer.DependencyFolderName;
             archive.CreateEntry(dependencyFolder + "/");
 
             foreach (UIElement element in inkCanvas.Children)
             {
-                if (InkCanvasArchiveElementsSerializer.TryGetDependencySourcePath(element, out string sourcePath))
+                if (elementsSerializer.TryGetDependencySourcePath(element, out string sourcePath))
                 {
                     AddFileToArchive(archive, sourcePath, dependencyFolder);
                 }
                 else
                 {
-                    LogHelper.WriteLogToFile("该元素类型暂不支持保存", LogHelper.LogType.Error);
+                    logger.Error("该元素类型暂不支持保存");
                 }
             }
         }
 
-        private static void AddFileToArchive(ZipArchive archive, string filePath, string folderName)
+        private void AddFileToArchive(ZipArchive archive, string filePath, string folderName)
         {
             if (!File.Exists(filePath))
             {
@@ -120,7 +129,7 @@ namespace Ink_Canvas.Features.Ink.Services
             string fileName = Path.GetFileName(filePath);
             if (string.IsNullOrWhiteSpace(fileName))
             {
-                LogHelper.WriteLogToFile($"Elements Save | Skipped dependency with invalid file name: {filePath}", LogHelper.LogType.Error);
+                logger.Error($"Elements Save | Skipped dependency with invalid file name: {filePath}");
                 return;
             }
 
@@ -130,7 +139,7 @@ namespace Ink_Canvas.Features.Ink.Services
             sourceStream.CopyTo(entryStream);
         }
 
-        private static void ExtractDependencies(ZipArchive archive, string outputDirectory)
+        private void ExtractDependencies(ZipArchive archive, string outputDirectory)
         {
             string outputRoot = Path.GetFullPath(outputDirectory);
             foreach (var entry in archive.Entries)
@@ -149,14 +158,14 @@ namespace Ink_Canvas.Features.Ink.Services
 
                     if (!filePath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
                     {
-                        LogHelper.WriteLogToFile($"Elements Load | Rejected archive entry outside dependency directory: {entry.FullName}", LogHelper.LogType.Error);
+                        logger.Error($"Elements Load | Rejected archive entry outside dependency directory: {entry.FullName}");
                         continue;
                     }
 
                     string? directoryPath = Path.GetDirectoryName(filePath);
                     if (string.IsNullOrWhiteSpace(directoryPath))
                     {
-                        LogHelper.WriteLogToFile($"Elements Load | Missing target directory for archive entry: {entry.FullName}", LogHelper.LogType.Error);
+                        logger.Error($"Elements Load | Missing target directory for archive entry: {entry.FullName}");
                         continue;
                     }
 
@@ -168,27 +177,27 @@ namespace Ink_Canvas.Features.Ink.Services
                 }
                 catch (ArgumentException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, $"Elements Load | Invalid archive entry '{entry.FullName}'");
+                    logger.Error(ex, $"Elements Load | Invalid archive entry '{entry.FullName}'");
                 }
                 catch (IOException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, $"Elements Load | Failed to extract archive entry '{entry.FullName}'");
+                    logger.Error(ex, $"Elements Load | Failed to extract archive entry '{entry.FullName}'");
                 }
                 catch (InvalidDataException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, $"Elements Load | Invalid archive entry data '{entry.FullName}'");
+                    logger.Error(ex, $"Elements Load | Invalid archive entry data '{entry.FullName}'");
                 }
                 catch (UnauthorizedAccessException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, $"Elements Load | Access denied while extracting archive entry '{entry.FullName}'");
+                    logger.Error(ex, $"Elements Load | Access denied while extracting archive entry '{entry.FullName}'");
                 }
                 catch (SecurityException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, $"Elements Load | Security error while extracting archive entry '{entry.FullName}'");
+                    logger.Error(ex, $"Elements Load | Security error while extracting archive entry '{entry.FullName}'");
                 }
                 catch (NotSupportedException ex)
                 {
-                    LogHelper.WriteLogToFile(ex, $"Elements Load | Unsupported archive entry '{entry.FullName}'");
+                    logger.Error(ex, $"Elements Load | Unsupported archive entry '{entry.FullName}'");
                 }
             }
         }
@@ -208,4 +217,3 @@ namespace Ink_Canvas.Features.Ink.Services
 
     internal sealed record InkArchiveLoadResult(StrokeCollection Strokes, IReadOnlyList<UIElement> Elements);
 }
-

@@ -1,4 +1,5 @@
 using Ink_Canvas.Controllers;
+using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -7,7 +8,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
-    internal static class RotPresentationDiscovery
+    internal sealed class RotPresentationDiscovery
     {
         private const string PowerPointApplicationMoniker = "!{91493441-5A91-11CF-8700-00AA0060263B}";
         private static readonly string[] PresentationExtensions =
@@ -25,7 +26,16 @@ namespace Ink_Canvas.Controllers.Presentation
             ".dpt"
         ];
 
-        internal static PresentationBindingCandidate? FindBestCandidate(bool isWpsSupportEnabled)
+        private readonly DynamicPresentationAccessor dynamicPresentationAccessor;
+        private readonly IAppLogger logger;
+
+        public RotPresentationDiscovery(DynamicPresentationAccessor dynamicPresentationAccessor, IAppLogger logger)
+        {
+            this.dynamicPresentationAccessor = dynamicPresentationAccessor ?? throw new ArgumentNullException(nameof(dynamicPresentationAccessor));
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(RotPresentationDiscovery));
+        }
+
+        internal PresentationBindingCandidate? FindBestCandidate(bool isWpsSupportEnabled)
         {
             IRunningObjectTable? runningObjectTable = null;
             IEnumMoniker? enumMoniker = null;
@@ -93,7 +103,7 @@ namespace Ink_Canvas.Controllers.Presentation
                         scannedApplications.Add(applicationObject);
                         keepApplicationAlive = true;
 
-                        if (!DynamicPresentationAccessor.TryBuildCandidate(applicationObject, isWpsSupportEnabled, out PresentationBindingCandidate? candidate)
+                        if (!dynamicPresentationAccessor.TryBuildCandidate(applicationObject, isWpsSupportEnabled, out PresentationBindingCandidate? candidate)
                             || candidate == null)
                         {
                             continue;
@@ -107,11 +117,11 @@ namespace Ink_Canvas.Controllers.Presentation
                     }
                     catch (COMException ex)
                     {
-                        LogHelper.WriteLogToFile(ex, "Presentation Session | ROT scan item failed");
+                        logger.Error(ex, "Presentation Session | ROT scan item failed");
                     }
                     catch (TargetInvocationException ex)
                     {
-                        LogHelper.WriteLogToFile(ex, "Presentation Session | ROT invocation failed");
+                        logger.Error(ex, "Presentation Session | ROT invocation failed");
                     }
                     finally
                     {

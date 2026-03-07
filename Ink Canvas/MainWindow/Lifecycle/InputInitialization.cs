@@ -44,7 +44,7 @@ namespace Ink_Canvas
 
         private void InitializeInputController()
         {
-            inkCanvasInteractionController = new InkCanvasInteractionController(inkCanvas, mainWindowViewModel.Input);
+            inkCanvasInteractionController = new InkCanvasInteractionController(inkCanvas, mainWindowViewModel.Input, appLogger);
             InitializeInkFeature();
         }
 

@@ -1,5 +1,5 @@
 using Ink_Canvas.Controllers;
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using Ink_Canvas.ViewModels;
 using System;
 using System.Threading.Tasks;
@@ -13,25 +13,29 @@ namespace Ink_Canvas.Features.Presentation.Coordinators
         private readonly PresentationSessionViewModel presentationViewModel;
         private readonly IPresentationUiHost uiHost;
         private readonly PresentationInkArchiveService archiveService;
+        private readonly IAppLogger logger;
 
         public PresentationExperienceCoordinator(
             IPresentationSessionController presentationSessionController,
             SettingsViewModel settingsViewModel,
             PresentationSessionViewModel presentationViewModel,
             IPresentationUiHost uiHost,
-            PresentationInkArchiveService archiveService)
+            PresentationInkArchiveService archiveService,
+            IAppLogger logger)
         {
             ArgumentNullException.ThrowIfNull(presentationSessionController);
             ArgumentNullException.ThrowIfNull(settingsViewModel);
             ArgumentNullException.ThrowIfNull(presentationViewModel);
             ArgumentNullException.ThrowIfNull(uiHost);
             ArgumentNullException.ThrowIfNull(archiveService);
+            ArgumentNullException.ThrowIfNull(logger);
 
             this.presentationSessionController = presentationSessionController;
             this.settingsViewModel = settingsViewModel;
             this.presentationViewModel = presentationViewModel;
             this.uiHost = uiHost;
             this.archiveService = archiveService;
+            this.logger = logger.ForCategory(nameof(PresentationExperienceCoordinator));
         }
 
         public PresentationInkSessionState State { get; } = new();
@@ -120,7 +124,7 @@ namespace Ink_Canvas.Features.Presentation.Coordinators
             uiHost.SetPresentationCounterText($"{ResolveCurrentSlideIndex()}/{slideCount}");
             presentationViewModel.SetNavigationVisibility(showBottomNavigation, showSideNavigation);
 
-            LogHelper.WriteLogToFile("PowerPoint Slide Show Loading process complete");
+            logger.Info("PowerPoint Slide Show Loading process complete");
             _ = uiHost.AnimateFloatingBarMarginAfterDelayAsync(TimeSpan.FromMilliseconds(100));
         }
 
@@ -131,10 +135,10 @@ namespace Ink_Canvas.Features.Presentation.Coordinators
                 uiHost.UnfoldFloatingBar();
             }
 
-            LogHelper.WriteLogToFile("PowerPoint Slide Show End", LogHelper.LogType.Event);
+            logger.Event("PowerPoint Slide Show End");
             if (!State.TryBeginSlideShowEnd())
             {
-                LogHelper.WriteLogToFile("Detected previous entrance, returning");
+                logger.Info("Detected previous entrance, returning");
                 return;
             }
 
@@ -164,7 +168,7 @@ namespace Ink_Canvas.Features.Presentation.Coordinators
         {
             int currentSlideIndex = ResolveCurrentSlideIndex();
             int slideCount = presentationViewModel.SlideCount;
-            LogHelper.WriteLogToFile($"PowerPoint Next Slide (Slide {currentSlideIndex})", LogHelper.LogType.Event);
+            logger.Event($"PowerPoint Next Slide (Slide {currentSlideIndex})");
 
             if (currentSlideIndex == State.PreviousSlideIndex)
             {

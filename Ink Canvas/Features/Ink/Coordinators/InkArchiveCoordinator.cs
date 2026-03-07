@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -11,15 +11,18 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         private readonly IInkArchiveHost host;
         private readonly InkHistoryCoordinator historyCoordinator;
         private readonly InkArchiveService archiveService;
+        private readonly IAppLogger logger;
 
         public InkArchiveCoordinator(
             IInkArchiveHost host,
             InkHistoryCoordinator historyCoordinator,
-            InkArchiveService archiveService)
+            InkArchiveService archiveService,
+            IAppLogger logger)
         {
             this.host = host ?? throw new ArgumentNullException(nameof(host));
             this.historyCoordinator = historyCoordinator ?? throw new ArgumentNullException(nameof(historyCoordinator));
             this.archiveService = archiveService ?? throw new ArgumentNullException(nameof(archiveService));
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkArchiveCoordinator));
         }
 
         public void SaveCurrentCanvas(bool showNotice, bool saveByUser)
@@ -76,7 +79,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 return;
             }
 
-            LogHelper.WriteLogToFile($"Strokes Insert: Name: {filePath}", LogHelper.LogType.Event);
+            logger.Event($"Strokes Insert: Name: {filePath}");
 
             try
             {
@@ -127,7 +130,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         private void HandleFailure(Exception exception, string context, string notification)
         {
             host.ShowArchiveNotification(notification);
-            LogHelper.WriteLogToFile(exception, context);
+            logger.Error(exception, context);
         }
     }
 }

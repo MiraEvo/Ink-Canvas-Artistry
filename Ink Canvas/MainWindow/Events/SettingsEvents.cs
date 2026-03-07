@@ -8,7 +8,7 @@ namespace Ink_Canvas
 {
     public partial class MainWindow
     {
-        public static void SaveSettingsToFile()
+        public void SaveSettingsToFile()
         {
             settingsService.Save(Settings);
         }

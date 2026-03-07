@@ -1,6 +1,7 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using iNKORE.UI.WPF.Modern.Controls;
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
@@ -13,38 +14,50 @@ namespace Ink_Canvas
     /// </summary>
     public partial class App : Application
     {
-        System.Threading.Mutex mutex;
+        private System.Threading.Mutex mutex;
+        private readonly IAppLogger appLogger;
 
         public static string[] StartArgs = null;
         public static string RootPath = Environment.GetEnvironmentVariable("APPDATA") + "\\Ink Canvas\\";
 
+        public FileAppLogger Logger { get; }
+
         public App()
         {
-            this.Startup += new StartupEventHandler(App_Startup);
-            this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+            Logger = new FileAppLogger(new LogOptions
+            {
+                Enabled = true,
+                DirectoryPath = Path.Combine(AppContext.BaseDirectory, "Logs"),
+                ActiveFileName = "Log.txt",
+                MaxFileSizeBytes = 512 * 1024,
+                RetainedArchiveCount = 5
+            });
+            appLogger = Logger.ForCategory(nameof(App));
+            Startup += App_Startup;
+            DispatcherUnhandledException += App_DispatcherUnhandledException;
         }
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             Ink_Canvas.MainWindow.ShowNewMessage("抱歉，出现未预期的异常，可能导致 Ink Canvas 画板运行不稳定。\n建议保存墨迹后重启应用。", true);
-            LogHelper.NewLog(e.Exception);
+            appLogger.Error(e.Exception, force: true);
             e.Handled = true;
         }
 
-        void App_Startup(object sender, StartupEventArgs e)
+        private void App_Startup(object sender, StartupEventArgs e)
         {
             /*if (!StoreHelper.IsStoreApp) */RootPath = AppContext.BaseDirectory;
 
-            LogHelper.NewLog(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version));
+            appLogger.Info(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version));
 
             bool ret;
             mutex = new System.Threading.Mutex(true, "Ink_Canvas_Artistry", out ret);
 
-            if (!ret && !e.Args.Contains("-m")) //-m multiple
+            if (!ret && !e.Args.Contains("-m"))
             {
-                LogHelper.NewLog("Detected existing instance");
+                appLogger.Info("Detected existing instance");
                 MessageBox.Show("已有一个程序实例正在运行");
-                LogHelper.NewLog("Ink Canvas automatically closed");
+                appLogger.Info("Ink Canvas automatically closed");
                 Environment.Exit(0);
             }
 

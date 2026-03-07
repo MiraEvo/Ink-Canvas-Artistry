@@ -10,10 +10,11 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml;
 using System.Xml.Linq;
+using Ink_Canvas.Services.Logging;
 
 namespace Ink_Canvas.Features.Ink.Services
 {
-    internal static class InkCanvasArchiveElementsSerializer
+    internal sealed class InkCanvasArchiveElementsSerializer
     {
         internal const string DependencyFolderName = "File Dependency";
 
@@ -25,8 +26,14 @@ namespace Ink_Canvas.Features.Ink.Services
             : StringComparison.Ordinal;
 
         private static int generatedElementIndex;
+        private readonly IAppLogger logger;
 
-        public static void SaveElements(InkCanvas inkCanvas, Stream outputStream)
+        public InkCanvasArchiveElementsSerializer(IAppLogger logger)
+        {
+            this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkCanvasArchiveElementsSerializer));
+        }
+
+        public void SaveElements(InkCanvas inkCanvas, Stream outputStream)
         {
             ArgumentNullException.ThrowIfNull(inkCanvas);
             ArgumentNullException.ThrowIfNull(outputStream);
@@ -41,7 +48,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 }
                 else
                 {
-                    LogHelper.WriteLogToFile("Elements Save | Skipped unsupported element while serializing archive.", LogHelper.LogType.Trace);
+                    logger.Trace("Elements Save | Skipped unsupported element while serializing archive.");
                 }
             }
 
@@ -58,7 +65,7 @@ namespace Ink_Canvas.Features.Ink.Services
             writer.Flush();
         }
 
-        public static List<UIElement> LoadElements(Stream inputStream, string dependencyDirectory)
+        public List<UIElement> LoadElements(Stream inputStream, string dependencyDirectory)
         {
             ArgumentNullException.ThrowIfNull(inputStream);
             ArgumentException.ThrowIfNullOrWhiteSpace(dependencyDirectory);
@@ -113,7 +120,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return elements;
         }
 
-        public static bool TryGetDependencySourcePath(UIElement element, out string sourcePath)
+        public bool TryGetDependencySourcePath(UIElement element, out string sourcePath)
         {
             sourcePath = null;
 
@@ -129,7 +136,7 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        private static XElement SerializeElement(UIElement element)
+        private XElement SerializeElement(UIElement element)
         {
             switch (element)
             {
@@ -142,11 +149,11 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        private static XElement SerializeImage(Image image)
+        private XElement SerializeImage(Image image)
         {
             if (!TryGetImageSourcePath(image.Source, out string sourcePath))
             {
-                LogHelper.WriteLogToFile("Elements Save | Image source could not be resolved to a local file.", LogHelper.LogType.Error);
+                logger.Error("Elements Save | Image source could not be resolved to a local file.");
                 return null;
             }
 
@@ -156,11 +163,11 @@ namespace Ink_Canvas.Features.Ink.Services
             return element;
         }
 
-        private static XElement SerializeMediaElement(MediaElement mediaElement)
+        private XElement SerializeMediaElement(MediaElement mediaElement)
         {
             if (mediaElement.Source?.IsFile != true || string.IsNullOrWhiteSpace(mediaElement.Source.LocalPath))
             {
-                LogHelper.WriteLogToFile("Elements Save | Media source could not be resolved to a local file.", LogHelper.LogType.Error);
+                logger.Error("Elements Save | Media source could not be resolved to a local file.");
                 return null;
             }
 
@@ -212,7 +219,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return header;
         }
 
-        private static UIElement DeserializeElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
+        private UIElement DeserializeElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
             switch (element.Name.LocalName)
             {
@@ -221,12 +228,12 @@ namespace Ink_Canvas.Features.Ink.Services
                 case "MediaElement":
                     return DeserializeMediaElement(element, dependencyRoot, useDependencyFileAttribute);
                 default:
-                    LogHelper.WriteLogToFile($"Elements Load | Unsupported element '{element.Name.LocalName}' was skipped.", LogHelper.LogType.Trace);
+                    logger.Trace($"Elements Load | Unsupported element '{element.Name.LocalName}' was skipped.");
                     return null;
             }
         }
 
-        private static Image DeserializeImage(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
+        private Image DeserializeImage(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
             Uri sourceUri = ResolveDependencyUri(element, dependencyRoot, useDependencyFileAttribute);
             BitmapImage bitmapImage = new BitmapImage();
@@ -248,7 +255,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return image;
         }
 
-        private static MediaElement DeserializeMediaElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
+        private MediaElement DeserializeMediaElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
             Uri sourceUri = ResolveDependencyUri(element, dependencyRoot, useDependencyFileAttribute);
             MediaElement mediaElement = new MediaElement
@@ -277,7 +284,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return mediaElement;
         }
 
-        private static void ApplyCommonProperties(FrameworkElement element, XElement sourceElement)
+        private void ApplyCommonProperties(FrameworkElement element, XElement sourceElement)
         {
             element.Name = EnsureValidElementName(GetAttributeValue(sourceElement, "Name"), element.GetType().Name);
 
@@ -303,7 +310,7 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        private static Transform ParseRenderTransform(XElement element)
+        private Transform ParseRenderTransform(XElement element)
         {
             foreach (XElement child in element.Elements())
             {
@@ -319,7 +326,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return null;
         }
 
-        private static Transform ParseTransform(XElement transformElement)
+        private Transform ParseTransform(XElement transformElement)
         {
             if (transformElement == null)
             {
@@ -369,12 +376,12 @@ namespace Ink_Canvas.Features.Ink.Services
                         ParseDoubleAttribute(transformElement, nameof(Matrix.OffsetX), 0d),
                         ParseDoubleAttribute(transformElement, nameof(Matrix.OffsetY), 0d)));
                 default:
-                    LogHelper.WriteLogToFile($"Elements Load | Unsupported transform '{transformElement.Name.LocalName}' was skipped.", LogHelper.LogType.Trace);
+                    logger.Trace($"Elements Load | Unsupported transform '{transformElement.Name.LocalName}' was skipped.");
                     return null;
             }
         }
 
-        private static void AppendRenderTransform(XElement element, Transform renderTransform)
+        private void AppendRenderTransform(XElement element, Transform renderTransform)
         {
             XElement transformElement = SerializeTransform(renderTransform);
             if (transformElement == null)
@@ -385,7 +392,7 @@ namespace Ink_Canvas.Features.Ink.Services
             element.Add(new XElement("RenderTransform", transformElement));
         }
 
-        private static XElement SerializeTransform(Transform transform)
+        private XElement SerializeTransform(Transform transform)
         {
             if (transform == null)
             {
@@ -437,7 +444,7 @@ namespace Ink_Canvas.Features.Ink.Services
                         new XAttribute(nameof(Matrix.OffsetX), ToInvariantString(matrix.OffsetX)),
                         new XAttribute(nameof(Matrix.OffsetY), ToInvariantString(matrix.OffsetY)));
                 default:
-                    LogHelper.WriteLogToFile($"Elements Save | Unsupported transform '{transform.GetType().Name}' was skipped.", LogHelper.LogType.Trace);
+                    logger.Trace($"Elements Save | Unsupported transform '{transform.GetType().Name}' was skipped.");
                     return null;
             }
         }
