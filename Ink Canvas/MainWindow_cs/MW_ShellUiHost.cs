@@ -145,7 +145,7 @@ namespace Ink_Canvas
             StackPanelCanvasControls.Visibility = Visibility.Visible;
 
             CheckEnableTwoFingerGestureBtnVisibility(true);
-            ColorSwitchCheck();
+            inkPaletteCoordinator?.HandlePaletteThemeRefresh();
             HideSubPanels("pen", true);
         }
 
@@ -236,7 +236,7 @@ namespace Ink_Canvas
         private void ApplyShellThemeRefresh()
         {
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;
-            CheckColorTheme(true);
+            inkPaletteCoordinator?.HandlePaletteThemeRefresh(true);
         }
 
         private void SaveScreenshotForCurrentContext()

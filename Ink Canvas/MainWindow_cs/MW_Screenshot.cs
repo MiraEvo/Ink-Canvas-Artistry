@@ -24,10 +24,7 @@ namespace Ink_Canvas
                 Directory.CreateDirectory(directory);
             }
             bitmap.Save(savePath, ImageFormat.Png);
-            if (Settings.Automation.IsAutoSaveStrokesAtScreenshot)
-            {
-                SaveInkCanvasFile(false, false);
-            }
+            inkArchiveCoordinator?.HandleAutoSaveAfterScreenshot();
             if (!isHideNotification)
             {
                 ShowNotificationAsync("截图成功保存至 " + savePath);
@@ -40,7 +37,7 @@ namespace Ink_Canvas
             string savePath = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
             bitmap.Save(savePath + @"\" + DateTime.Now.ToString("u").Replace(':', '-') + ".png", ImageFormat.Png);
             ShowNotificationAsync("截图成功保存至【桌面" + @"\" + DateTime.Now.ToString("u").Replace(':', '-') + ".png】");
-            if (Settings.Automation.IsAutoSaveStrokesAtScreenshot) SaveInkCanvasFile(false, false);
+            inkArchiveCoordinator?.HandleAutoSaveAfterScreenshot();
         }
 
         private void SavePPTScreenshot(string fileName)
@@ -59,10 +56,7 @@ namespace Ink_Canvas
                 Directory.CreateDirectory(directory);
             }
             bitmap.Save(savePath, ImageFormat.Png);
-            if (Settings.Automation.IsAutoSaveStrokesAtScreenshot)
-            {
-                SaveInkCanvasFile(false, false);
-            }
+            inkArchiveCoordinator?.HandleAutoSaveAfterScreenshot();
         }
 
         private Bitmap GetScreenshotBitmap()

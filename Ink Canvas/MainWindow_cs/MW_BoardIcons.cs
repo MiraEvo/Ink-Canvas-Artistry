@@ -12,35 +12,7 @@ namespace Ink_Canvas
     {
         private void BoardChangeBackgroundColorBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (!isLoaded) return;
-            Settings.Canvas.UsingWhiteboard = !Settings.Canvas.UsingWhiteboard;
-            SaveSettingsToFile();
-            if (Settings.Canvas.UsingWhiteboard)
-            {
-                if (inkColor == 5) lastBoardInkColor = 0;
-            }
-            else
-            {
-                if (inkColor == 0) lastBoardInkColor = 5;
-            }
-            ComboBoxTheme_SelectionChanged(null, null);
-            CheckColorTheme(true);
-            if (BoardPen.Opacity == 1)
-            {
-                BoardPen.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-            }
-            if (BoardEraser.Opacity == 1)
-            {
-                BoardEraser.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-            }
-            if (BoardSelect.Opacity == 1)
-            {
-                BoardSelect.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-            }
-            if (BoardEraserByStrokes.Opacity == 1)
-            {
-                BoardEraserByStrokes.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
-            }
+            inkPaletteCoordinator?.HandleBoardBackgroundToggle();
         }
 
         private void BoardEraserIcon_Click(object sender, RoutedEventArgs e)
@@ -69,20 +41,20 @@ namespace Ink_Canvas
 
         private void BoardSymbolIconDelete_Click(object sender, RoutedEventArgs e)
         {
-            PenIcon_Click(null, null);
-            SymbolIconDelete_MouseUp(sender, e);
+            toolbarExperienceCoordinator.HandlePenRequested();
+            toolbarExperienceCoordinator.HandleDeleteRequested();
         }
 
         private void BoardLaunchEasiCamera_Click(object sender, RoutedEventArgs e)
         {
-            ImageBlackboard_Click(null, null);
+            toolbarExperienceCoordinator.HandleToggleBlackboardRequested();
             SoftwareLauncher.LaunchEasiCamera("希沃视频展台");
         }
 
         private void BoardLaunchDesmos_Click(object sender, RoutedEventArgs e)
         {
             HideSubPanelsImmediately();
-            ImageBlackboard_Click(null, null);
+            toolbarExperienceCoordinator.HandleToggleBlackboardRequested();
             ProcessHelper.StartWithShell("https://www.desmos.com/calculator?lang=zh-CN");
         }
 

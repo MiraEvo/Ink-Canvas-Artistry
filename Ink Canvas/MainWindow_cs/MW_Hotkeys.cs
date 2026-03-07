@@ -96,12 +96,12 @@ namespace Ink_Canvas
 
         private void HotKey_Undo(object sender, ExecutedRoutedEventArgs e)
         {
-            SymbolIconUndo_Click(null, null);
+            toolbarExperienceCoordinator.HandleUndoRequested();
         }
 
         private void HotKey_Redo(object sender, ExecutedRoutedEventArgs e)
         {
-            SymbolIconRedo_Click(null, null);
+            toolbarExperienceCoordinator.HandleRedoRequested();
         }
 
         private void KeyExit(object sender, ExecutedRoutedEventArgs e)
@@ -113,7 +113,7 @@ namespace Ink_Canvas
         {
             if (StackPanelCanvasControls.Visibility == Visibility.Visible)
             {
-                SymbolIconSelect_Click(null, null);
+                toolbarExperienceCoordinator.HandleSelectRequested();
             }
         }
 
@@ -123,11 +123,11 @@ namespace Ink_Canvas
             {
                 if (Eraser_Icon.Background != null)
                 {
-                    EraserIconByStrokes_Click(null, null);
+                    toolbarExperienceCoordinator.HandleStrokeEraserRequested();
                 }
                 else
                 {
-                    EraserIcon_Click(null, null);
+                    toolbarExperienceCoordinator.HandleEraserRequested();
                 }
             }
         }

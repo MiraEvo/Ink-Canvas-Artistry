@@ -628,7 +628,7 @@ namespace Ink_Canvas
                 isDesktopUselightThemeColor = isUselightThemeColor;
             }
 
-            CheckColorTheme();
+            inkPaletteCoordinator?.HandlePaletteThemeRefresh();
         }
 
         private void ToggleSingleFingerDragMode()

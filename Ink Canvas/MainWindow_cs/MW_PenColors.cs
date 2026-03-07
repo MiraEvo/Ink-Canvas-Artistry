@@ -1,7 +1,6 @@
 ﻿using Ink_Canvas.Helpers;
 using System;
 using Ink_Canvas.ViewModels;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -11,25 +10,11 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        int inkColor = 1;
-
         private void InkWidthSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (!isLoaded) return;
-            if (sender == BoardInkWidthSlider) InkWidthSlider.Value = ((Slider)sender).Value;
-            if (sender == InkWidthSlider) BoardInkWidthSlider.Value = ((Slider)sender).Value;
-            Settings.Canvas.InkWidth = ((Slider)sender).Value / 2;
-            if (inkColor > 100)
-            {
-                drawingAttributes.Height = 30 + ((Slider)sender).Value;
-                drawingAttributes.Width = 30 + ((Slider)sender).Value;
-            }
-            else
-            {
-                drawingAttributes.Height = ((Slider)sender).Value / 2;
-                drawingAttributes.Width = ((Slider)sender).Value / 2;
-            }
-            SaveSettingsToFile();
+            inkPaletteCoordinator?.HandleInkWidthChanged(
+                ((Slider)sender).Value,
+                ReferenceEquals(sender, BoardInkWidthSlider));
         }
 
         private void ColorSwitchCheck()
@@ -73,33 +58,6 @@ namespace Ink_Canvas
 
             isLongPressSelected = false;
         }
-
-        bool isUselightThemeColor = false, isDesktopUselightThemeColor = false;
-        int lastDesktopInkColor = 1, lastBoardInkColor = 5;
-        private readonly Dictionary<int, Color> inkColorLightThemeMapping = new Dictionary<int, Color>
-        {
-            { 0, Colors.Black }, // Black
-            { 1, Color.FromRgb(239, 68, 68) }, // Red
-            { 2, Color.FromRgb(34, 197, 94) }, // Green
-            { 3, Color.FromRgb(59, 130, 246) }, // Blue
-            { 4, Color.FromRgb(250, 204, 21) }, // Yellow
-            { 5, Colors.White }, // White
-            { 6, Color.FromRgb(236, 72, 153) }, // Pink
-            { 7, Color.FromRgb(20, 184, 166) }, // Teal
-            { 8, Color.FromRgb(249, 115, 22) }, // Orange
-        };
-        private readonly Dictionary<int, Color> inkColorDarkThemeMapping = new Dictionary<int, Color>
-        {
-            { 0, Colors.Black }, // Black
-            { 1, Color.FromRgb(220, 38, 38) }, // Red
-            { 2, Color.FromRgb(22, 163, 74) }, // Green
-            { 3, Color.FromRgb(37, 99, 235) }, // Blue
-            { 4, Color.FromRgb(234, 179, 8) }, // Yellow
-            { 5, Colors.White }, // White
-            { 6, Color.FromRgb(147, 51, 234) }, // Pink (Purple)
-            { 7, Color.FromRgb(13, 148, 136) }, // Teal
-            { 8, Color.FromRgb(234, 88, 12) }  // Orange
-        };
 
         private void CheckColorTheme(bool changeColorTheme = false)
         {
@@ -367,47 +325,47 @@ namespace Ink_Canvas
 
         private void BtnColorBlack_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(0);
+            inkPaletteCoordinator?.HandleColorSelected(0);
         }
 
         private void BtnColorRed_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(1);
+            inkPaletteCoordinator?.HandleColorSelected(1);
         }
 
         private void BtnColorGreen_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(2);
+            inkPaletteCoordinator?.HandleColorSelected(2);
         }
 
         private void BtnColorBlue_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(3);
+            inkPaletteCoordinator?.HandleColorSelected(3);
         }
 
         private void BtnColorYellow_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(4);
+            inkPaletteCoordinator?.HandleColorSelected(4);
         }
 
         private void BtnColorWhite_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(5);
+            inkPaletteCoordinator?.HandleColorSelected(5);
         }
 
         private void BtnColorPink_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(6);
+            inkPaletteCoordinator?.HandleColorSelected(6);
         }
 
         private void BtnColorTeal_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(7);
+            inkPaletteCoordinator?.HandleColorSelected(7);
         }
 
         private void BtnColorOrange_Click(object sender, RoutedEventArgs e)
         {
-            CheckLastColor(8);
+            inkPaletteCoordinator?.HandleColorSelected(8);
         }
 
         private Color StringToColor(string colorStr)

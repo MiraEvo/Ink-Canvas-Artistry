@@ -5,6 +5,7 @@ using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -16,19 +17,29 @@ using Point = System.Windows.Point;
 
 namespace Ink_Canvas
 {
-    public partial class MainWindow : IInkCanvasHost
+    public partial class MainWindow : IInkCanvasHost, IInkGestureHost, IInkPaletteHost, IInkArchiveHost
     {
         private readonly ShapeDrawingSessionState shapeDrawingFallbackState = new();
         private readonly SelectionSessionState selectionFallbackState = new();
+        private readonly InkGestureSessionState inkGestureFallbackState = new();
+        private readonly InkPaletteSessionState inkPaletteFallbackState = new();
         private readonly InkHistorySessionState inkHistoryFallbackState = new();
         private readonly WhiteboardSessionState whiteboardFallbackState = new();
         private InkRecognitionService inkRecognitionService = null!;
         private InkInteractionCoordinator inkInteractionCoordinator = null!;
+        private InkGestureCoordinator inkGestureCoordinator = null!;
+        private InkPaletteCoordinator inkPaletteCoordinator = null!;
+        private InkArchiveCoordinator inkArchiveCoordinator = null!;
         private InkHistoryCoordinator inkHistoryCoordinator = null!;
+        private readonly InkArchiveService inkArchiveService = new();
 
         private ShapeDrawingSessionState ShapeDrawingState => inkInteractionCoordinator?.ShapeDrawingState ?? shapeDrawingFallbackState;
 
         private SelectionSessionState SelectionState => inkInteractionCoordinator?.SelectionState ?? selectionFallbackState;
+
+        private InkGestureSessionState GestureState => inkGestureCoordinator?.GestureState ?? inkGestureFallbackState;
+
+        private InkPaletteSessionState PaletteState => inkPaletteCoordinator?.PaletteState ?? inkPaletteFallbackState;
 
         private InkHistorySessionState InkHistoryState => inkHistoryCoordinator?.HistoryState ?? inkHistoryFallbackState;
 
@@ -45,6 +56,9 @@ namespace Ink_Canvas
                 mainWindowViewModel.Shell,
                 mainWindowViewModel.Input,
                 inkRecognitionService);
+            inkGestureCoordinator = new InkGestureCoordinator(this);
+            inkPaletteCoordinator = new InkPaletteCoordinator(this);
+            inkArchiveCoordinator = new InkArchiveCoordinator(this, inkHistoryCoordinator, inkArchiveService);
         }
 
         private bool isLongPressSelected
@@ -115,8 +129,8 @@ namespace Ink_Canvas
 
         private bool isWaitUntilNextTouchDown
         {
-            get => ShapeDrawingState.IsWaitUntilNextTouchDown;
-            set => ShapeDrawingState.IsWaitUntilNextTouchDown = value;
+            get => GestureState.IsWaitUntilNextTouchDown;
+            set => GestureState.IsWaitUntilNextTouchDown = value;
         }
 
         private bool isMouseDown
@@ -145,28 +159,28 @@ namespace Ink_Canvas
 
         private bool isLastTouchEraser
         {
-            get => ShapeDrawingState.IsLastTouchEraser;
-            set => ShapeDrawingState.IsLastTouchEraser = value;
+            get => GestureState.IsLastTouchEraser;
+            set => GestureState.IsLastTouchEraser = value;
         }
 
-        private List<int> dec => ShapeDrawingState.ActiveTouchDeviceIds;
+        private List<int> dec => GestureState.ActiveTouchDeviceIds;
 
         private Point centerPoint
         {
-            get => ShapeDrawingState.CenterPoint;
-            set => ShapeDrawingState.CenterPoint = value;
+            get => GestureState.CenterPoint;
+            set => GestureState.CenterPoint = value;
         }
 
         private InkCanvasEditingMode lastInkCanvasEditingMode
         {
-            get => ShapeDrawingState.LastInkCanvasEditingMode;
-            set => ShapeDrawingState.LastInkCanvasEditingMode = value;
+            get => GestureState.LastInkCanvasEditingMode;
+            set => GestureState.LastInkCanvasEditingMode = value;
         }
 
         private bool isSingleFingerDragMode
         {
-            get => ShapeDrawingState.IsSingleFingerDragMode;
-            set => ShapeDrawingState.IsSingleFingerDragMode = value;
+            get => GestureState.IsSingleFingerDragMode;
+            set => GestureState.IsSingleFingerDragMode = value;
         }
 
         private StrokeCollection newStrokes
@@ -176,6 +190,40 @@ namespace Ink_Canvas
         }
 
         private List<Circle> circles => ShapeDrawingState.Circles;
+
+        private int inkColor
+        {
+            get => PaletteState.InkColor;
+            set => PaletteState.InkColor = value;
+        }
+
+        private bool isUselightThemeColor
+        {
+            get => PaletteState.IsUsingLightThemeColor;
+            set => PaletteState.IsUsingLightThemeColor = value;
+        }
+
+        private bool isDesktopUselightThemeColor
+        {
+            get => PaletteState.IsDesktopUsingLightThemeColor;
+            set => PaletteState.IsDesktopUsingLightThemeColor = value;
+        }
+
+        private int lastDesktopInkColor
+        {
+            get => PaletteState.LastDesktopInkColor;
+            set => PaletteState.LastDesktopInkColor = value;
+        }
+
+        private int lastBoardInkColor
+        {
+            get => PaletteState.LastBoardInkColor;
+            set => PaletteState.LastBoardInkColor = value;
+        }
+
+        private Dictionary<int, Color> inkColorLightThemeMapping => PaletteState.LightThemeMapping;
+
+        private Dictionary<int, Color> inkColorDarkThemeMapping => PaletteState.DarkThemeMapping;
 
         private object? lastBorderMouseDownObject
         {
@@ -292,6 +340,380 @@ namespace Ink_Canvas
         void IInkCanvasHost.ApplySelectionMatrixTransform(int type) => MatrixTransform(type);
 
         void IInkCanvasHost.HideSelectionCover() => GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
+
+        bool IInkGestureHost.IsLoaded => isLoaded;
+
+        bool IInkGestureHost.IsInMultiTouchMode => isInMultiTouchMode;
+
+        void IInkGestureHost.ToggleMultiTouchMode() => inkCanvasInteractionController.ConfigureMultiTouchMode(
+            !isInMultiTouchMode,
+            MainWindow_StylusDown,
+            MainWindow_StylusMove,
+            MainWindow_StylusUp,
+            MainWindow_TouchDown,
+            Main_Grid_TouchDown);
+
+        void IInkGestureHost.HandleMainWindowTouchDown(TouchEventArgs e, InkGestureSessionState gestureState)
+        {
+            inkCanvasInteractionController.HandleMultiTouchTouchDown(
+                e,
+                Settings,
+                BoundsWidth,
+                forceEraser,
+                forcePointEraser,
+                drawingShapeMode != 0,
+                () =>
+                {
+                    if (!isHidingSubPanelsWhenInking)
+                    {
+                        isHidingSubPanelsWhenInking = true;
+                        HideSubPanels();
+                    }
+                });
+        }
+
+        void IInkGestureHost.HandleGridTouchDown(TouchEventArgs e, InkGestureSessionState gestureState)
+        {
+            if (!isHidingSubPanelsWhenInking)
+            {
+                isHidingSubPanelsWhenInking = true;
+                HideSubPanels();
+            }
+
+            if (NeedUpdateIniP())
+            {
+                iniP = e.GetTouchPoint(inkCanvas).Position;
+            }
+
+            if (drawingShapeMode == 9 && !isFirstTouchCuboid)
+            {
+                MouseTouchMove(iniP);
+            }
+
+            inkCanvas.Opacity = 1;
+            double boundsWidth = GetTouchBoundWidth(e);
+            if ((Settings.Advanced.TouchMultiplier != 0 || !Settings.Advanced.IsSpecialScreen)
+                && boundsWidth > BoundsWidth)
+            {
+                gestureState.IsLastTouchEraser = true;
+                if (drawingShapeMode == 0 && forceEraser)
+                {
+                    return;
+                }
+
+                double threshold = Settings.Startup.IsEnableNibMode
+                    ? Settings.Advanced.NibModeBoundsWidthThresholdValue
+                    : Settings.Advanced.FingerModeBoundsWidthThresholdValue;
+                if (boundsWidth > BoundsWidth * threshold)
+                {
+                    boundsWidth *= Settings.Startup.IsEnableNibMode
+                        ? Settings.Advanced.NibModeBoundsWidthEraserSize
+                        : Settings.Advanced.FingerModeBoundsWidthEraserSize;
+                    if (Settings.Advanced.IsSpecialScreen)
+                    {
+                        boundsWidth *= Settings.Advanced.TouchMultiplier;
+                    }
+
+                    ApplyCanvasInteractionMode(CanvasInteractionMode.EraseByPoint, boundsWidth);
+                }
+                else
+                {
+                    if (IsPresentationSlideShowRunning
+                        && inkCanvas.Strokes.Count == 0
+                        && Settings.PowerPointSettings.IsEnableFingerGestureSlideShowControl)
+                    {
+                        gestureState.IsLastTouchEraser = false;
+                        ApplyCanvasInteractionMode(CanvasInteractionMode.GestureOnly);
+                        inkCanvas.Opacity = 0.1;
+                    }
+                    else
+                    {
+                        ApplyCanvasInteractionMode(CanvasInteractionMode.EraseByStroke, strokeEraserDiameter: 5);
+                    }
+                }
+            }
+            else
+            {
+                gestureState.IsLastTouchEraser = false;
+                inkCanvas.EraserShape = forcePointEraser ? new EllipseStylusShape(50, 50) : new EllipseStylusShape(5, 5);
+                if (forceEraser)
+                {
+                    return;
+                }
+
+                ApplyCanvasInteractionMode(CanvasInteractionMode.Ink);
+            }
+        }
+
+        void IInkGestureHost.HandlePreviewTouchDown(TouchEventArgs e, InkGestureSessionState gestureState)
+        {
+            dec.Add(e.TouchDevice.Id);
+            if (dec.Count == 1)
+            {
+                TouchPoint touchPoint = e.GetTouchPoint(inkCanvas);
+                centerPoint = touchPoint.Position;
+                lastTouchDownStrokeCollection = inkCanvas.Strokes.Clone();
+            }
+
+            if (dec.Count > 1 || isSingleFingerDragMode || !Settings.Gesture.IsEnableTwoFingerGesture)
+            {
+                if (isInMultiTouchMode || !Settings.Gesture.IsEnableTwoFingerGesture)
+                {
+                    return;
+                }
+
+                if (inkCanvas.EditingMode != InkCanvasEditingMode.None && inkCanvas.EditingMode != InkCanvasEditingMode.Select)
+                {
+                    lastInkCanvasEditingMode = inkCanvas.EditingMode;
+                    ApplyCanvasInteractionMode(CanvasInteractionMode.Suspended);
+                }
+            }
+        }
+
+        void IInkGestureHost.HandlePreviewTouchUp(TouchEventArgs e, InkGestureSessionState gestureState)
+        {
+            if (dec.Count > 1 && inkCanvas.EditingMode == InkCanvasEditingMode.None)
+            {
+                inkCanvas.EditingMode = lastInkCanvasEditingMode;
+            }
+
+            dec.Remove(e.TouchDevice.Id);
+            inkCanvas.Opacity = 1;
+            if (dec.Count == 0)
+            {
+                if (lastTouchDownStrokeCollection.Count != inkCanvas.Strokes.Count
+                    && !(drawingShapeMode == 9 && !isFirstTouchCuboid))
+                {
+                    int whiteboardIndex = CurrentWhiteboardIndex;
+                    if (ShellViewModel.IsDesktopAnnotationMode)
+                    {
+                        whiteboardIndex = 0;
+                    }
+
+                    strokeCollections[whiteboardIndex] = lastTouchDownStrokeCollection;
+                }
+            }
+        }
+
+        void IInkGestureHost.HandleManipulationCompleted(ManipulationCompletedEventArgs e, InkGestureSessionState gestureState)
+        {
+            if (e.Manipulators.Count() == 0)
+            {
+                if (forceEraser)
+                {
+                    return;
+                }
+
+                ApplyCanvasInteractionMode(CanvasInteractionMode.Ink);
+            }
+        }
+
+        void IInkGestureHost.HandleManipulationDelta(ManipulationDeltaEventArgs e, InkGestureSessionState gestureState)
+        {
+            if (isInMultiTouchMode || !Settings.Gesture.IsEnableTwoFingerGesture)
+            {
+                return;
+            }
+
+            if (!((dec.Count >= 2 && (Settings.PowerPointSettings.IsEnableTwoFingerGestureInPresentationMode || !IsPresentationSlideShowRunning))
+                || isSingleFingerDragMode))
+            {
+                return;
+            }
+
+            Matrix matrix = new();
+            ManipulationDelta manipulationDelta = e.DeltaManipulation;
+            Vector translation = manipulationDelta.Translation;
+            if (Settings.Gesture.IsEnableTwoFingerGestureTranslateOrRotation)
+            {
+                double rotation = manipulationDelta.Rotation;
+                Vector scale = manipulationDelta.Scale;
+                Point center = GetMatrixTransformCenterPoint(e.ManipulationOrigin, e.Source as FrameworkElement);
+                if (Settings.Gesture.IsEnableTwoFingerZoom)
+                {
+                    matrix.ScaleAt(scale.X, scale.Y, center.X, center.Y);
+                }
+
+                if (Settings.Gesture.IsEnableTwoFingerRotation)
+                {
+                    matrix.RotateAt(rotation, center.X, center.Y);
+                }
+
+                if (Settings.Gesture.IsEnableTwoFingerTranslate)
+                {
+                    matrix.Translate(translation.X, translation.Y);
+                }
+
+                List<UIElement> elements = InkCanvasElementsHelper.GetAllElements(inkCanvas);
+                foreach (UIElement element in elements)
+                {
+                    ApplyElementMatrixTransform(element, matrix);
+                }
+            }
+
+            if (Settings.Gesture.IsEnableTwoFingerZoom)
+            {
+                foreach (Stroke stroke in inkCanvas.Strokes)
+                {
+                    stroke.Transform(matrix, false);
+                    ScaleStrokeDrawingAttributes(stroke, manipulationDelta.Scale.X, manipulationDelta.Scale.Y);
+                }
+            }
+            else
+            {
+                foreach (Stroke stroke in inkCanvas.Strokes)
+                {
+                    stroke.Transform(matrix, false);
+                }
+            }
+
+            foreach (Circle circle in circles)
+            {
+                circle.R = GetDistance(circle.Stroke.StylusPoints[0].ToPoint(), circle.Stroke.StylusPoints[circle.Stroke.StylusPoints.Count / 2].ToPoint()) / 2;
+                circle.Centroid = new Point(
+                    (circle.Stroke.StylusPoints[0].X + circle.Stroke.StylusPoints[circle.Stroke.StylusPoints.Count / 2].X) / 2,
+                    (circle.Stroke.StylusPoints[0].Y + circle.Stroke.StylusPoints[circle.Stroke.StylusPoints.Count / 2].Y) / 2);
+            }
+        }
+
+        bool IInkPaletteHost.IsLoaded => isLoaded;
+
+        void IInkPaletteHost.ApplyInkWidthChange(double value, bool fromBoardSlider)
+        {
+            if (fromBoardSlider)
+            {
+                InkWidthSlider.Value = value;
+            }
+            else
+            {
+                BoardInkWidthSlider.Value = value;
+            }
+
+            Settings.Canvas.InkWidth = value / 2;
+            if (inkColor > 100)
+            {
+                drawingAttributes.Height = 30 + value;
+                drawingAttributes.Width = 30 + value;
+            }
+            else
+            {
+                drawingAttributes.Height = value / 2;
+                drawingAttributes.Width = value / 2;
+            }
+
+            SaveSettingsToFile();
+        }
+
+        void IInkPaletteHost.ApplyInkAlphaChange(double value, bool fromBoardSlider)
+        {
+            if (fromBoardSlider)
+            {
+                InkAlphaSlider.Value = value;
+            }
+            else
+            {
+                BoardInkAlphaSlider.Value = value;
+            }
+
+            drawingAttributes.Height = 20;
+            drawingAttributes.Width = 5;
+            Settings.Canvas.InkAlpha = (int)value;
+            SaveSettingsToFile();
+            CheckColorTheme();
+        }
+
+        void IInkPaletteHost.ApplyPaletteColorSelection(int colorIndex) => CheckLastColor(colorIndex);
+
+        void IInkPaletteHost.ApplyPaletteTheme(bool changeColorTheme) => CheckColorTheme(changeColorTheme);
+
+        void IInkPaletteHost.ToggleBoardBackgroundColor()
+        {
+            if (!isLoaded)
+            {
+                return;
+            }
+
+            Settings.Canvas.UsingWhiteboard = !Settings.Canvas.UsingWhiteboard;
+            SaveSettingsToFile();
+            if (Settings.Canvas.UsingWhiteboard)
+            {
+                if (inkColor == 5)
+                {
+                    lastBoardInkColor = 0;
+                }
+            }
+            else if (inkColor == 0)
+            {
+                lastBoardInkColor = 5;
+            }
+
+            ComboBoxTheme_SelectionChanged(null, null);
+            CheckColorTheme(true);
+            if (BoardPen.Opacity == 1)
+            {
+                BoardPen.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+            }
+            if (BoardEraser.Opacity == 1)
+            {
+                BoardEraser.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+            }
+            if (BoardSelect.Opacity == 1)
+            {
+                BoardSelect.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+            }
+            if (BoardEraserByStrokes.Opacity == 1)
+            {
+                BoardEraserByStrokes.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
+            }
+        }
+
+        Ink_Canvas.Settings IInkArchiveHost.Settings => Settings;
+
+        InkCanvas IInkArchiveHost.InkCanvas => inkCanvas;
+
+        bool IInkArchiveHost.IsDesktopAnnotationMode => ShellViewModel.IsDesktopAnnotationMode;
+
+        bool IInkArchiveHost.IsBlackboardMode => ShellViewModel.IsBlackboardMode;
+
+        int IInkArchiveHost.CurrentWhiteboardIndex => CurrentWhiteboardIndex;
+
+        string? IInkArchiveHost.ShowOpenArchiveDialog()
+        {
+            OpenFileDialog openFileDialog = new()
+            {
+                InitialDirectory = Settings.Automation.AutoSavedStrokesLocation,
+                Title = "打开墨迹文件",
+                Filter = "Ink Canvas Files (*.icart;*.icstk)|*.icart;*.icstk|Ink Canvas Artistry Files (*.icart)|*.icart|Ink Canvas Stroke Files (*.icstk)|*.icstk"
+            };
+
+            return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
+        }
+
+        void IInkArchiveHost.ShowArchiveNotification(string message) => ShowNotificationAsync(message);
+
+        void IInkArchiveHost.ReplaceCanvasContent(StrokeCollection strokes, IReadOnlyList<UIElement> elements)
+        {
+            inkCanvas.Strokes.Add(strokes);
+            inkCanvas.Children.Clear();
+            foreach (UIElement element in elements)
+            {
+                inkCanvas.Children.Add(element);
+            }
+        }
+
+        void IInkArchiveHost.ClearCanvasForArchiveImport()
+        {
+            ClearStrokes(true);
+            inkCanvas.Children.Clear();
+        }
+
+        void IInkArchiveHost.EnsureCanvasVisibleAfterArchiveImport()
+        {
+            if (inkCanvas.Visibility != Visibility.Visible)
+            {
+                _ = toolbarExperienceCoordinator?.HandleCursorRequestedAsync();
+            }
+        }
 
         private void UpdateSelectionCloneToggleVisual(bool enabled)
         {

@@ -1,19 +1,21 @@
 using Ink_Canvas.Controllers;
+using Ink_Canvas.Features.Automation;
 using Ink_Canvas.Helpers;
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
 
 namespace Ink_Canvas
 {
-    public partial class MainWindow
+    public partial class MainWindow : IAutomationUiHost
     {
         private IAutomationController? automationController;
         private IHotkeyController? hotkeyController;
+        private AutomationExperienceCoordinator automationExperienceCoordinator = null!;
 
         private void InitializeAutomationControllers()
         {
+            automationExperienceCoordinator = new AutomationExperienceCoordinator(this);
             automationController = new AutomationController(
                 SettingsViewModel,
                 PresentationViewModel,
@@ -21,20 +23,20 @@ namespace Ink_Canvas
                 AutomationViewModel,
                 () => ShellViewModel.IsFloatingBarTransitioning,
                 () => ShellViewModel.IsFloatingBarFolded,
-                CanInstallSilentUpdate,
-                () => FoldFloatingBar_Click(null, null),
-                () => UnFoldFloatingBar_MouseUp(null, null),
-                HandleAutoKilledEasiNote,
-                version => AutoUpdateHelper.InstallNewVersionApp(version, true));
+                automationExperienceCoordinator.CanInstallSilentUpdate,
+                automationExperienceCoordinator.HandleRequestFoldFloatingBar,
+                automationExperienceCoordinator.HandleRequestUnfoldFloatingBar,
+                automationExperienceCoordinator.HandleAutoKilledEasiNote,
+                automationExperienceCoordinator.HandleInstallSilentUpdate);
 
             hotkeyController = new HotkeyController(
-                () => BtnPPTSlideShowEnd_Click(null, null),
-                () => SymbolIconDelete_MouseUp(null, null),
-                SaveScreenShotToDesktop,
-                () => SymbolIconEmoji_MouseUp(null, null),
-                () => PenIcon_Click(null, null),
-                ExitDrawModeFromHotkey,
-                () => ImageBlackboard_Click(null, null));
+                automationExperienceCoordinator.HandleExitPresentation,
+                automationExperienceCoordinator.HandleClearCanvas,
+                automationExperienceCoordinator.HandleCaptureScreen,
+                automationExperienceCoordinator.HandleToggleCanvasVisibility,
+                automationExperienceCoordinator.HandleActivatePen,
+                automationExperienceCoordinator.HandleExitDrawMode,
+                automationExperienceCoordinator.HandleToggleBlackboard);
         }
 
         private void InitTimers()
@@ -62,7 +64,9 @@ namespace Ink_Canvas
             automationController?.CancelSilentUpdate();
         }
 
-        private bool CanInstallSilentUpdate()
+        bool IAutomationUiHost.IsBlackboardMode => ShellViewModel.IsBlackboardMode;
+
+        bool IAutomationUiHost.CanInstallSilentUpdate()
         {
             try
             {
@@ -82,25 +86,29 @@ namespace Ink_Canvas
             }
         }
 
-        private void HandleAutoKilledEasiNote()
-        {
-            if (ShellViewModel.IsBlackboardMode)
-            {
-                ExitBlackboardSession();
-            }
+        void IAutomationUiHost.RequestFoldFloatingBar() => _ = toolbarExperienceCoordinator.HandleFoldFloatingBarAsync(false);
 
-            MessageBox.Show("“希沃白板 5”已自动关闭");
-        }
+        void IAutomationUiHost.RequestUnfoldFloatingBar() => _ = toolbarExperienceCoordinator.HandleUnfoldFloatingBarAsync(false);
 
-        private void ExitDrawModeFromHotkey()
-        {
-            if (ShellViewModel.IsBlackboardMode)
-            {
-                ExitBlackboardSession();
-            }
+        void IAutomationUiHost.EndPresentation() => BtnPPTSlideShowEnd_Click(null, null);
 
-            CursorIcon_Click(null, null);
-        }
+        void IAutomationUiHost.RequestClearCanvas() => toolbarExperienceCoordinator.HandleDeleteRequested();
+
+        void IAutomationUiHost.CaptureScreenToDesktop() => SaveScreenShotToDesktop();
+
+        void IAutomationUiHost.ToggleCanvasVisibility() => toolbarExperienceCoordinator.HandleHideInkCanvasRequested();
+
+        void IAutomationUiHost.ActivatePenTool() => toolbarExperienceCoordinator.HandlePenRequested();
+
+        void IAutomationUiHost.ActivateCursorTool() => _ = toolbarExperienceCoordinator.HandleCursorRequestedAsync();
+
+        void IAutomationUiHost.ToggleBlackboard() => toolbarExperienceCoordinator.HandleToggleBlackboardRequested();
+
+        void IAutomationUiHost.ExitBlackboardSession() => ExitBlackboardSession();
+
+        void IAutomationUiHost.ShowAutoKilledEasiNoteMessage() => MessageBox.Show("“希沃白板 5”已自动关闭");
+
+        void IAutomationUiHost.InstallSilentUpdate(string version) => AutoUpdateHelper.InstallNewVersionApp(version, true);
 
         private void DisposeAutomationControllers()
         {
