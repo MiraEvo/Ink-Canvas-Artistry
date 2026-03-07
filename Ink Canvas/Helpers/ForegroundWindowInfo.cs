@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 namespace Ink_Canvas.Helpers
 {
-    internal class ForegroundWindowInfo
+    internal static partial class ForegroundWindowInfo
     {
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetForegroundWindow();
+        [LibraryImport("user32.dll", EntryPoint = "GetForegroundWindow")]
+        private static partial IntPtr GetForegroundWindow();
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
@@ -16,12 +17,14 @@ namespace Ink_Canvas.Helpers
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
         private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-        [DllImport("user32.dll")]
+        [LibraryImport("user32.dll", EntryPoint = "GetWindowRect")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+        private static partial bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
-        [DllImport("user32.dll")]
-        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+        [LibraryImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
+        private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        private const int TextCapacity = 256;
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -38,10 +41,16 @@ namespace Ink_Canvas.Helpers
         public static string WindowTitle()
         {
             IntPtr foregroundWindowHandle = GetForegroundWindow();
+            if (foregroundWindowHandle == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
 
-            const int nChars = 256;
-            StringBuilder windowTitle = new StringBuilder(nChars);
-            GetWindowText(foregroundWindowHandle, windowTitle, nChars);
+            StringBuilder windowTitle = new StringBuilder(TextCapacity);
+            if (GetWindowText(foregroundWindowHandle, windowTitle, TextCapacity) <= 0)
+            {
+                return string.Empty;
+            }
 
             return windowTitle.ToString();
         }
@@ -49,10 +58,16 @@ namespace Ink_Canvas.Helpers
         public static string WindowClassName()
         {
             IntPtr foregroundWindowHandle = GetForegroundWindow();
+            if (foregroundWindowHandle == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
 
-            const int nChars = 256;
-            StringBuilder className = new StringBuilder(nChars);
-            GetClassName(foregroundWindowHandle, className, nChars);
+            StringBuilder className = new StringBuilder(TextCapacity);
+            if (GetClassName(foregroundWindowHandle, className, TextCapacity) <= 0)
+            {
+                return string.Empty;
+            }
 
             return className.ToString();
         }
@@ -60,9 +75,10 @@ namespace Ink_Canvas.Helpers
         public static RECT WindowRect()
         {
             IntPtr foregroundWindowHandle = GetForegroundWindow();
-
-            RECT windowRect;
-            GetWindowRect(foregroundWindowHandle, out windowRect);
+            if (foregroundWindowHandle == IntPtr.Zero || !GetWindowRect(foregroundWindowHandle, out RECT windowRect))
+            {
+                return default;
+            }
 
             return windowRect;
         }
@@ -70,17 +86,29 @@ namespace Ink_Canvas.Helpers
         public static string ProcessName()
         {
             IntPtr foregroundWindowHandle = GetForegroundWindow();
-            uint processId;
-            GetWindowThreadProcessId(foregroundWindowHandle, out processId);
+            if (foregroundWindowHandle == IntPtr.Zero)
+            {
+                return "Unknown";
+            }
+
+            GetWindowThreadProcessId(foregroundWindowHandle, out uint processId);
+            if (processId == 0)
+            {
+                return "Unknown";
+            }
 
             try
             {
-                Process process = Process.GetProcessById((int)processId);
+                using Process process = Process.GetProcessById((int)processId);
                 return process.ProcessName;
             }
             catch (ArgumentException)
             {
                 // Process with the given ID not found
+                return "Unknown";
+            }
+            catch (InvalidOperationException)
+            {
                 return "Unknown";
             }
         }

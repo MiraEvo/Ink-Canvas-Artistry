@@ -462,7 +462,7 @@ namespace Ink_Canvas
                 case 15:
                     _currentCommitType = CommitReason.ShapeDrawing;
                     double d = GetDistance(iniP, endP);
-                    if (d == 0) return;
+                    if (IsNearlyZero(d)) return;
                     double sinTheta = (iniP.Y - endP.Y) / d;
                     double cosTheta = (endP.X - iniP.X) / d;
                     double tanTheta = Math.Abs(sinTheta / cosTheta);
@@ -634,7 +634,7 @@ namespace Ink_Canvas
                     StylusPoint stylusPoint;
                     if (a > b)
                     {
-                        stylusPoint = new StylusPoint(iniP.X + c, iniP.Y, (float)1.0);
+                        stylusPoint = new StylusPoint(iniP.X + c, iniP.Y, ToPressureFactor(1.0));
                         point = new StylusPointCollection();
                         point.Add(stylusPoint);
                         stroke = new Stroke(point)
@@ -642,7 +642,7 @@ namespace Ink_Canvas
                             DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                         };
                         strokes.Add(stroke.Clone());
-                        stylusPoint = new StylusPoint(iniP.X - c, iniP.Y, (float)1.0);
+                        stylusPoint = new StylusPoint(iniP.X - c, iniP.Y, ToPressureFactor(1.0));
                         point = new StylusPointCollection();
                         point.Add(stylusPoint);
                         stroke = new Stroke(point)
@@ -653,7 +653,7 @@ namespace Ink_Canvas
                     }
                     else if (a < b)
                     {
-                        stylusPoint = new StylusPoint(iniP.X, iniP.Y - c, (float)1.0);
+                        stylusPoint = new StylusPoint(iniP.X, iniP.Y - c, ToPressureFactor(1.0));
                         point = new StylusPointCollection();
                         point.Add(stylusPoint);
                         stroke = new Stroke(point)
@@ -661,7 +661,7 @@ namespace Ink_Canvas
                             DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                         };
                         strokes.Add(stroke.Clone());
-                        stylusPoint = new StylusPoint(iniP.X, iniP.Y + c, (float)1.0);
+                        stylusPoint = new StylusPoint(iniP.X, iniP.Y + c, ToPressureFactor(1.0));
                         point = new StylusPointCollection();
                         point.Add(stylusPoint);
                         stroke = new Stroke(point)
@@ -748,12 +748,12 @@ namespace Ink_Canvas
                             {
                                 //画焦点
                                 c = Math.Sqrt(a * a + b * b);
-                                stylusPoint = isHyperbolaFocalPointOnXAxis ? new StylusPoint(iniP.X + c, iniP.Y, (float)1.0) : new StylusPoint(iniP.X, iniP.Y + c, (float)1.0);
+                                stylusPoint = isHyperbolaFocalPointOnXAxis ? new StylusPoint(iniP.X + c, iniP.Y, ToPressureFactor(1.0)) : new StylusPoint(iniP.X, iniP.Y + c, ToPressureFactor(1.0));
                                 point = new StylusPointCollection();
                                 point.Add(stylusPoint);
                                 stroke = new Stroke(point) { DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone() };
                                 strokes.Add(stroke.Clone());
-                                stylusPoint = isHyperbolaFocalPointOnXAxis ? new StylusPoint(iniP.X - c, iniP.Y, (float)1.0) : new StylusPoint(iniP.X, iniP.Y - c, (float)1.0);
+                                stylusPoint = isHyperbolaFocalPointOnXAxis ? new StylusPoint(iniP.X - c, iniP.Y, ToPressureFactor(1.0)) : new StylusPoint(iniP.X, iniP.Y - c, ToPressureFactor(1.0));
                                 point = new StylusPointCollection();
                                 point.Add(stylusPoint);
                                 stroke = new Stroke(point) { DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone() };
@@ -848,7 +848,7 @@ namespace Ink_Canvas
                         DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                     };
                     strokes.Add(stroke.Clone());
-                    stylusPoint = new StylusPoint(iniP.X - p / 2, iniP.Y, (float)1.0);
+                    stylusPoint = new StylusPoint(iniP.X - p / 2, iniP.Y, ToPressureFactor(1.0));
                     point = new StylusPointCollection();
                     point.Add(stylusPoint);
                     stroke = new Stroke(point)
@@ -1241,7 +1241,7 @@ namespace Ink_Canvas
             double cosTheta = (ed.X - st.X) / d;
             for (double i = 0.0; i < d; i += step * 2.76)
             {
-                var stylusPoint = new StylusPoint(st.X + i * cosTheta, st.Y + i * sinTheta, (float)0.8);
+                var stylusPoint = new StylusPoint(st.X + i * cosTheta, st.Y + i * sinTheta, ToPressureFactor(0.8));
                 point = new StylusPointCollection();
                 point.Add(stylusPoint);
                 stroke = new Stroke(point)

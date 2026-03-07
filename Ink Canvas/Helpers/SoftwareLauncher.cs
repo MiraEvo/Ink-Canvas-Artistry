@@ -1,15 +1,11 @@
 using Microsoft.Win32;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace Ink_Canvas.Helpers
 {
-    internal class SoftwareLauncher
+    internal static class SoftwareLauncher
     {
-        [DllImport("user32.dll")]
-        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
         public static void LaunchEasiCamera(string softwareName)
         {
             string executablePath = FindEasiCameraExecutablePath(softwareName);
@@ -60,16 +56,15 @@ namespace Ink_Canvas.Helpers
 
                 if (!string.IsNullOrEmpty(installLocation))
                 {
-                    return Path.Combine(installLocation, "sweclauncher.exe");
+                    return Path.Join(installLocation, "sweclauncher.exe");
                 }
 
                 if (!string.IsNullOrEmpty(uninstallString))
                 {
-                    int lastSlashIndex = uninstallString.LastIndexOf("\\", StringComparison.Ordinal);
-                    if (lastSlashIndex >= 0)
+                    string folderPath = TryGetDirectoryFromUninstallString(uninstallString);
+                    if (!string.IsNullOrWhiteSpace(folderPath))
                     {
-                        string folderPath = uninstallString[..lastSlashIndex];
-                        return Path.Combine(folderPath, "sweclauncher", "sweclauncher.exe");
+                        return Path.Join(folderPath, "sweclauncher", "sweclauncher.exe");
                     }
                 }
 
@@ -77,6 +72,35 @@ namespace Ink_Canvas.Helpers
             }
 
             return null;
+        }
+
+        private static string TryGetDirectoryFromUninstallString(string uninstallString)
+        {
+            string trimmedValue = uninstallString.Trim();
+            if (trimmedValue.Length == 0)
+            {
+                return null;
+            }
+
+            string executablePath = trimmedValue;
+            if (trimmedValue[0] == '"')
+            {
+                int closingQuoteIndex = trimmedValue.IndexOf('"', 1);
+                if (closingQuoteIndex > 1)
+                {
+                    executablePath = trimmedValue[1..closingQuoteIndex];
+                }
+            }
+            else
+            {
+                int exeIndex = trimmedValue.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+                if (exeIndex > 0)
+                {
+                    executablePath = trimmedValue[..(exeIndex + 4)];
+                }
+            }
+
+            return Path.GetDirectoryName(executablePath);
         }
     }
 }

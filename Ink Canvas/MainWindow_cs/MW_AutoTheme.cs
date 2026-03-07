@@ -24,7 +24,13 @@ namespace Ink_Canvas
 
         void RemoveResourceDictionary(Uri uri)
         {
-            var dictionaries = Application.Current.Resources.MergedDictionaries;
+            Application application = Application.Current;
+            if (application == null)
+            {
+                return;
+            }
+
+            var dictionaries = application.Resources.MergedDictionaries;
             var dictionaryToRemove = dictionaries.FirstOrDefault(d => d.Source == uri);
 
             if (dictionaryToRemove != null)
@@ -43,24 +49,36 @@ namespace Ink_Canvas
 
         private void SetBoardTheme()
         {
+            Application application = Application.Current;
+            if (application == null)
+            {
+                return;
+            }
+
             var lightBoardUri = new Uri("Resources/Styles/Light-Board.xaml", UriKind.Relative);
             var darkBoardUri = new Uri("Resources/Styles/Dark-Board.xaml", UriKind.Relative);
             if (Settings.Canvas.UsingWhiteboard)
             {
                 ResourceDictionary rd = new ResourceDictionary { Source = lightBoardUri };
-                Application.Current.Resources.MergedDictionaries.Add(rd);
+                application.Resources.MergedDictionaries.Add(rd);
                 RemoveResourceDictionary(darkBoardUri);
             }
             else
             {
                 ResourceDictionary rd = new ResourceDictionary { Source = darkBoardUri };
-                Application.Current.Resources.MergedDictionaries.Add(rd);
+                application.Resources.MergedDictionaries.Add(rd);
                 RemoveResourceDictionary(lightBoardUri);
             }
         }
 
         private void SetTheme(string theme)
         {
+            Application application = Application.Current;
+            if (application == null)
+            {
+                return;
+            }
+
             var lightUri = new Uri("Resources/Styles/Light.xaml", UriKind.Relative);
             var darkUri = new Uri("Resources/Styles/Dark.xaml", UriKind.Relative);
 
@@ -69,7 +87,7 @@ namespace Ink_Canvas
             if (theme == "Light")
             {
                 ResourceDictionary rd = new ResourceDictionary { Source = lightUri };
-                Application.Current.Resources.MergedDictionaries.Add(rd);
+                application.Resources.MergedDictionaries.Add(rd);
                 RemoveResourceDictionary(darkUri);
                 ThemeManager.SetRequestedTheme(window, ElementTheme.Light);
                 ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
@@ -77,7 +95,7 @@ namespace Ink_Canvas
             else if (theme == "Dark")
             {
                 ResourceDictionary rd = new ResourceDictionary { Source = darkUri };
-                Application.Current.Resources.MergedDictionaries.Add(rd);
+                application.Resources.MergedDictionaries.Add(rd);
                 RemoveResourceDictionary(lightUri);
                 ThemeManager.SetRequestedTheme(window, ElementTheme.Dark);
                 ThemeManager.Current.ApplicationTheme = ApplicationTheme.Dark;

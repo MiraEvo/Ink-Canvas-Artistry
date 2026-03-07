@@ -7,7 +7,8 @@ namespace Ink_Canvas
     {
         private Point GetMatrixTransformCenterPoint(Point gestureOperationCenterPoint, FrameworkElement fe)
         {
-            Point canvasCenterPoint = new Point(fe.ActualWidth / 2, fe.ActualHeight / 2);
+            FrameworkElement sourceElement = fe ?? inkCanvas;
+            Point canvasCenterPoint = new Point(sourceElement.ActualWidth / 2, sourceElement.ActualHeight / 2);
             if (!isLoaded) return canvasCenterPoint;
             if (Settings.Gesture.MatrixTransformCenterPoint == MatrixTransformCenterPointOptions.CanvasCenterPoint)
             {

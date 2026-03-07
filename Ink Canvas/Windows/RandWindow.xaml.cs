@@ -17,49 +17,55 @@ namespace Ink_Canvas {
         public RandWindow() {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
+            Application application = Application.Current;
+            MainWindow mainWindow = application?.MainWindow as MainWindow;
+            if (mainWindow != null && application != null)
             {
                 if (mainWindow.GetMainWindowTheme() == "Light")
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
                 else
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
             }
         }
 
         public RandWindow(bool IsAutoClose) {
             InitializeComponent();
-            MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
+            Application application = Application.Current;
+            MainWindow mainWindow = application?.MainWindow as MainWindow;
+            if (mainWindow != null && application != null)
             {
                 if (mainWindow.GetMainWindowTheme() == "Light")
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
                 else
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
             }
             isAutoClose = IsAutoClose;
 
             new Thread(new ThreadStart(() => {
                 Thread.Sleep(100);
-                Application.Current.Dispatcher.Invoke(() => {
-                    BorderBtnRand_MouseUp(BorderBtnRand, null);
-                });
+                Application currentApplication = Application.Current;
+                if (currentApplication?.Dispatcher != null)
+                {
+                    currentApplication.Dispatcher.Invoke(() => {
+                        BorderBtnRand_MouseUp(BorderBtnRand, null);
+                    });
+                }
             })).Start();
         }
 
@@ -101,7 +107,7 @@ namespace Ink_Canvas {
                     }
                     rands.Add(rand);
                     if (rands.Count >= PeopleCount) rands = new List<int>();
-                    Application.Current.Dispatcher.Invoke(() => {
+                    Dispatcher?.Invoke(() => {
                         if (Names.Count != 0) {
                             LabelOutput.Content = Names[rand - 1];
                         } else {
@@ -113,7 +119,7 @@ namespace Ink_Canvas {
                 }
 
                 rands = new List<int>();
-                Application.Current.Dispatcher.Invoke(() => {
+                Dispatcher?.Invoke(() => {
                     for (int i = 0; i < TotalCount; i++) {
                         int rand = random.Next(1, PeopleCount + 1);
                         while (rands.Contains(rand)) {
@@ -168,7 +174,7 @@ namespace Ink_Canvas {
                     if (isAutoClose) {
                         new Thread(new ThreadStart(() => {
                             Thread.Sleep(1500);
-                            Application.Current.Dispatcher.Invoke(() => {
+                            Dispatcher?.Invoke(() => {
                                 Close();
                             });
                         })).Start();

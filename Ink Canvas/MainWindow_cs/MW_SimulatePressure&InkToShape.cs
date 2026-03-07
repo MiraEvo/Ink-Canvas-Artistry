@@ -235,7 +235,6 @@ namespace Ink_Canvas
                                     if (needRotation)
                                     {
                                         Matrix m = new Matrix();
-                                        FrameworkElement fe = e.Source as FrameworkElement;
                                         double tanTheta = (p[2].Y - p[0].Y) / (p[2].X - p[0].X);
                                         double theta = Math.Atan(tanTheta);
                                         m.RotateAt(theta * 180.0 / Math.PI, result.Centroid.X, result.Centroid.Y);
@@ -344,7 +343,11 @@ namespace Ink_Canvas
                     //LogHelper.WriteLogToFile(stylusPoint.PressureFactor.ToString(), LogHelper.LogType.Info);
                     // 检查是否是压感笔书写
                     //if (stylusPoint.PressureFactor != 0.5 && stylusPoint.PressureFactor != 0)
-                    if ((stylusPoint.PressureFactor > 0.501 || stylusPoint.PressureFactor < 0.5) && stylusPoint.PressureFactor != 0)
+                    bool hasCustomPressure =
+                        !IsNearlyEqual(stylusPoint.PressureFactor, DefaultPressureFactor)
+                        && !IsNearlyZero(stylusPoint.PressureFactor);
+
+                    if (hasCustomPressure)
                     {
                         return;
                     }
@@ -378,15 +381,15 @@ namespace Ink_Canvas
                                 StylusPoint point = new StylusPoint();
                                 if (speed >= 0.25)
                                 {
-                                    point.PressureFactor = (float)(0.5 - 0.3 * (Math.Min(speed, 1.5) - 0.3) / 1.2);
+                                    point.PressureFactor = ToPressureFactor(0.5 - 0.3 * (Math.Min(speed, 1.5) - 0.3) / 1.2);
                                 }
                                 else if (speed >= 0.05)
                                 {
-                                    point.PressureFactor = (float)0.5;
+                                    point.PressureFactor = DefaultPressureFactor;
                                 }
                                 else
                                 {
-                                    point.PressureFactor = (float)(0.5 + 0.4 * (0.05 - speed) / 0.05);
+                                    point.PressureFactor = ToPressureFactor(0.5 + 0.4 * (0.05 - speed) / 0.05);
                                 }
                                 point.X = e.Stroke.StylusPoints[i].X;
                                 point.Y = e.Stroke.StylusPoints[i].Y;
@@ -417,7 +420,7 @@ namespace Ink_Canvas
                                 {
                                     StylusPoint point = new StylusPoint();
 
-                                    point.PressureFactor = (float)0.5;
+                                    point.PressureFactor = DefaultPressureFactor;
                                     point.X = e.Stroke.StylusPoints[i].X;
                                     point.Y = e.Stroke.StylusPoints[i].Y;
                                     stylusPoints.Add(point);
@@ -426,7 +429,7 @@ namespace Ink_Canvas
                                 {
                                     StylusPoint point = new StylusPoint();
 
-                                    point.PressureFactor = (float)((0.5 - pressure) * (n - i) / x + pressure);
+                                    point.PressureFactor = ToPressureFactor((0.5 - pressure) * (n - i) / x + pressure);
                                     point.X = e.Stroke.StylusPoints[i].X;
                                     point.Y = e.Stroke.StylusPoints[i].Y;
                                     stylusPoints.Add(point);
@@ -438,7 +441,7 @@ namespace Ink_Canvas
                                 {
                                     StylusPoint point = new StylusPoint();
 
-                                    point.PressureFactor = (float)(0.4 * (n - i) / n + pressure);
+                                    point.PressureFactor = ToPressureFactor(0.4 * (n - i) / n + pressure);
                                     point.X = e.Stroke.StylusPoints[i].X;
                                     point.Y = e.Stroke.StylusPoints[i].Y;
                                     stylusPoints.Add(point);
@@ -474,7 +477,7 @@ namespace Ink_Canvas
                                 {
                                     StylusPoint point = new StylusPoint();
 
-                                    point.PressureFactor = (float)0.5;
+                                    point.PressureFactor = DefaultPressureFactor;
                                     point.X = e.Stroke.StylusPoints[i].X;
                                     point.Y = e.Stroke.StylusPoints[i].Y;
                                     stylusPoints.Add(point);
@@ -483,7 +486,7 @@ namespace Ink_Canvas
                                 {
                                     StylusPoint point = new StylusPoint();
 
-                                    point.PressureFactor = (float)((0.5 - pressure) * (n - i) / x + pressure);
+                                    point.PressureFactor = ToPressureFactor((0.5 - pressure) * (n - i) / x + pressure);
                                     point.X = e.Stroke.StylusPoints[i].X;
                                     point.Y = e.Stroke.StylusPoints[i].Y;
                                     stylusPoints.Add(point);
@@ -495,7 +498,7 @@ namespace Ink_Canvas
                                 {
                                     StylusPoint point = new StylusPoint();
 
-                                    point.PressureFactor = (float)(0.4 * (n - i) / n + pressure);
+                                    point.PressureFactor = ToPressureFactor(0.4 * (n - i) / n + pressure);
                                     point.X = e.Stroke.StylusPoints[i].X;
                                     point.Y = e.Stroke.StylusPoints[i].Y;
                                     stylusPoints.Add(point);
@@ -586,40 +589,40 @@ namespace Ink_Canvas
         public StylusPointCollection GenerateFakePressureTriangle(StylusPointCollection points)
         {
             var newPoint = new StylusPointCollection();
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, ToPressureFactor(0.4)));
             var cPoint = GetCenterPoint(points[0], points[1]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, ToPressureFactor(0.4)));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, ToPressureFactor(0.4)));
             cPoint = GetCenterPoint(points[1], points[2]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, ToPressureFactor(0.4)));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, ToPressureFactor(0.4)));
             cPoint = GetCenterPoint(points[2], points[0]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, ToPressureFactor(0.4)));
             return newPoint;
         }
 
         public StylusPointCollection GenerateFakePressureRectangle(StylusPointCollection points)
         {
             var newPoint = new StylusPointCollection();
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, ToPressureFactor(0.4)));
             var cPoint = GetCenterPoint(points[0], points[1]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, ToPressureFactor(0.4)));
+            newPoint.Add(new StylusPoint(points[1].X, points[1].Y, ToPressureFactor(0.4)));
             cPoint = GetCenterPoint(points[1], points[2]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, ToPressureFactor(0.4)));
+            newPoint.Add(new StylusPoint(points[2].X, points[2].Y, ToPressureFactor(0.4)));
             cPoint = GetCenterPoint(points[2], points[3]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, (float)0.4));
-            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, ToPressureFactor(0.4)));
+            newPoint.Add(new StylusPoint(points[3].X, points[3].Y, ToPressureFactor(0.4)));
             cPoint = GetCenterPoint(points[3], points[0]);
-            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, (float)0.8));
-            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, (float)0.4));
+            newPoint.Add(new StylusPoint(cPoint.X, cPoint.Y, ToPressureFactor(0.8)));
+            newPoint.Add(new StylusPoint(points[0].X, points[0].Y, ToPressureFactor(0.4)));
             return newPoint;
         }
 

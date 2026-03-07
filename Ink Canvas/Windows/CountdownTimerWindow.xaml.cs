@@ -18,20 +18,21 @@ namespace Ink_Canvas
         {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
+            Application application = Application.Current;
+            MainWindow mainWindow = application?.MainWindow as MainWindow;
+            if (mainWindow != null && application != null)
             {
                 if (mainWindow.GetMainWindowTheme() == "Light")
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
                 else
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
             }
 
@@ -54,7 +55,13 @@ namespace Ink_Canvas
             double spentTimePercent = totalSeconds > 0
                 ? timeSpan.TotalMilliseconds / (totalSeconds * 1000.0)
                 : 1;
-            Application.Current.Dispatcher.Invoke(() =>
+            Application application = Application.Current;
+            if (application?.Dispatcher == null)
+            {
+                return;
+            }
+
+            application.Dispatcher.Invoke(() =>
             {
                 ProcessBarTime.CurrentValue = 1 - spentTimePercent;
                 TextBlockHour.Text = leftTimeSpan.Hours.ToString("00");
@@ -77,7 +84,7 @@ namespace Ink_Canvas
             });
             if (spentTimePercent >= 1)
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                application.Dispatcher.Invoke(() =>
                 {
                     //Play sound
                     player.Stream = Properties.Resources.TimerDownNotice;

@@ -8,6 +8,7 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<UseWindowsForms>true</UseWindowsForms>
 		<UseWPF>true</UseWPF>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<ApplicationIcon>Resources\Ink Canvas Artistry.ico</ApplicationIcon>

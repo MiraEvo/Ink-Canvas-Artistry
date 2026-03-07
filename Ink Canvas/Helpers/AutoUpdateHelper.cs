@@ -94,7 +94,7 @@ namespace Ink_Canvas.Helpers
         }
 
         private static readonly string updatesFolderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Ink Canvas Artistry", "AutoUpdate");
-        private static string statusFilePath = null;
+        private static string statusFilePath;
 
         public static async Task<bool> DownloadSetupFileAndSaveStatus(string version)
         {
@@ -103,7 +103,9 @@ namespace Ink_Canvas.Helpers
                 string validatedVersion = ValidateVersionOrThrow(version);
                 statusFilePath = ResolvePathWithinUpdatesFolder($"DownloadV{validatedVersion}Status.txt");
 
-                if (File.Exists(statusFilePath) && File.ReadAllText(statusFilePath).Trim().ToLower() == "true")
+                if (File.Exists(statusFilePath)
+                    && bool.TryParse(File.ReadAllText(statusFilePath).Trim(), out bool isDownloaded)
+                    && isDownloaded)
                 {
                     LogHelper.WriteLogToFile("AutoUpdate | Setup file already downloaded.");
                     return true;
@@ -168,7 +170,7 @@ namespace Ink_Canvas.Helpers
 
         private static async Task DownloadFile(string fileUrl, string destinationPath)
         {
-            string directory = Path.GetDirectoryName(destinationPath);
+            string directory = GetRequiredDirectoryPath(destinationPath);
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
@@ -227,7 +229,7 @@ namespace Ink_Canvas.Helpers
                     return;
                 }
 
-                string directory = Path.GetDirectoryName(statusFilePath);
+                string directory = GetRequiredDirectoryPath(statusFilePath);
                 if (!Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
@@ -295,18 +297,22 @@ namespace Ink_Canvas.Helpers
                     Arguments = arguments,
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(setupFilePath)
+                    WorkingDirectory = GetRequiredDirectoryPath(setupFilePath)
                 };
 
                 using (Process process = new Process { StartInfo = processStartInfo })
                 {
                     process.Start();
                     LogHelper.WriteLogToFile($"AutoUpdate | Started installer with arguments: {arguments}");
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application application = Application.Current;
+                    if (application?.Dispatcher != null)
                     {
-                        LogHelper.WriteLogToFile($"AutoUpdate | Shutting down application for update.");
-                        Application.Current.Shutdown();
-                    });
+                        application.Dispatcher.Invoke(() =>
+                        {
+                            LogHelper.WriteLogToFile("AutoUpdate | Shutting down application for update.");
+                            application.Shutdown();
+                        });
+                    }
                 }
             }
             catch (Win32Exception ex)
@@ -419,13 +425,21 @@ namespace Ink_Canvas.Helpers
 
         private static string ResolvePathWithinUpdatesFolder(string fileName)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
             if (Path.IsPathRooted(fileName))
             {
                 throw new InvalidOperationException("Update file name must be a relative path.");
             }
 
+            string relativePath = fileName.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (relativePath.Length != fileName.Length)
+            {
+                throw new InvalidOperationException("Update file name cannot start with a directory separator.");
+            }
+
             string rootPath = AppendDirectorySeparator(Path.GetFullPath(updatesFolderPath));
-            string fullPath = Path.GetFullPath(Path.Combine(rootPath, fileName));
+            string fullPath = Path.GetFullPath(Path.Join(rootPath, relativePath));
 
             if (!fullPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
             {
@@ -443,8 +457,20 @@ namespace Ink_Canvas.Helpers
             }
 
             return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+                || path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal)
                 ? path
                 : path + Path.DirectorySeparatorChar;
+        }
+
+        private static string GetRequiredDirectoryPath(string filePath)
+        {
+            string directory = Path.GetDirectoryName(filePath);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                throw new InvalidOperationException($"Path '{filePath}' does not contain a valid directory.");
+            }
+
+            return directory;
         }
     }
 

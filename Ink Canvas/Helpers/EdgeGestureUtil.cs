@@ -18,10 +18,10 @@ namespace Ink_Canvas.Helpers
     public static class EdgeGestureUtil
     {
 
-        private static Guid DISABLE_TOUCH_SCREEN = new Guid("32CE38B2-2C9A-41B1-9BC5-B3784394AA44");
-        private static Guid IID_PROPERTY_STORE = new Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99");
+        private static readonly Guid DISABLE_TOUCH_SCREEN = new Guid("32CE38B2-2C9A-41B1-9BC5-B3784394AA44");
+        private static readonly Guid IID_PROPERTY_STORE = new Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99");
 
-        private static short VT_BOOL = 11;
+        private const short VT_BOOL = 11;
         #region "Structures"
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
@@ -180,11 +180,22 @@ namespace Ink_Canvas.Helpers
 
         public static void DisableEdgeGestures(IntPtr hwnd, bool enable)
         {
-            IPropertyStore pPropStore = null;
-            int hr = 0;
-            hr = SHGetPropertyStoreForWindow(hwnd, ref IID_PROPERTY_STORE, ref pPropStore);
-            if (hr == 0)
+            if (hwnd == IntPtr.Zero)
             {
+                return;
+            }
+
+            IPropertyStore pPropStore = null;
+            Guid propertyStoreId = IID_PROPERTY_STORE;
+
+            try
+            {
+                int hr = SHGetPropertyStoreForWindow(hwnd, ref propertyStoreId, ref pPropStore);
+                if (hr < 0)
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
+
                 PropertyKey propKey = new PropertyKey();
                 propKey.fmtid = DISABLE_TOUCH_SCREEN;
                 propKey.pid = 2;
@@ -192,7 +203,13 @@ namespace Ink_Canvas.Helpers
                 var.vt = VT_BOOL;
                 var.boolVal = enable;
                 pPropStore.SetValue(ref propKey, ref var);
-                Marshal.FinalReleaseComObject(pPropStore);
+            }
+            finally
+            {
+                if (pPropStore != null)
+                {
+                    Marshal.FinalReleaseComObject(pPropStore);
+                }
             }
         }
 

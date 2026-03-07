@@ -113,6 +113,12 @@ namespace Ink_Canvas
             if (File.Exists(filePath))
             {
                 string fileName = Path.GetFileName(filePath);
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    LogHelper.WriteLogToFile($"Elements Save | Skipped dependency with invalid file name: {filePath}", LogHelper.LogType.Error);
+                    return;
+                }
+
                 var fileEntry = archive.CreateEntry(folderName + "/" + fileName);
                 using (var entryStream = fileEntry.Open())
                 using (var fileStream = File.OpenRead(filePath))
@@ -279,7 +285,7 @@ namespace Ink_Canvas
                         try
                         {
                             string relativePath = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
-                            string fileName = Path.GetFullPath(Path.Combine(outputRoot, relativePath));
+                            string fileName = Path.GetFullPath(Path.Join(outputRoot, relativePath));
                             string normalizedRoot = AppendDirectorySeparator(outputRoot);
 
                             if (!fileName.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))

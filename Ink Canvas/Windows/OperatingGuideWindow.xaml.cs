@@ -15,20 +15,21 @@ namespace Ink_Canvas
         {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
-            if (mainWindow != null)
+            Application application = Application.Current;
+            MainWindow mainWindow = application?.MainWindow as MainWindow;
+            if (mainWindow != null && application != null)
             {
                 if (mainWindow.GetMainWindowTheme() == "Light")
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Light-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
                 else
                 {
                     ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
                     ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    Application.Current.Resources.MergedDictionaries.Add(rd);
+                    application.Resources.MergedDictionaries.Add(rd);
                 }
             }
         }

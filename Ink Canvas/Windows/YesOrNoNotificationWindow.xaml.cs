@@ -15,7 +15,7 @@ namespace Ink_Canvas
             _noAction = noAction;
             InitializeComponent();
             Label.Text = text;
-            MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
+            MainWindow mainWindow = Application.Current?.MainWindow as MainWindow;
             if (mainWindow != null)
             {
                 if (mainWindow.GetMainWindowTheme() == "Light")

@@ -7,15 +7,16 @@ using System.Windows.Interop;
 
 namespace Ink_Canvas
 {
-    static class Hotkey
+    static partial class Hotkey
     {
         #region 系统api
-        [DllImport("user32.dll")]
+        [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        static extern bool RegisterHotKey(IntPtr hWnd, int id, HotkeyModifiers fsModifiers, uint vk);
+        private static partial bool RegisterHotKey(IntPtr hWnd, int id, HotkeyModifiers fsModifiers, uint vk);
 
-        [DllImport("user32.dll")]
-        static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool UnregisterHotKey(IntPtr hWnd, int id);
         #endregion
 
         /// <summary>
@@ -27,10 +28,22 @@ namespace Ink_Canvas
         /// <param name="callBack">回调函数</param>
         public static bool Regist(Window window, HotkeyModifiers fsModifiers, Key key, HotKeyCallBackHanlder callBack)
         {
-            var hwnd = new WindowInteropHelper(window).Handle;
-            var _hwndSource = HwndSource.FromHwnd(hwnd);
+            ArgumentNullException.ThrowIfNull(window);
+            ArgumentNullException.ThrowIfNull(callBack);
 
-            if (keyid == 10)
+            var hwnd = new WindowInteropHelper(window).Handle;
+            if (hwnd == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            var _hwndSource = HwndSource.FromHwnd(hwnd);
+            if (_hwndSource == null)
+            {
+                return false;
+            }
+
+            if (keyid == InitialKeyId)
             {
                 _hwndSource.AddHook(WndProc);
             }
@@ -71,16 +84,26 @@ namespace Ink_Canvas
         /// <param name="callBack">回调函数</param> 
         public static void UnRegist(IntPtr hWnd, HotKeyCallBackHanlder callBack)
         {
-            foreach (KeyValuePair<int, HotKeyCallBackHanlder> var in keymap)
+            List<int> idsToRemove = new List<int>();
+            foreach (KeyValuePair<int, HotKeyCallBackHanlder> entry in keymap)
             {
-                if (var.Value == callBack)
-                    UnregisterHotKey(hWnd, var.Key);
+                if (entry.Value == callBack)
+                {
+                    UnregisterHotKey(hWnd, entry.Key);
+                    idsToRemove.Add(entry.Key);
+                }
+            }
+
+            foreach (int id in idsToRemove)
+            {
+                keymap.Remove(id);
             }
         }
 
         const int WM_HOTKEY = 0x312;
-        static int keyid = 10;
-        static Dictionary<int, HotKeyCallBackHanlder> keymap = new Dictionary<int, HotKeyCallBackHanlder>();
+        const int InitialKeyId = 10;
+        static int keyid = InitialKeyId;
+        static readonly Dictionary<int, HotKeyCallBackHanlder> keymap = new Dictionary<int, HotKeyCallBackHanlder>();
 
         public delegate void HotKeyCallBackHanlder();
     }

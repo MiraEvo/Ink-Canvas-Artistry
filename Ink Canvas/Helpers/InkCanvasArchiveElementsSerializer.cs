@@ -486,7 +486,7 @@ namespace Ink_Canvas.Helpers
                 throw new InvalidDataException("Element dependency file name is empty.");
             }
 
-            string candidatePath = Path.GetFullPath(Path.Combine(dependencyRoot, sourceValue));
+            string candidatePath = Path.GetFullPath(Path.Join(dependencyRoot, sourceValue));
             EnsurePathIsUnderRoot(candidatePath, dependencyRoot, "Element dependency");
 
             if (!File.Exists(candidatePath))
