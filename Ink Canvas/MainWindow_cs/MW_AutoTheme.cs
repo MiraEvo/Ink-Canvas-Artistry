@@ -42,9 +42,14 @@ namespace Ink_Canvas
         private void ComboBoxTheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (!isLoaded) return;
-            Settings.Appearance.Theme = ComboBoxTheme.SelectedIndex;
+
+            if (SettingsViewModel.Theme != ComboBoxTheme.SelectedIndex)
+            {
+                SettingsViewModel.Theme = ComboBoxTheme.SelectedIndex;
+                return;
+            }
+
             SystemEvents_UserPreferenceChanged(null, null);
-            SaveSettingsToFile();
         }
 
         private void SetBoardTheme()

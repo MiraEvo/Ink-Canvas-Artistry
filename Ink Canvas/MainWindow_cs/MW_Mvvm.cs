@@ -1,4 +1,4 @@
-using Ink_Canvas.Helpers;
+using Ink_Canvas.Features.Settings;
 using Ink_Canvas.Services;
 using Ink_Canvas.ViewModels;
 using iNKORE.UI.WPF.Modern.Controls;
@@ -8,8 +8,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Interop;
-using System.Windows.Media;
 
 namespace Ink_Canvas
 {
@@ -20,6 +18,7 @@ namespace Ink_Canvas
         private static readonly IPathPickerService pathPickerService = new PathPickerService();
 
         private MainWindowViewModel mainWindowViewModel = null!;
+        private SettingsApplicationCoordinator settingsApplicationCoordinator = null!;
 
         private SettingsViewModel SettingsViewModel => mainWindowViewModel.Settings;
 
@@ -50,6 +49,7 @@ namespace Ink_Canvas
             InitializeWorkspaceSessionController();
             InitializeAutomationControllers();
 
+            settingsApplicationCoordinator = new SettingsApplicationCoordinator(this, mainWindowViewModel.Settings);
             ConfigureSettingsBindings();
         }
 
@@ -156,254 +156,7 @@ namespace Ink_Canvas
                 return;
             }
 
-            switch (e.PropertyName)
-            {
-                case nameof(SettingsViewModel.IsAutoUpdate):
-                    if (!SettingsViewModel.IsAutoUpdate)
-                    {
-                        CancelSilentUpdate();
-                    }
-                    break;
-                case nameof(SettingsViewModel.IsAutoUpdateWithSilence):
-                    if (!SettingsViewModel.IsAutoUpdateWithSilence)
-                    {
-                        CancelSilentUpdate();
-                    }
-                    break;
-                case nameof(SettingsViewModel.RunAtStartup):
-                    ApplyRunAtStartup();
-                    break;
-                case nameof(SettingsViewModel.IsSupportPowerPoint):
-                    ApplyPowerPointSupport();
-                    break;
-                case nameof(SettingsViewModel.IsEnableNibMode):
-                case nameof(SettingsViewModel.NibModeBoundsWidth):
-                case nameof(SettingsViewModel.FingerModeBoundsWidth):
-                    ApplyNibModeBounds();
-                    break;
-                case nameof(SettingsViewModel.IsEnableDisplayFloatBarText):
-                    ApplyFloatBarTextVisibility();
-                    break;
-                case nameof(SettingsViewModel.Theme):
-                    SystemEvents_UserPreferenceChanged(null, null);
-                    break;
-                case nameof(SettingsViewModel.IsEnableDisplayNibModeToggle):
-                    ApplyNibModeToggleVisibility();
-                    break;
-                case nameof(SettingsViewModel.IsColorfulViewboxFloatingBar):
-                    ApplyFloatingBarBackground();
-                    break;
-                case nameof(SettingsViewModel.FloatingBarBottomMargin):
-                    ViewboxFloatingBarMarginAnimation();
-                    break;
-                case nameof(SettingsViewModel.FloatingBarScale):
-                case nameof(SettingsViewModel.BlackboardScale):
-                    ApplyScaling();
-                    break;
-                case nameof(SettingsViewModel.IsShowPptNavigationBottom):
-                    PptNavigationBottomBtn.Visibility = Settings.PowerPointSettings.IsShowPPTNavigationBottom ? Visibility.Visible : Visibility.Collapsed;
-                    break;
-                case nameof(SettingsViewModel.IsShowPptNavigationSides):
-                    PptNavigationSidesBtn.Visibility = Settings.PowerPointSettings.IsShowPPTNavigationSides ? Visibility.Visible : Visibility.Collapsed;
-                    break;
-                case nameof(SettingsViewModel.IsShowBottomPptNavigationPanel):
-                    ApplyPptBottomNavigationVisibility();
-                    break;
-                case nameof(SettingsViewModel.IsShowSidePptNavigationPanel):
-                    ApplyPptSideNavigationVisibility();
-                    break;
-                case nameof(SettingsViewModel.IsShowCursor):
-                    inkCanvas_EditingModeChanged(inkCanvas, null);
-                    break;
-                case nameof(SettingsViewModel.IsSpecialScreen):
-                    TouchMultiplierSlider.Visibility = Settings.Advanced.IsSpecialScreen ? Visibility.Visible : Visibility.Collapsed;
-                    break;
-                case nameof(SettingsViewModel.IsEnableEdgeGestureUtil):
-                    if (OperatingSystem.IsWindowsVersionAtLeast(10))
-                    {
-                        EdgeGestureUtil.DisableEdgeGestures(new WindowInteropHelper(this).Handle, Settings.Advanced.IsEnableEdgeGestureUtil);
-                    }
-                    break;
-                case nameof(SettingsViewModel.IsEnableMultiTouchMode):
-                    ApplyMultiTouchMode();
-                    CheckEnableTwoFingerGestureBtnColorPrompt();
-                    break;
-                case nameof(SettingsViewModel.IsEnableTwoFingerTranslate):
-                case nameof(SettingsViewModel.IsEnableTwoFingerZoom):
-                case nameof(SettingsViewModel.IsEnableTwoFingerRotation):
-                    CheckEnableTwoFingerGestureBtnColorPrompt();
-                    break;
-                case nameof(SettingsViewModel.IsAutoFoldInEasiNote):
-                case nameof(SettingsViewModel.IsAutoFoldInEasiCamera):
-                case nameof(SettingsViewModel.IsAutoFoldInEasiNote3C):
-                case nameof(SettingsViewModel.IsAutoFoldInSeewoPincoTeacher):
-                case nameof(SettingsViewModel.IsAutoFoldInHiteTouchPro):
-                case nameof(SettingsViewModel.IsAutoFoldInHiteCamera):
-                case nameof(SettingsViewModel.IsAutoFoldInWxBoardMain):
-                case nameof(SettingsViewModel.IsAutoFoldInOldZyBoard):
-                case nameof(SettingsViewModel.IsAutoFoldInMSWhiteboard):
-                case nameof(SettingsViewModel.IsAutoFoldInPPTSlideShow):
-                    RefreshAutoFoldMonitoring();
-                    break;
-                case nameof(SettingsViewModel.IsAutoKillPptService):
-                case nameof(SettingsViewModel.IsAutoKillEasiNote):
-                    RefreshProcessKillMonitoring();
-                    break;
-                case nameof(SettingsViewModel.IsAutoSaveStrokesAtScreenshot):
-                    ToggleSwitchAutoSaveStrokesAtClear.Header = Settings.Automation.IsAutoSaveStrokesAtScreenshot ? "清屏时自动截图并保存墨迹" : "清屏时自动截图";
-                    break;
-            }
-        }
-
-        private void ApplyRunAtStartup()
-        {
-            if (SettingsViewModel.RunAtStartup)
-            {
-                StartAutomaticallyDel("InkCanvas");
-                StartAutomaticallyDel("Ink Canvas Annotation");
-                StartAutomaticallyCreate("Ink Canvas Artistry");
-            }
-            else
-            {
-                StartAutomaticallyDel("InkCanvas");
-                StartAutomaticallyDel("Ink Canvas Annotation");
-                StartAutomaticallyDel("Ink Canvas Artistry");
-            }
-        }
-
-        private void ApplyPowerPointSupport()
-        {
-            if (Settings.PowerPointSettings.PowerPointSupport)
-            {
-                StartPresentationMonitoring();
-            }
-            else
-            {
-                StopPresentationMonitoring();
-            }
-        }
-
-        private void ApplyNibModeBounds()
-        {
-            BoundsWidth = Settings.Startup.IsEnableNibMode
-                ? Settings.Advanced.NibModeBoundsWidth
-                : Settings.Advanced.FingerModeBoundsWidth;
-        }
-
-        private void ApplyFloatBarTextVisibility()
-        {
-            if (Settings.Appearance.IsEnableDisPlayFloatBarText)
-            {
-                FloatBarSelectIconTextBlock.Visibility = Visibility.Visible;
-                Icon_Pen.Height = 22;
-                Icon_Eraser1.Height = 22;
-                Icon_Eraser2.Height = 22;
-                Icon_Eraser2.Margin = new Thickness(5, -22, 0, -8);
-                Icon_EraserByStrokes1.Height = 22;
-                Icon_EraserByStrokes2.Height = 22;
-                Icon_EraserByStrokes2.Margin = new Thickness(12, -22, 0, -8);
-                Icon_Select1.Height = 22;
-                Icon_Select2.Height = 22;
-                Icon_Select2.Margin = new Thickness(6, -18, 0, -8);
-                Icon_Undo.Margin = new Thickness(0, 1.5, 0, -1.5);
-                Icon_Redo.Margin = new Thickness(0, 1.5, 0, -1.5);
-            }
-            else
-            {
-                FloatBarSelectIconTextBlock.Visibility = Visibility.Collapsed;
-                Icon_Pen.Height = 32;
-                Icon_Eraser1.Height = 32;
-                Icon_Eraser2.Height = 32;
-                Icon_Eraser2.Margin = new Thickness(5, -32, 0, -8);
-                Icon_EraserByStrokes1.Height = 32;
-                Icon_EraserByStrokes2.Height = 32;
-                Icon_EraserByStrokes2.Margin = new Thickness(12, -32, 0, -8);
-                Icon_Select1.Height = 32;
-                Icon_Select2.Height = 32;
-                Icon_Select2.Margin = new Thickness(6, -28, 0, -8);
-                Icon_Undo.Margin = new Thickness(0);
-                Icon_Redo.Margin = new Thickness(0);
-            }
-        }
-
-        private void ApplyNibModeToggleVisibility()
-        {
-            Visibility visibility = Settings.Appearance.IsEnableDisPlayNibModeToggler ? Visibility.Visible : Visibility.Collapsed;
-            NibModeSimpleStackPanel.Visibility = visibility;
-            BoardNibModeSimpleStackPanel.Visibility = visibility;
-        }
-
-        private void ApplyFloatingBarBackground()
-        {
-            if (Settings.Appearance.IsColorfulViewboxFloatingBar)
-            {
-                LinearGradientBrush gradientBrush = new LinearGradientBrush
-                {
-                    StartPoint = new System.Windows.Point(0, 0),
-                    EndPoint = new System.Windows.Point(1, 1)
-                };
-                gradientBrush.GradientStops.Add(new GradientStop(Color.FromArgb(0x95, 0x80, 0xB0, 0xFF), 0));
-                gradientBrush.GradientStops.Add(new GradientStop(Color.FromArgb(0x95, 0xC0, 0xFF, 0xC0), 1));
-
-                EnableTwoFingerGestureBorder.Background = gradientBrush;
-                BorderFloatingBarMainControls.Background = gradientBrush;
-                BorderFloatingBarMoveControls.Background = gradientBrush;
-                BtnPPTSlideShowEnd.Background = gradientBrush;
-            }
-            else
-            {
-                SystemEvents_UserPreferenceChanged(null, null);
-            }
-        }
-
-        private void ApplyPptBottomNavigationVisibility()
-        {
-            if (!IsPresentationSlideShowRunning)
-            {
-                return;
-            }
-
-            Visibility visibility = Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
-            PPTNavigationBottomLeft.Visibility = visibility;
-            PPTNavigationBottomRight.Visibility = visibility;
-            PresentationViewModel.SetNavigationVisibility(
-                visibility == Visibility.Visible,
-                PresentationViewModel.IsSideNavigationVisible);
-        }
-
-        private void ApplyPptSideNavigationVisibility()
-        {
-            if (!IsPresentationSlideShowRunning)
-            {
-                return;
-            }
-
-            Visibility visibility = Settings.PowerPointSettings.IsShowSidePPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
-            PPTNavigationSidesLeft.Visibility = visibility;
-            PPTNavigationSidesRight.Visibility = visibility;
-            PresentationViewModel.SetNavigationVisibility(
-                PresentationViewModel.IsBottomNavigationVisible,
-                visibility == Visibility.Visible);
-        }
-
-        private void ApplyProcessKillTimer()
-        {
-            RefreshProcessKillMonitoring();
-        }
-
-        private void ApplyMultiTouchMode()
-        {
-            if (Settings.Gesture.IsEnableMultiTouchMode)
-            {
-                if (!isInMultiTouchMode)
-                {
-                    BorderMultiTouchMode_MouseUp(null, null);
-                }
-            }
-            else if (isInMultiTouchMode)
-            {
-                BorderMultiTouchMode_MouseUp(null, null);
-            }
+            settingsApplicationCoordinator.ApplyPropertyChange(e.PropertyName);
         }
 
         private Binding CreateTwoWayBinding(string path)
