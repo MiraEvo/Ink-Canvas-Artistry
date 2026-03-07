@@ -39,15 +39,14 @@ namespace Ink_Canvas
             HideSubPanels("color");
             if (Main_Grid.Background == Brushes.Transparent)
             {
-                if (currentMode == 1)
+                if (ShellViewModel.IsBlackboardMode)
                 {
-                    currentMode = 0;
-                    GridBackgroundCover.Visibility = Visibility.Collapsed;
-                    AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
-                    AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
-                    AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
+                    ExitBlackboardSession();
                 }
-                BtnHideInkCanvas_Click(null, null);
+                else
+                {
+                    BtnHideInkCanvas_Click(null, null);
+                }
             }
 
             StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
@@ -115,7 +114,7 @@ namespace Ink_Canvas
         {
             if (changeColorTheme)
             {
-                if (currentMode != 0)
+                if (ShellViewModel.IsBlackboardMode)
                 {
                     if (Settings.Canvas.UsingWhiteboard)
                     {
@@ -130,7 +129,7 @@ namespace Ink_Canvas
                 }
             }
 
-            if (currentMode == 0)
+            if (ShellViewModel.IsDesktopAnnotationMode)
             {
                 isUselightThemeColor = isDesktopUselightThemeColor;
                 inkColor = lastDesktopInkColor;
@@ -363,7 +362,7 @@ namespace Ink_Canvas
             }
             else
             {
-                if (currentMode == 0)
+                if (ShellViewModel.IsDesktopAnnotationMode)
                 {
                     lastDesktopInkColor = inkColor;
                 }

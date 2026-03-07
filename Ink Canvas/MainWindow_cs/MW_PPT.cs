@@ -256,16 +256,13 @@ namespace Ink_Canvas
                 {
                     if (ShellViewModel.IsBlackboardMode)
                     {
-                        currentMode = 0;
-                        GridBackgroundCover.Visibility = Visibility.Collapsed;
-                        AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
-                        AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
-                        AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
-
-                        //SaveStrokes();
+                        ExitBlackboardSession();
                         ClearStrokes(true);
                     }
-                    BtnHideInkCanvas_Click(null, null);
+                    else
+                    {
+                        BtnHideInkCanvas_Click(null, null);
+                    }
                 }
 
                 ClearStrokes(true);
@@ -381,7 +378,7 @@ namespace Ink_Canvas
 
                 if (ShellViewModel.IsBlackboardMode)
                 {
-                    ImageBlackboard_Click(null, null);
+                    ExitBlackboardSession();
                 }
 
                 ClearStrokes(true);
@@ -391,8 +388,7 @@ namespace Ink_Canvas
                     BtnHideInkCanvas_Click(null, null);
                 }
 
-                RequestDefaultDesktopFloatingBarPosition();
-                ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
+                RestoreDesktopWorkspaceDefaultsAfterPresentation();
 
                 if (Settings.Appearance.IsColorfulViewboxFloatingBar)
                 {
@@ -453,11 +449,7 @@ namespace Ink_Canvas
         {
             if (ShellViewModel.IsBlackboardMode)
             {
-                GridBackgroundCover.Visibility = Visibility.Collapsed;
-                AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
-                AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
-                AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
-                currentMode = 0;
+                ExitBlackboardSession();
             }
 
             _isPptClickingBtnTurned = true;
@@ -489,11 +481,7 @@ namespace Ink_Canvas
         {
             if (ShellViewModel.IsBlackboardMode)
             {
-                GridBackgroundCover.Visibility = Visibility.Collapsed;
-                AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
-                AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
-                AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
-                currentMode = 0;
+                ExitBlackboardSession();
             }
             _isPptClickingBtnTurned = true;
             if (inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber &&

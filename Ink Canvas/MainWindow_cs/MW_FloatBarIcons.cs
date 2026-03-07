@@ -313,7 +313,14 @@ namespace Ink_Canvas
 
         private void ImageBlackboard_Click(object sender, RoutedEventArgs e)
         {
-            ShellViewModel.ToggleBlackboardModeCommand.Execute(null);
+            if (ShellViewModel.IsBlackboardMode)
+            {
+                ExitBlackboardSession();
+            }
+            else
+            {
+                EnterBlackboardSession();
+            }
         }
 
         private void ImageCountdownTimer_Click(object sender, RoutedEventArgs e)
@@ -786,53 +793,7 @@ namespace Ink_Canvas
 
         private void BtnSwitch_Click(object sender, RoutedEventArgs e)
         {
-            if (Main_Grid.Background == Brushes.Transparent)
-            {
-                if (currentMode == 1)
-                {
-                    GridBackgroundCover.Visibility = Visibility.Collapsed;
-                    AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
-                    AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
-                    AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
-
-                    SaveStrokes(true);
-                    ClearStrokes(true);
-                    RestoreStrokes();
-                }
-                Topmost = true;
-                BtnHideInkCanvas_Click(null, e);
-            }
-            else
-            {
-                switch (currentMode)
-                {
-                    case 0: //屏幕模式
-                        currentMode = 0;
-                        GridBackgroundCover.Visibility = Visibility.Collapsed;
-                        AnimationsHelper.HideWithSlideAndFade(BlackboardLeftSide);
-                        AnimationsHelper.HideWithSlideAndFade(BlackboardCenterSide);
-                        AnimationsHelper.HideWithSlideAndFade(BlackboardRightSide);
-
-                        SaveStrokes();
-                        ClearStrokes(true);
-                        RestoreStrokes(true);
-                        Topmost = true;
-                        break;
-                    case 1: //黑板或白板模式
-                        currentMode = 1;
-                        GridBackgroundCover.Visibility = Visibility.Visible;
-                        AnimationsHelper.ShowWithSlideFromBottomAndFade(BlackboardLeftSide);
-                        AnimationsHelper.ShowWithSlideFromBottomAndFade(BlackboardCenterSide);
-                        AnimationsHelper.ShowWithSlideFromBottomAndFade(BlackboardRightSide);
-
-                        SaveStrokes(true);
-                        ClearStrokes(true);
-                        RestoreStrokes();
-
-                        Topmost = false;
-                        break;
-                }
-            }
+            ApplyWorkspaceVisualState(ShellViewModel.WorkspaceMode);
         }
 
         int BoundsWidth = 5;
@@ -921,6 +882,8 @@ namespace Ink_Canvas
                 AnimationsHelper.ShowWithSlideFromLeftAndFade(StackPanelCanvasControls);
                 CheckEnableTwoFingerGestureBtnVisibility(true);
             }
+
+            SyncWorkspaceCanvasVisibility();
         }
         #endregion
     }

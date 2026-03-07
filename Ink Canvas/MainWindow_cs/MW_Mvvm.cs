@@ -35,7 +35,8 @@ namespace Ink_Canvas
                 new ShellViewModel(),
                 new InputStateViewModel(),
                 new PresentationSessionViewModel(),
-                new AutomationStateViewModel());
+                new AutomationStateViewModel(),
+                new WorkspaceSessionViewModel());
             mainWindowViewModel.Settings.PropertyChanged += SettingsViewModel_PropertyChanged;
             mainWindowViewModel.Settings.ReloadRequested += SettingsViewModel_ReloadRequested;
             mainWindowViewModel.Shell.WorkspaceModeChanged += ShellViewModel_WorkspaceModeChanged;
@@ -46,6 +47,7 @@ namespace Ink_Canvas
             DataContext = mainWindowViewModel;
             InitializeInputController();
             InitializePresentationController();
+            InitializeWorkspaceSessionController();
 
             ConfigureSettingsBindings();
         }

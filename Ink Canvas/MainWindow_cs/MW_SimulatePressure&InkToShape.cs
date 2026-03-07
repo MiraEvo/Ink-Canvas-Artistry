@@ -507,7 +507,7 @@ namespace Ink_Canvas
         {
             lastTouchDownStrokeCollection = inkCanvas.Strokes.Clone();
             int whiteboardIndex = CurrentWhiteboardIndex;
-            if (currentMode == 0)
+            if (ShellViewModel.IsDesktopAnnotationMode)
             {
                 whiteboardIndex = 0;
             }

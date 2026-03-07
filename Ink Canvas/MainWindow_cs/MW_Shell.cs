@@ -15,22 +15,6 @@ namespace Ink_Canvas
     {
         private bool isApplyingShellSubPanelState;
 
-        private int currentMode
-        {
-            get => ShellViewModel?.IsBlackboardMode == true ? 1 : 0;
-            set
-            {
-                if (ShellViewModel == null)
-                {
-                    return;
-                }
-
-                ShellViewModel.SetWorkspaceMode(
-                    value == 0 ? WorkspaceMode.DesktopAnnotation : WorkspaceMode.Blackboard,
-                    false);
-            }
-        }
-
         private bool isFloatingBarFolded
         {
             get => ShellViewModel?.IsFloatingBarFolded == true;
@@ -136,7 +120,7 @@ namespace Ink_Canvas
                 }
             }
 
-            BtnSwitch_Click(null, null);
+            ApplyWorkspaceVisualState(workspaceMode);
 
             if (workspaceMode == WorkspaceMode.DesktopAnnotation
                 && inkCanvas.Strokes.Count == 0

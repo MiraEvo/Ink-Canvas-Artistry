@@ -9,13 +9,15 @@ namespace Ink_Canvas.ViewModels
             ShellViewModel shell,
             InputStateViewModel input,
             PresentationSessionViewModel presentation,
-            AutomationStateViewModel automationState)
+            AutomationStateViewModel automationState,
+            WorkspaceSessionViewModel workspaceSession)
         {
             Settings = settings;
             Shell = shell;
             Input = input;
             Presentation = presentation;
             AutomationState = automationState;
+            WorkspaceSession = workspaceSession;
         }
 
         public SettingsViewModel Settings { get; }
@@ -27,5 +29,7 @@ namespace Ink_Canvas.ViewModels
         public PresentationSessionViewModel Presentation { get; }
 
         public AutomationStateViewModel AutomationState { get; }
+
+        public WorkspaceSessionViewModel WorkspaceSession { get; }
     }
 }

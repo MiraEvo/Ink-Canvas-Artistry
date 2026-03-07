@@ -43,13 +43,13 @@ namespace Ink_Canvas
 
         private void BorderStrokeSelectionCloneToBoardOrNewPage_Click(object sender, RoutedEventArgs e)
         {
-            if (currentMode == 0)
+            if (ShellViewModel.IsDesktopAnnotationMode)
             {
                 StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
                 List<UIElement> elements = InkCanvasElementsHelper.GetSelectedElementsCloned(inkCanvas);
                 inkCanvas.Select(new StrokeCollection());
                 strokes = strokes.Clone();
-                ImageBlackboard_Click(null, null);
+                EnterBlackboardSession();
                 inkCanvas.Strokes.Add(strokes);
                 InkCanvasElementsHelper.AddElements(inkCanvas, elements, timeMachine);
             }
@@ -370,14 +370,7 @@ namespace Ink_Canvas
             }
             else
             {
-                if (currentMode == 0)
-                {
-                    TextSelectionCloneToNewBoard.Text = "衍至画板";
-                }
-                else
-                {
-                    TextSelectionCloneToNewBoard.Text = "衍至新页";
-                }
+                UpdateSelectionClonePrompt();
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
                 StrokesSelectionClone = new StrokeCollection();
                 ElementsSelectionClone = new List<UIElement>();
@@ -427,14 +420,7 @@ namespace Ink_Canvas
             }
             else
             {
-                if (currentMode == 0)
-                {
-                    TextSelectionCloneToNewBoard.Text = "衍至画板";
-                }
-                else
-                {
-                    TextSelectionCloneToNewBoard.Text = "衍至新页";
-                }
+                UpdateSelectionClonePrompt();
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
                 IconStrokeSelectionClone.SetResourceReference(TextBlock.ForegroundProperty, "FloatBarForeground");
                 ToggleButtonStrokeSelectionClone.IsChecked = false;
@@ -465,7 +451,7 @@ namespace Ink_Canvas
             double viewboxBottom = viewboxTop + ViewboxFloatingBar.ActualHeight;
             double viewboxRight = viewboxLeft + ViewboxFloatingBar.ActualWidth;
 
-            if (currentMode == 0)
+            if (ShellViewModel.IsDesktopAnnotationMode)
             {
                 bool isHorizontalOverlap = (borderLeft < viewboxRight && borderRight > viewboxLeft);
                 bool isVerticalOverlap = (borderTop < viewboxBottom && borderBottom > viewboxTop);
@@ -641,14 +627,7 @@ namespace Ink_Canvas
             }
             else
             {
-                if (currentMode == 0)
-                {
-                    TextSelectionCloneToNewBoard.Text = "衍至画板";
-                }
-                else
-                {
-                    TextSelectionCloneToNewBoard.Text = "衍至新页";
-                }
+                UpdateSelectionClonePrompt();
                 GridInkCanvasSelectionCover.Visibility = Visibility.Visible;
                 StrokesSelectionClone = new StrokeCollection();
                 ElementsSelectionClone = new List<UIElement>();
