@@ -1,5 +1,4 @@
 ﻿using Ink_Canvas.Helpers;
-using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -193,8 +192,9 @@ namespace Ink_Canvas {
                     string s = str;
                     //Make replacement
                     foreach (string replace in replaces) {
-                        if (s == Strings.Left(replace, replace.IndexOf("-->"))) {
-                            s = Strings.Mid(replace, replace.IndexOf("-->") + 4);
+                        int separatorIndex = replace.IndexOf("-->", StringComparison.Ordinal);
+                        if (separatorIndex > 0 && s == replace.Substring(0, separatorIndex)) {
+                            s = replace.Substring(separatorIndex + 3);
                         }
                     }
 

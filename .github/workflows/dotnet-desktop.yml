@@ -17,45 +17,31 @@ jobs:
       with:
         fetch-depth: 0
 
-    # 安装 .NET Core
-    - name: Install .NET Core
+    # 安装 .NET SDK
+    - name: Install .NET SDK
       uses: actions/setup-dotnet@v3.0.3
       with:
-        dotnet-version: '6.0.x'
-        
-    # 安装 NuGet
-    - name: Setup NuGet
-      uses: NuGet/setup-nuget@v1.2.0
-      with:
-        nuget-version: '5.x'
+        dotnet-version: '8.0.x'
 
-    # 还原 NuGet 包
-    - name: NuGet restore
-      run: nuget restore
-      
-    # 添加 MSBuild.exe 到环境变量: https://github.com/microsoft/setup-msbuild
-    - name: Add msbuild to PATH
-      uses: microsoft/setup-msbuild@v1.3.1
+    - name: Restore
+      run: dotnet restore "Ink Canvas.sln"
 
     # 编译整个项目
     - name: Build the solution
       run: |
-        msbuild -t:restore /p:GitFlow="Github Action"
-        msbuild -target:"Ink Canvas" /p:Configuration=Release /p:Platform="Any CPU" /p:GitFlow="Github Action"
+        dotnet build "Ink Canvas.sln" -c Release -p:Platform="Any CPU" --no-restore /p:GitFlow="Github Action"
       env:
         Configuration: ${{ matrix.configuration }}
 
     - name: Build the solution (x64)
       run: |
-        msbuild -t:restore /p:GitFlow="Github Action"
-        msbuild -target:"Ink Canvas" /p:Configuration=Release /p:Platform="x64" /p:GitFlow="Github Action"
+        dotnet build "Ink Canvas.sln" -c Release -p:Platform="x64" --no-restore /p:GitFlow="Github Action"
       env:
         Configuration: ${{ matrix.configuration }}
 
     - name: Build the solution (ARM64)
       run: |
-        msbuild -t:restore /p:GitFlow="Github Action"
-        msbuild -target:"Ink Canvas" /p:Configuration=Release /p:Platform="ARM64" /p:GitFlow="Github Action"
+        dotnet build "Ink Canvas.sln" -c Release -p:Platform="ARM64" --no-restore /p:GitFlow="Github Action"
       env:
         Configuration: ${{ matrix.configuration }}
         

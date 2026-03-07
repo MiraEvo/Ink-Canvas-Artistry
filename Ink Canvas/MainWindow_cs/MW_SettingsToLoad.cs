@@ -1,6 +1,5 @@
 ﻿using Ink_Canvas.Helpers;
 using Newtonsoft.Json;
-using OSVersionExtension;
 using System;
 using System.Reflection;
 using System.Windows;
@@ -41,13 +40,7 @@ namespace Ink_Canvas
             }
             try
             {
-                if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Startup) + "\\Ink Canvas Annotation.lnk"))
-                {
-                    StartAutomaticallyDel("Ink Canvas Annotation");
-                    StartAutomaticallyCreate("Ink Canvas Artistry");
-                    ToggleSwitchRunAtStartup.IsOn = true;
-                }
-                else if (File.Exists(Environment.GetFolderPath(Environment.SpecialFolder.Startup) + "\\Ink Canvas Artistry.lnk"))
+                if (NormalizeStartupRegistration())
                 {
                     ToggleSwitchRunAtStartup.IsOn = true;
                 }
@@ -474,7 +467,7 @@ namespace Ink_Canvas
                 ToggleSwitchIsEnableEdgeGestureUtil.IsOn = Settings.Advanced.IsEnableEdgeGestureUtil;
                 if (Settings.Advanced.IsEnableEdgeGestureUtil)
                 {
-                    if (OSVersion.GetOperatingSystem() >= OSVersionExtension.OperatingSystem.Windows10) EdgeGestureUtil.DisableEdgeGestures(new WindowInteropHelper(this).Handle, true);
+                    if (OperatingSystem.IsWindowsVersionAtLeast(10)) EdgeGestureUtil.DisableEdgeGestures(new WindowInteropHelper(this).Handle, true);
                 }
             }
             else

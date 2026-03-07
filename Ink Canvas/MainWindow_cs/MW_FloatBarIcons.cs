@@ -927,7 +927,7 @@ namespace Ink_Canvas
 
         private void BtnRestart_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(System.Windows.Forms.Application.ExecutablePath, "-m");
+            ProcessHelper.StartWithShell(System.Windows.Forms.Application.ExecutablePath, "-m");
 
             CloseIsFromButton = true;
             Application.Current.Shutdown();

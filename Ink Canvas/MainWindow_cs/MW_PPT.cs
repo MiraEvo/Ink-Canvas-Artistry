@@ -30,7 +30,7 @@ namespace Ink_Canvas
         {
             try
             {
-                pptApplication = (Microsoft.Office.Interop.PowerPoint.Application)Marshal.GetActiveObject("PowerPoint.Application");
+                pptApplication = ComInteropHelper.GetActiveObject<Microsoft.Office.Interop.PowerPoint.Application>("PowerPoint.Application");
                 //pptApplication.SlideShowWindows[1].View.Next();
                 if (pptApplication != null)
                 {
@@ -97,7 +97,7 @@ namespace Ink_Canvas
                     return;
                 }
 
-                pptApplication = (Microsoft.Office.Interop.PowerPoint.Application)Marshal.GetActiveObject("PowerPoint.Application");
+                pptApplication = ComInteropHelper.GetActiveObject<Microsoft.Office.Interop.PowerPoint.Application>("PowerPoint.Application");
 
                 if (pptApplication != null)
                 {

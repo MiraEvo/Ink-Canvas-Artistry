@@ -1,6 +1,5 @@
 ﻿using Ink_Canvas.Helpers;
 using Newtonsoft.Json;
-using OSVersionExtension;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -896,7 +895,7 @@ namespace Ink_Canvas
         {
             if (!isLoaded) return;
             Settings.Advanced.IsEnableEdgeGestureUtil = ToggleSwitchIsEnableEdgeGestureUtil.IsOn;
-            if (OSVersion.GetOperatingSystem() >= OSVersionExtension.OperatingSystem.Windows10) EdgeGestureUtil.DisableEdgeGestures(new WindowInteropHelper(this).Handle, ToggleSwitchIsEnableEdgeGestureUtil.IsOn);
+            if (OperatingSystem.IsWindowsVersionAtLeast(10)) EdgeGestureUtil.DisableEdgeGestures(new WindowInteropHelper(this).Handle, ToggleSwitchIsEnableEdgeGestureUtil.IsOn);
             SaveSettingsToFile();
         }
 
@@ -919,13 +918,13 @@ namespace Ink_Canvas
 
         private void HyperlinkSourceToPresentRepository_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://github.com/InkCanvas/Ink-Canvas-Artistry");
+            ProcessHelper.StartWithShell("https://github.com/InkCanvas/Ink-Canvas-Artistry");
             HideSubPanels();
         }
 
         private void HyperlinkSourceToOringinalRepository_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("https://github.com/WXRIW/Ink-Canvas");
+            ProcessHelper.StartWithShell("https://github.com/WXRIW/Ink-Canvas");
             HideSubPanels();
         }
     }

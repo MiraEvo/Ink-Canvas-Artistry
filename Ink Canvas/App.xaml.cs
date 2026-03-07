@@ -33,7 +33,7 @@ namespace Ink_Canvas
 
         void App_Startup(object sender, StartupEventArgs e)
         {
-            /*if (!StoreHelper.IsStoreApp) */RootPath = AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+            /*if (!StoreHelper.IsStoreApp) */RootPath = AppContext.BaseDirectory;
 
             LogHelper.NewLog(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version.ToString()));
 

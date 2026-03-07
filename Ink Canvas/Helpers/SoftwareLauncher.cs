@@ -1,6 +1,5 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Ink_Canvas.Helpers
@@ -18,7 +17,7 @@ namespace Ink_Canvas.Helpers
             {
                 try
                 {
-                    Process.Start(executablePath);
+                    ProcessHelper.StartWithShell(executablePath);
                     //Console.WriteLine(softwareName + " 启动成功！");
                 }
                 catch (Exception ex)

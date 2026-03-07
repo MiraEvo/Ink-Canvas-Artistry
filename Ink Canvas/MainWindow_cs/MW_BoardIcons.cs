@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Ink;
 using System.Windows.Media;
 using Application = System.Windows.Application;
-using System.Diagnostics;
 
 namespace Ink_Canvas
 {
@@ -118,7 +117,7 @@ namespace Ink_Canvas
         {
             HideSubPanelsImmediately();
             ImageBlackboard_Click(null, null);
-            Process.Start("https://www.desmos.com/calculator?lang=zh-CN");
+            ProcessHelper.StartWithShell("https://www.desmos.com/calculator?lang=zh-CN");
         }
 
     }

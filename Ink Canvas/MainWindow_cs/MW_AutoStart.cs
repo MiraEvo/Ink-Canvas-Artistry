@@ -1,32 +1,46 @@
-﻿using IWshRuntimeLibrary;
+using Microsoft.Win32;
 using System;
+using System.IO;
 using System.Windows;
 
 namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
+        private const string StartupRegistryPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+
+        private static string GetStartupShortcutPath(string exeName)
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), exeName + ".lnk");
+        }
+
+        private static bool StartupEntryExists(string exeName)
+        {
+            using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(StartupRegistryPath, false);
+            return registryKey?.GetValue(exeName) is string value && !string.IsNullOrWhiteSpace(value);
+        }
+
+        private static void DeleteLegacyStartupShortcut(string exeName)
+        {
+            string shortcutPath = GetStartupShortcutPath(exeName);
+            if (File.Exists(shortcutPath))
+            {
+                File.Delete(shortcutPath);
+            }
+        }
+
         public static bool StartAutomaticallyCreate(string exeName)
         {
             try
             {
-                WshShell shell = new WshShell();
-                IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Startup) + "\\" + exeName + ".lnk");
-                //设置快捷方式的目标所在的位置(源程序完整路径)
-                shortcut.TargetPath = System.Windows.Forms.Application.ExecutablePath;
-                //应用程序的工作目录
-                //当用户没有指定一个具体的目录时，快捷方式的目标应用程序将使用该属性所指定的目录来装载或保存文件。
-                shortcut.WorkingDirectory = System.Environment.CurrentDirectory;
-                //目标应用程序窗口类型(1.Normal window普通窗口,3.Maximized最大化窗口,7.Minimized最小化)
-                shortcut.WindowStyle = 1;
-                //快捷方式的描述
-                shortcut.Description = exeName + "_Ink";
-                //设置快捷键(如果有必要的话.)
-                //shortcut.Hotkey = "CTRL+ALT+D";
-                shortcut.Save();
+                string executablePath = Environment.ProcessPath ?? System.Windows.Forms.Application.ExecutablePath;
+                using RegistryKey registryKey = Registry.CurrentUser.CreateSubKey(StartupRegistryPath, true);
+                registryKey?.SetValue(exeName, $"\"{executablePath}\"");
+                DeleteLegacyStartupShortcut(exeName);
                 return true;
             }
             catch (Exception) { }
+
             return false;
         }
 
@@ -34,10 +48,39 @@ namespace Ink_Canvas
         {
             try
             {
-                System.IO.File.Delete(Environment.GetFolderPath(Environment.SpecialFolder.Startup) + "\\" + exeName + ".lnk");
+                using RegistryKey registryKey = Registry.CurrentUser.OpenSubKey(StartupRegistryPath, true);
+                registryKey?.DeleteValue(exeName, false);
+                DeleteLegacyStartupShortcut(exeName);
                 return true;
             }
             catch (Exception) { }
+
+            return false;
+        }
+
+        public static bool NormalizeStartupRegistration()
+        {
+            bool hasLegacyRegistration = StartupEntryExists("InkCanvas")
+                || StartupEntryExists("Ink Canvas Annotation")
+                || File.Exists(GetStartupShortcutPath("InkCanvas"))
+                || File.Exists(GetStartupShortcutPath("Ink Canvas Annotation"));
+            bool hasCurrentRegistration = StartupEntryExists("Ink Canvas Artistry")
+                || File.Exists(GetStartupShortcutPath("Ink Canvas Artistry"));
+
+            if (hasLegacyRegistration)
+            {
+                StartAutomaticallyDel("InkCanvas");
+                StartAutomaticallyDel("Ink Canvas Annotation");
+                StartAutomaticallyCreate("Ink Canvas Artistry");
+                return true;
+            }
+
+            if (hasCurrentRegistration)
+            {
+                StartAutomaticallyCreate("Ink Canvas Artistry");
+                return true;
+            }
+
             return false;
         }
     }
