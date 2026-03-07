@@ -4,11 +4,18 @@ namespace Ink_Canvas.ViewModels
 {
     public sealed class MainWindowViewModel : ObservableObject
     {
-        public MainWindowViewModel(SettingsViewModel settings, ShellViewModel shell, InputStateViewModel input)
+        public MainWindowViewModel(
+            SettingsViewModel settings,
+            ShellViewModel shell,
+            InputStateViewModel input,
+            PresentationSessionViewModel presentation,
+            AutomationStateViewModel automationState)
         {
             Settings = settings;
             Shell = shell;
             Input = input;
+            Presentation = presentation;
+            AutomationState = automationState;
         }
 
         public SettingsViewModel Settings { get; }
@@ -16,5 +23,9 @@ namespace Ink_Canvas.ViewModels
         public ShellViewModel Shell { get; }
 
         public InputStateViewModel Input { get; }
+
+        public PresentationSessionViewModel Presentation { get; }
+
+        public AutomationStateViewModel AutomationState { get; }
     }
 }

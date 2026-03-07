@@ -18,7 +18,7 @@ namespace Ink_Canvas
 
         private void HotKey_ExitPPTSlideShow()
         {
-            if(BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+            if (IsPresentationSlideShowRunning)
             {
                 BtnPPTSlideShowEnd_Click(null, null);
             }
@@ -46,7 +46,7 @@ namespace Ink_Canvas
 
         private void HotKey_QuitDrawMode()
         {
-            if (currentMode != 0)
+            if (ShellViewModel.IsBlackboardMode)
             {
                 ImageBlackboard_Click(null, null);
             }
@@ -60,7 +60,7 @@ namespace Ink_Canvas
 
         private void Window_MouseWheel(object sender, MouseWheelEventArgs e)
         {
-            if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible || currentMode != 0) return;
+            if (!IsPresentationSlideShowRunning || ShellViewModel.IsBlackboardMode) return;
             if (e.Delta >= 120)
             {
                 BtnPPTSlidesUp_Click(null, null);
@@ -73,7 +73,7 @@ namespace Ink_Canvas
 
         private void Main_Grid_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible || currentMode != 0) return;
+            if (!IsPresentationSlideShowRunning || ShellViewModel.IsBlackboardMode) return;
 
             if (e.Key == Key.Down || e.Key == Key.PageDown || e.Key == Key.Right || e.Key == Key.N || e.Key == Key.Space)
             {

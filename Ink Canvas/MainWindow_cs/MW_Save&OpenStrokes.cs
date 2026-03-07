@@ -29,7 +29,7 @@ namespace Ink_Canvas
             {
                 string savePath = Settings.Automation.AutoSavedStrokesLocation
                     + (saveByUser ? @"\User Saved - " : @"\Auto Saved - ")
-                    + (currentMode == 0 ? "Annotation Strokes" : "BlackBoard Strokes");
+                    + (ShellViewModel.IsDesktopAnnotationMode ? "Annotation Strokes" : "BlackBoard Strokes");
 
                 if (!Directory.Exists(savePath))
                 {
@@ -37,7 +37,7 @@ namespace Ink_Canvas
                 }
 
                 string savePathWithName = savePath + @"\" + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss-fff")
-                    + (currentMode != 0 ? " Page-" + CurrentWhiteboardIndex + " StrokesCount-" + inkCanvas.Strokes.Count + ".icart" : ".icart");
+                    + (ShellViewModel.IsBlackboardMode ? " Page-" + CurrentWhiteboardIndex + " StrokesCount-" + inkCanvas.Strokes.Count + ".icart" : ".icart");
 
                 using (FileStream fs = new FileStream(savePathWithName, FileMode.Create))
                 using (var archive = new ZipArchive(fs, ZipArchiveMode.Create))

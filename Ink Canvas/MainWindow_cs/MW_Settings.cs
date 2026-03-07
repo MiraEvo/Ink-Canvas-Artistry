@@ -76,11 +76,11 @@ namespace Ink_Canvas
 
             if (Settings.PowerPointSettings.PowerPointSupport)
             {
-                timerCheckPPT.Start();
+                StartPresentationMonitoring();
             }
             else
             {
-                timerCheckPPT.Stop();
+                StopPresentationMonitoring();
             }
         }
 
@@ -185,7 +185,7 @@ namespace Ink_Canvas
         {
             if (!isLoaded) return;
             Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel = ToggleSwitchShowPPTNavigationPanelBottom.IsOn;
-            if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+            if (IsPresentationSlideShowRunning)
             {
                 PPTNavigationBottomLeft.Visibility = Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
                 PPTNavigationBottomRight.Visibility = Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
@@ -197,7 +197,7 @@ namespace Ink_Canvas
         {
             if (!isLoaded) return;
             Settings.PowerPointSettings.IsShowSidePPTNavigationPanel = ToggleSwitchShowPPTNavigationPanelSide.IsOn;
-            if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+            if (IsPresentationSlideShowRunning)
             {
                 PPTNavigationSidesLeft.Visibility = Settings.PowerPointSettings.IsShowSidePPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
                 PPTNavigationSidesRight.Visibility = Settings.PowerPointSettings.IsShowSidePPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;

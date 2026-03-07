@@ -9,17 +9,13 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        Timer timerCheckPPT = new Timer();
         Timer timerKillProcess = new Timer();
         Timer timerCheckAutoFold = new Timer();
         string AvailableLatestVersion = null;
         Timer timerCheckAutoUpdateWithSilence = new Timer();
-        bool isHidingSubPanelsWhenInking = false; // 避免书写时触发二次关闭二级菜单导致动画不连续
 
         private void InitTimers()
         {
-            timerCheckPPT.Elapsed += TimerCheckPPT_Elapsed;
-            timerCheckPPT.Interval = 1000;
             timerKillProcess.Elapsed += TimerKillProcess_Elapsed;
             timerKillProcess.Interval = 5000;
             timerCheckAutoFold.Elapsed += timerCheckAutoFold_Elapsed;
@@ -73,9 +69,6 @@ namespace Ink_Canvas
         }
 
 
-        bool foldFloatingBarByUser = false, // 保持收纳操作不受自动收纳的控制
-            unfoldFloatingBarByUser = false; // 允许用户在希沃软件内进行展开操作
-
         private void timerCheckAutoFold_Elapsed(object sender, ElapsedEventArgs e)
         {
             if (isFloatingBarChangingHideMode) return;
@@ -103,8 +96,8 @@ namespace Ink_Canvas
                         FoldFloatingBar_Click(null, null);
                     }
                 }
-                else if (WinTabWindowsChecker.IsWindowExisted("幻灯片放映", false))
-                { // 处于幻灯片放映状态
+                else if (IsPresentationSlideShowRunning)
+                {
                     if (!Settings.Automation.IsAutoFoldInPPTSlideShow && isFloatingBarFolded && !foldFloatingBarByUser)
                     {
                         UnFoldFloatingBar_MouseUp(null, null);

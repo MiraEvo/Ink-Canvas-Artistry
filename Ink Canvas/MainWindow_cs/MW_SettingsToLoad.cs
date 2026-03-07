@@ -183,12 +183,12 @@ namespace Ink_Canvas
                 if (Settings.PowerPointSettings.PowerPointSupport)
                 {
                     ToggleSwitchSupportPowerPoint.IsOn = true;
-                    timerCheckPPT.Start();
+                    StartPresentationMonitoring();
                 }
                 else
                 {
                     ToggleSwitchSupportPowerPoint.IsOn = false;
-                    timerCheckPPT.Stop();
+                    StopPresentationMonitoring();
                 }
                 if (Settings.PowerPointSettings.IsShowCanvasAtNewSlideShow)
                 {

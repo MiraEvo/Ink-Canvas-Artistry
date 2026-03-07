@@ -33,15 +33,19 @@ namespace Ink_Canvas
                     pathPickerService,
                     settings => Settings = settings),
                 new ShellViewModel(),
-                new InputStateViewModel());
+                new InputStateViewModel(),
+                new PresentationSessionViewModel(),
+                new AutomationStateViewModel());
             mainWindowViewModel.Settings.PropertyChanged += SettingsViewModel_PropertyChanged;
             mainWindowViewModel.Settings.ReloadRequested += SettingsViewModel_ReloadRequested;
             mainWindowViewModel.Shell.WorkspaceModeChanged += ShellViewModel_WorkspaceModeChanged;
             mainWindowViewModel.Shell.ToolModeChanged += ShellViewModel_ToolModeChanged;
             mainWindowViewModel.Shell.ActiveSubPanelChanged += ShellViewModel_ActiveSubPanelChanged;
+            mainWindowViewModel.Presentation.PropertyChanged += PresentationViewModel_PropertyChanged;
 
             DataContext = mainWindowViewModel;
             InitializeInputController();
+            InitializePresentationController();
 
             ConfigureSettingsBindings();
         }
@@ -256,11 +260,11 @@ namespace Ink_Canvas
         {
             if (Settings.PowerPointSettings.PowerPointSupport)
             {
-                timerCheckPPT.Start();
+                StartPresentationMonitoring();
             }
             else
             {
-                timerCheckPPT.Stop();
+                StopPresentationMonitoring();
             }
         }
 
@@ -339,7 +343,7 @@ namespace Ink_Canvas
 
         private void ApplyPptBottomNavigationVisibility()
         {
-            if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
+            if (!IsPresentationSlideShowRunning)
             {
                 return;
             }
@@ -347,11 +351,14 @@ namespace Ink_Canvas
             Visibility visibility = Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
             PPTNavigationBottomLeft.Visibility = visibility;
             PPTNavigationBottomRight.Visibility = visibility;
+            PresentationViewModel.SetNavigationVisibility(
+                visibility == Visibility.Visible,
+                PresentationViewModel.IsSideNavigationVisible);
         }
 
         private void ApplyPptSideNavigationVisibility()
         {
-            if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
+            if (!IsPresentationSlideShowRunning)
             {
                 return;
             }
@@ -359,6 +366,9 @@ namespace Ink_Canvas
             Visibility visibility = Settings.PowerPointSettings.IsShowSidePPTNavigationPanel ? Visibility.Visible : Visibility.Collapsed;
             PPTNavigationSidesLeft.Visibility = visibility;
             PPTNavigationSidesRight.Visibility = visibility;
+            PresentationViewModel.SetNavigationVisibility(
+                PresentationViewModel.IsBottomNavigationVisible,
+                visibility == Visibility.Visible);
         }
 
         private void ApplyProcessKillTimer()

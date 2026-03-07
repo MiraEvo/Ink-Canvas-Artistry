@@ -104,7 +104,7 @@ namespace Ink_Canvas
                 }
                 else
                 {
-                    if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible && inkCanvas.Strokes.Count == 0 && Settings.PowerPointSettings.IsEnableFingerGestureSlideShowControl)
+                    if (IsPresentationSlideShowRunning && inkCanvas.Strokes.Count == 0 && Settings.PowerPointSettings.IsEnableFingerGestureSlideShowControl)
                     {
                         isLastTouchEraser = false;
                         ApplyCanvasInteractionMode(CanvasInteractionMode.GestureOnly);
@@ -181,7 +181,7 @@ namespace Ink_Canvas
                     !(drawingShapeMode == 9 && !isFirstTouchCuboid))
                 {
                     int whiteboardIndex = CurrentWhiteboardIndex;
-                    if (currentMode == 0)
+                    if (ShellViewModel.IsDesktopAnnotationMode)
                     {
                         whiteboardIndex = 0;
                     }
@@ -211,7 +211,7 @@ namespace Ink_Canvas
         private void Main_Grid_ManipulationDelta(object sender, ManipulationDeltaEventArgs e)
         {
             if (isInMultiTouchMode || !Settings.Gesture.IsEnableTwoFingerGesture) return;
-            if ((dec.Count >= 2 && (Settings.PowerPointSettings.IsEnableTwoFingerGestureInPresentationMode || BtnPPTSlideShowEnd.Visibility != Visibility.Visible)) || isSingleFingerDragMode)
+            if ((dec.Count >= 2 && (Settings.PowerPointSettings.IsEnableTwoFingerGestureInPresentationMode || !IsPresentationSlideShowRunning)) || isSingleFingerDragMode)
             {
                 Matrix m = new Matrix();
                 ManipulationDelta md = e.DeltaManipulation;

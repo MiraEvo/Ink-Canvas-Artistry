@@ -20,8 +20,8 @@ namespace Ink_Canvas
         public MainWindow()
         {
             /*
-                处于画板模式内：Topmost == false / currentMode != 0
-                处于 PPT 放映内：BtnPPTSlideShowEnd.Visibility
+                处于画板模式内：Topmost == false / Shell.IsBlackboardMode
+                处于 PPT 放映内：Presentation.IsSlideShowRunning
             */
             InitializeComponent();
             InitializeMvvm();
@@ -122,7 +122,7 @@ namespace Ink_Canvas
             {
                 foreach (GestureRecognitionResult gest in gestures)
                 {
-                    if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                    if (IsPresentationSlideShowRunning)
                     {
                         if (gest.ApplicationGesture == ApplicationGesture.Left)
                         {

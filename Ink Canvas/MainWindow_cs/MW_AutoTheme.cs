@@ -13,7 +13,7 @@ namespace Ink_Canvas
     {
         public string GetMainWindowTheme()
         {
-            if (currentMode != 0)
+            if (ShellViewModel.IsBlackboardMode)
             {
                 return Settings.Canvas.UsingWhiteboard ? "Light" : "Dark";
             }

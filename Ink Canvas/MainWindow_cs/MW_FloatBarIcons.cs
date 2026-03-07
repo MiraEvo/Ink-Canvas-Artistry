@@ -60,7 +60,7 @@ namespace Ink_Canvas
             }
             else if (isVisible == true)
             {
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible) EnableTwoFingerGestureBorder.Visibility = Visibility.Collapsed;
+                if (IsPresentationSlideShowRunning) EnableTwoFingerGestureBorder.Visibility = Visibility.Collapsed;
                 else EnableTwoFingerGestureBorder.Visibility = Visibility.Visible;
             }
             else EnableTwoFingerGestureBorder.Visibility = Visibility.Collapsed;
@@ -75,6 +75,13 @@ namespace Ink_Canvas
         Point downPos = new Point();
         Point pointDesktop = new Point(-1, -1); //用于记录上次在桌面时的坐标
         Point pointPPT = new Point(-1, -1); //用于记录上次在PPT中的坐标
+        bool shouldRestoreDefaultDesktopFloatingBarPosition;
+
+        private void RequestDefaultDesktopFloatingBarPosition()
+        {
+            shouldRestoreDefaultDesktopFloatingBarPosition = true;
+            pointPPT = new Point(-1, -1);
+        }
 
         void SymbolIconEmoji_MouseMove(object sender, MouseEventArgs e)
         {
@@ -85,7 +92,7 @@ namespace Ink_Canvas
                 ViewboxFloatingBar.Margin = new Thickness(xPos, yPos, -2000, -200);
 
                 pos = e.GetPosition(null);
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                if (IsPresentationSlideShowRunning)
                 {
                     pointPPT = new Point(xPos, yPos);
                 }
@@ -244,7 +251,7 @@ namespace Ink_Canvas
 
         private async void SymbolIconCursor_Click(object sender, RoutedEventArgs e)
         {
-            if (currentMode != 0)
+            if (ShellViewModel.IsBlackboardMode)
             {
                 ImageBlackboard_Click(null, null);
             }
@@ -252,7 +259,7 @@ namespace Ink_Canvas
             {
                 ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
 
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                if (IsPresentationSlideShowRunning)
                 {
                     await Task.Delay(100);
                     ViewboxFloatingBarMarginAnimation();
@@ -278,8 +285,8 @@ namespace Ink_Canvas
             {
                 if (Settings.Automation.IsAutoSaveStrokesAtClear && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
                 {
-                    if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
-                        SavePPTScreenshot($"{pptName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
+                    if (IsPresentationSlideShowRunning)
+                        SavePPTScreenshot($"{CurrentPresentationName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
                     else
                         SaveScreenshot(true);
                 }
@@ -444,7 +451,7 @@ namespace Ink_Canvas
             {
                 MarginFromEdge = -100;
             }
-            else if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+            else if (IsPresentationSlideShowRunning)
             {
                 MarginFromEdge = 60;
             }
@@ -476,7 +483,7 @@ namespace Ink_Canvas
 
                 if (MarginFromEdge != -60)
                 {
-                    if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                    if (IsPresentationSlideShowRunning)
                     {
                         if (pointPPT.X != -1 || pointPPT.Y != -1)
                         {
@@ -492,7 +499,12 @@ namespace Ink_Canvas
                     }
                     else
                     {
-                        if (pointDesktop.X != -1 || pointDesktop.Y != -1)
+                        if (shouldRestoreDefaultDesktopFloatingBarPosition)
+                        {
+                            pointDesktop = pos;
+                            shouldRestoreDefaultDesktopFloatingBarPosition = false;
+                        }
+                        else if (pointDesktop.X != -1 || pointDesktop.Y != -1)
                         {
                             if (Math.Abs(pointDesktop.Y - pos.Y) > 50)
                             {
@@ -545,7 +557,7 @@ namespace Ink_Canvas
         private void ColorThemeSwitch_MouseUp(object sender, RoutedEventArgs e)
         {
             isUselightThemeColor = !isUselightThemeColor;
-            if (currentMode == 0)
+            if (ShellViewModel.IsDesktopAnnotationMode)
             {
                 isDesktopUselightThemeColor = isUselightThemeColor;
             }
@@ -724,7 +736,7 @@ namespace Ink_Canvas
             forceEraser = false;
             //BorderClearInDelete.Visibility = Visibility.Collapsed;
 
-            if (currentMode == 0)
+            if (ShellViewModel.IsDesktopAnnotationMode)
             { // 先回到画笔再清屏，避免 TimeMachine 的相关 bug 影响
                 if (Pen_Icon.Background == null && StackPanelCanvasControls.Visibility == Visibility.Visible)
                 {
@@ -742,7 +754,7 @@ namespace Ink_Canvas
             if (inkCanvas.Strokes.Count != 0)
             {
                 int whiteboardIndex = CurrentWhiteboardIndex;
-                if (currentMode == 0)
+                if (ShellViewModel.IsDesktopAnnotationMode)
                 {
                     whiteboardIndex = 0;
                 }
@@ -840,7 +852,7 @@ namespace Ink_Canvas
             else
             {
                 // Auto-clear Strokes 要等待截图完成再清理笔记
-                if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
+                if (!IsPresentationSlideShowRunning)
                 {
                     if (isLoaded && Settings.Automation.IsAutoClearWhenExitingWritingMode)
                     {
@@ -891,7 +903,7 @@ namespace Ink_Canvas
 
                 GridBackgroundCoverHolder.Visibility = Visibility.Collapsed;
 
-                if (currentMode != 0)
+                if (ShellViewModel.IsBlackboardMode)
                 {
                     SaveStrokes();
                     RestoreStrokes(true);

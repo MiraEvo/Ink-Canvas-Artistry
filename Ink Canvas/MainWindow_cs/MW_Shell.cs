@@ -102,7 +102,7 @@ namespace Ink_Canvas
             {
                 HideSubPanelsImmediately();
 
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                if (IsPresentationSlideShowRunning)
                 {
                     if (Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel)
                     {
@@ -140,7 +140,7 @@ namespace Ink_Canvas
 
             if (workspaceMode == WorkspaceMode.DesktopAnnotation
                 && inkCanvas.Strokes.Count == 0
-                && BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
+                && !IsPresentationSlideShowRunning)
             {
                 ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
             }
@@ -190,9 +190,9 @@ namespace Ink_Canvas
             if (inkCanvas.Strokes.Count > 0
                 && inkCanvas.Strokes.Count > Settings.Automation.MinimumAutomationStrokeNumber)
             {
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                if (IsPresentationSlideShowRunning)
                 {
-                    SavePPTScreenshot($"{pptName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
+                    SavePPTScreenshot($"{CurrentPresentationName}/{previousSlideID}_{DateTime.Now:HH-mm-ss}");
                 }
                 else
                 {
@@ -200,7 +200,7 @@ namespace Ink_Canvas
                 }
             }
 
-            if (BtnPPTSlideShowEnd.Visibility != Visibility.Visible)
+            if (!IsPresentationSlideShowRunning)
             {
                 if (Settings.Canvas.HideStrokeWhenSelecting)
                 {
@@ -236,7 +236,7 @@ namespace Ink_Canvas
             inkCanvas.Select(new StrokeCollection());
             GridInkCanvasSelectionCover.Visibility = Visibility.Collapsed;
 
-            if (currentMode != 0)
+            if (ShellViewModel.IsBlackboardMode)
             {
                 SaveStrokes();
                 RestoreStrokes(true);

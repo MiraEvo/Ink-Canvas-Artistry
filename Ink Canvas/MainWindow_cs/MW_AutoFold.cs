@@ -28,7 +28,7 @@ namespace Ink_Canvas
                 HideSubPanelsImmediately();
                 isFloatingBarChangingHideMode = true;
                 isFloatingBarFolded = true;
-                if (currentMode != 0) ImageBlackboard_Click(null, null);
+                if (ShellViewModel.IsBlackboardMode) ImageBlackboard_Click(null, null);
                 if (StackPanelCanvasControls.Visibility == Visibility.Visible)
                 {
                     if (foldFloatingBarByUser && inkCanvas.Strokes.Count > 2)
@@ -57,7 +57,7 @@ namespace Ink_Canvas
 
         private async void UnFoldFloatingBar_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (sender == null || BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+            if (sender == null || IsPresentationSlideShowRunning)
             {
                 unfoldFloatingBarByUser = false;
             }
@@ -79,7 +79,7 @@ namespace Ink_Canvas
 
             await Dispatcher.InvokeAsync(() =>
             {
-                if (BtnPPTSlideShowEnd.Visibility == Visibility.Visible)
+                if (IsPresentationSlideShowRunning)
                 {
                     if (Settings.PowerPointSettings.IsShowBottomPPTNavigationPanel)
                     {
