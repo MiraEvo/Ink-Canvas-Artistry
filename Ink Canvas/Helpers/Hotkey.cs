@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
@@ -7,6 +8,7 @@ using System.Windows.Interop;
 
 namespace Ink_Canvas
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     static partial class Hotkey
     {
         #region 系统api
@@ -37,15 +39,15 @@ namespace Ink_Canvas
                 return false;
             }
 
-            var _hwndSource = HwndSource.FromHwnd(hwnd);
-            if (_hwndSource == null)
+            var hwndSource = HwndSource.FromHwnd(hwnd);
+            if (hwndSource == null)
             {
                 return false;
             }
 
             if (keyid == InitialKeyId)
             {
-                _hwndSource.AddHook(WndProc);
+                hwndSource.AddHook(WndProc);
             }
 
             int id = keyid++;
@@ -53,16 +55,16 @@ namespace Ink_Canvas
             var vk = KeyInterop.VirtualKeyFromKey(key);
             if (!RegisterHotKey(hwnd, id, fsModifiers, (uint)vk))
             {
-                //throw new Exception("regist hotkey fail.");
                 return false;
             }
+
             keymap[id] = callBack;
             return true;
         }
 
-        /// <summary> 
-        /// 快捷键消息处理 
-        /// </summary> 
+        /// <summary>
+        /// 快捷键消息处理
+        /// </summary>
         static IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
             if (msg == WM_HOTKEY)
@@ -72,30 +74,28 @@ namespace Ink_Canvas
                 {
                     callback();
                 }
+
                 handled = true;
             }
+
             return IntPtr.Zero;
         }
 
-        /// <summary> 
-        /// 注销快捷键 
-        /// </summary> 
-        /// <param name="hWnd">持有快捷键窗口的句柄</param> 
-        /// <param name="callBack">回调函数</param> 
+        /// <summary>
+        /// 注销快捷键
+        /// </summary>
+        /// <param name="hWnd">持有快捷键窗口的句柄</param>
+        /// <param name="callBack">回调函数</param>
         public static void UnRegist(IntPtr hWnd, HotKeyCallBackHanlder callBack)
         {
-            List<int> idsToRemove = new List<int>();
-            foreach (KeyValuePair<int, HotKeyCallBackHanlder> entry in keymap)
-            {
-                if (entry.Value == callBack)
-                {
-                    UnregisterHotKey(hWnd, entry.Key);
-                    idsToRemove.Add(entry.Key);
-                }
-            }
+            List<int> idsToRemove = keymap
+                .Where(entry => entry.Value == callBack)
+                .Select(entry => entry.Key)
+                .ToList();
 
             foreach (int id in idsToRemove)
             {
+                UnregisterHotKey(hWnd, id);
                 keymap.Remove(id);
             }
         }
@@ -103,7 +103,7 @@ namespace Ink_Canvas
         const int WM_HOTKEY = 0x312;
         const int InitialKeyId = 10;
         static int keyid = InitialKeyId;
-        static readonly Dictionary<int, HotKeyCallBackHanlder> keymap = new Dictionary<int, HotKeyCallBackHanlder>();
+        static readonly Dictionary<int, HotKeyCallBackHanlder> keymap = new();
 
         public delegate void HotKeyCallBackHanlder();
     }

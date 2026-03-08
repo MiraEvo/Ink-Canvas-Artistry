@@ -49,6 +49,7 @@ namespace Ink_Canvas
             }
             catch (TaskCanceledException)
             {
+                System.Diagnostics.Debug.WriteLine("Notification | Show request was canceled.");
             }
         }
     }

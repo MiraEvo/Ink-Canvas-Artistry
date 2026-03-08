@@ -241,7 +241,7 @@ namespace Ink_Canvas
 
         private void GridInkCanvasSelectionCover_MouseMove(object sender, MouseEventArgs e)
         {
-            if (isGridInkCanvasSelectionCoverMouseDown == false) return;
+            if (!isGridInkCanvasSelectionCoverMouseDown) return;
             Point mousePoint = e.GetPosition(inkCanvas);
             Vector trans = new Vector(mousePoint.X - lastMousePoint.X, mousePoint.Y - lastMousePoint.Y);
             lastMousePoint = mousePoint;
@@ -249,25 +249,17 @@ namespace Ink_Canvas
             // add Translate
             m.Translate(trans.X, trans.Y);
             // handle UIElement
-            List<UIElement> elements = new List<UIElement>();
-            if (ElementsSelectionClone.Count != 0)
-            {
-                elements = ElementsSelectionClone;
-            }
-            else
-            {
-                elements = InkCanvasElementsHelper.GetSelectedElements(inkCanvas);
-            }
+            List<UIElement> elements = ElementsSelectionClone.Count != 0
+                ? ElementsSelectionClone
+                : InkCanvasElementsHelper.GetSelectedElements(inkCanvas);
             foreach (UIElement element in elements)
             {
                 ApplyElementMatrixTransform(element, m);
             }
             // handle strokes
-            StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
-            if (StrokesSelectionClone.Count != 0)
-            {
-                strokes = StrokesSelectionClone;
-            }
+            StrokeCollection strokes = StrokesSelectionClone.Count != 0
+                ? StrokesSelectionClone
+                : inkCanvas.GetSelectedStrokes();
             foreach (Stroke stroke in strokes)
             {
                 stroke.Transform(m, false);
@@ -470,7 +462,7 @@ namespace Ink_Canvas
             dec.Remove(e.TouchDevice.Id);
             if (dec.Count >= 1) return;
             isProgramChangeStrokeSelection = false;
-            if (lastTouchPointOnGridInkCanvasCover == e.GetTouchPoint(null).Position)
+            if (AreNearlyEqual(lastTouchPointOnGridInkCanvasCover, e.GetTouchPoint(null).Position))
             {
                 if (lastTouchPointOnGridInkCanvasCover.X < inkCanvas.GetSelectionBounds().Left ||
                     lastTouchPointOnGridInkCanvasCover.Y < inkCanvas.GetSelectionBounds().Top ||

@@ -1,6 +1,7 @@
 using global::System;
-using global::System.Runtime.InteropServices;
+using global::System.Diagnostics.CodeAnalysis;
 using global::System.Runtime.CompilerServices;
+using global::System.Runtime.InteropServices;
 using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Services.System.Integration
@@ -16,19 +17,20 @@ namespace Ink_Canvas.Services.System.Integration
     ///     ICC官網：<see href="https://icc.bliemhax.com"/>
     /// </para>
     /// </summary>
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     public static class EdgeGestureUtil
     {
-
-        private static readonly Guid DISABLE_TOUCH_SCREEN = new Guid("32CE38B2-2C9A-41B1-9BC5-B3784394AA44");
-        private static readonly Guid IID_PROPERTY_STORE = new Guid("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99");
+        private static readonly Guid DISABLE_TOUCH_SCREEN = new("32CE38B2-2C9A-41B1-9BC5-B3784394AA44");
+        private static readonly Guid IID_PROPERTY_STORE = new("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99");
 
         private const short VT_BOOL = 11;
+
         #region "Structures"
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         public struct PropertyKey
         {
-            public PropertyKey(Guid guid, UInt32 pid)
+            public PropertyKey(Guid guid, uint pid)
             {
                 fmtid = guid;
                 this.pid = pid;
@@ -82,51 +84,35 @@ namespace Ink_Canvas.Services.System.Integration
             private DateTime date;
             [FieldOffset(8)]
             private global::System.Runtime.InteropServices.ComTypes.FILETIME filetime;
-
             [FieldOffset(8)]
             private Blob blobVal;
             [FieldOffset(8)]
             private IntPtr pwszVal;
 
-
-            /// <summary>
-            /// Helper method to gets blob data
-            /// </summary>
             private byte[] GetBlob()
             {
-                byte[] Result = new byte[blobVal.Length];
-                Marshal.Copy(blobVal.Data, Result, 0, Result.Length);
-                return Result;
+                byte[] result = new byte[blobVal.Length];
+                Marshal.Copy(blobVal.Data, result, 0, result.Length);
+                return result;
             }
 
-            /// <summary>
-            /// Property value
-            /// </summary>
             public object Value
             {
                 get
                 {
                     VarEnum ve = (VarEnum)vt;
-                    switch (ve)
+                    return ve switch
                     {
-                        case VarEnum.VT_I1:
-                            return bVal;
-                        case VarEnum.VT_I2:
-                            return iVal;
-                        case VarEnum.VT_I4:
-                            return lVal;
-                        case VarEnum.VT_I8:
-                            return hVal;
-                        case VarEnum.VT_INT:
-                            return iVal;
-                        case VarEnum.VT_UI4:
-                            return ulVal;
-                        case VarEnum.VT_LPWSTR:
-                            return Marshal.PtrToStringUni(pwszVal);
-                        case VarEnum.VT_BLOB:
-                            return GetBlob();
-                    }
-                    throw new NotImplementedException($"PropVariant {ve}");
+                        VarEnum.VT_I1 => bVal,
+                        VarEnum.VT_I2 => iVal,
+                        VarEnum.VT_I4 => lVal,
+                        VarEnum.VT_I8 => hVal,
+                        VarEnum.VT_INT => iVal,
+                        VarEnum.VT_UI4 => ulVal,
+                        VarEnum.VT_LPWSTR => Marshal.PtrToStringUni(pwszVal),
+                        VarEnum.VT_BLOB => GetBlob(),
+                        _ => throw new NotImplementedException($"PropVariant {ve}")
+                    };
                 }
             }
         }
@@ -134,16 +120,8 @@ namespace Ink_Canvas.Services.System.Integration
         internal struct Blob
         {
             public int Length;
-
             public IntPtr Data;
-            //Code Should Compile at warning level4 without any warnings, 
-            //However this struct will give us Warning CS0649: Field [Fieldname] 
-            //is never assigned to, and will always have its default value
-            //You can disable CS0649 in the project options but that will disable
-            //the warning for the whole project, it's a nice warning and we do want 
-            //it in other places so we make a nice dummy function to keep the compiler
-            //happy.
-            // 代码应该在警告级别 4 下编译而不会出现任何警告，但是此结构将给出警告 CS0649：字段 [Fieldname] 从未分配，并且始终具有其默认值。您可以在项目选项中禁用 CS0649，但这将禁用整个项目的警告，这是一个很好的警告，我们确实希望它在其他地方，所以我们制作了一个不错的虚拟函数来让编译器满意。
+
             private void FixCS0649()
             {
                 Length = 0;
@@ -155,19 +133,24 @@ namespace Ink_Canvas.Services.System.Integration
 
         #region "Interfaces"
 
-        [ComImport(), Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         public interface IPropertyStore
         {
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            void GetCount([Out(), In()] ref uint cProps);
+            void GetCount([Out, In] ref uint cProps);
+
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            void GetAt([In()] uint iProp, ref PropertyKey pkey);
+            void GetAt([In] uint iProp, ref PropertyKey pkey);
+
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            void GetValue([In()] ref PropertyKey key, ref PropVariant pv);
+            void GetValue([In] ref PropertyKey key, ref PropVariant pv);
+
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
-            void SetValue([In()] ref PropertyKey key, [In()] ref PropVariant pv);
+            void SetValue([In] ref PropertyKey key, [In] ref PropVariant pv);
+
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             void Commit();
+
             [MethodImpl(MethodImplOptions.InternalCall, MethodCodeType = MethodCodeType.Runtime)]
             void Release();
         }
@@ -197,12 +180,21 @@ namespace Ink_Canvas.Services.System.Integration
                     Marshal.ThrowExceptionForHR(hr);
                 }
 
-                PropertyKey propKey = new PropertyKey();
-                propKey.fmtid = DISABLE_TOUCH_SCREEN;
-                propKey.pid = 2;
-                PropVariant var = new PropVariant();
-                var.vt = VT_BOOL;
-                var.boolVal = enable;
+                if (pPropStore == null)
+                {
+                    throw new InvalidOperationException("SHGetPropertyStoreForWindow returned success without an IPropertyStore instance.");
+                }
+
+                PropertyKey propKey = new()
+                {
+                    fmtid = DISABLE_TOUCH_SCREEN,
+                    pid = 2
+                };
+                PropVariant var = new()
+                {
+                    vt = VT_BOOL,
+                    boolVal = enable
+                };
                 pPropStore.SetValue(ref propKey, ref var);
             }
             finally
@@ -215,7 +207,5 @@ namespace Ink_Canvas.Services.System.Integration
         }
 
         #endregion
-
     }
 }
-

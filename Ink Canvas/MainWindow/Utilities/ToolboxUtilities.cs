@@ -71,11 +71,10 @@ namespace Ink_Canvas
             inkCanvas.Visibility = Visibility.Collapsed;
             InkCanvasForInkReplay.Strokes.Clear();
 
-            StrokeCollection strokes = inkCanvas.Strokes.Clone();
-            if (inkCanvas.GetSelectedStrokes().Count != 0)
-            {
-                strokes = inkCanvas.GetSelectedStrokes().Clone();
-            }
+            StrokeCollection selectedStrokes = inkCanvas.GetSelectedStrokes();
+            StrokeCollection strokes = selectedStrokes.Count != 0
+                ? selectedStrokes.Clone()
+                : inkCanvas.Strokes.Clone();
 
             CancellationTokenSource replayCancellationTokenSource = BeginInkReplay();
             try
@@ -85,6 +84,7 @@ namespace Ink_Canvas
             }
             catch (OperationCanceledException)
             {
+                Debug.WriteLine("Toolbox | Ink replay was canceled.");
             }
             finally
             {

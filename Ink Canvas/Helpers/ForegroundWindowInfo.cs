@@ -1,11 +1,13 @@
-﻿using System;
+using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 namespace Ink_Canvas.Helpers
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     internal static partial class ForegroundWindowInfo
     {
         [LibraryImport("user32.dll", EntryPoint = "GetForegroundWindow")]
@@ -47,7 +49,7 @@ namespace Ink_Canvas.Helpers
                 return string.Empty;
             }
 
-            StringBuilder windowTitle = new StringBuilder(TextCapacity);
+            StringBuilder windowTitle = new(TextCapacity);
             if (GetWindowText(foregroundWindowHandle, windowTitle, TextCapacity) <= 0)
             {
                 return string.Empty;
@@ -64,7 +66,7 @@ namespace Ink_Canvas.Helpers
                 return string.Empty;
             }
 
-            StringBuilder className = new StringBuilder(TextCapacity);
+            StringBuilder className = new(TextCapacity);
             if (GetClassName(foregroundWindowHandle, className, TextCapacity) <= 0)
             {
                 return string.Empty;
@@ -93,7 +95,7 @@ namespace Ink_Canvas.Helpers
             }
 
             GetWindowThreadProcessId(foregroundWindowHandle, out uint processId);
-            if (processId == 0)
+            if (processId == 0 || processId > int.MaxValue)
             {
                 return "Unknown";
             }

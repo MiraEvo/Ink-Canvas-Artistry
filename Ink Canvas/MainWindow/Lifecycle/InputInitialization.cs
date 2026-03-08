@@ -14,19 +14,19 @@ namespace Ink_Canvas
 
         private bool isInMultiTouchMode
         {
-            get => InputStateViewModel?.IsMultiTouchMode == true;
+            get => InputStateViewModel?.IsMultiTouchMode ?? false;
             set => InputStateViewModel?.SetMultiTouchMode(value, false);
         }
 
         private bool forceEraser
         {
-            get => InputStateViewModel?.ForceEraser == true;
+            get => InputStateViewModel?.ForceEraser ?? false;
             set => InputStateViewModel?.SetForceEraser(value, false);
         }
 
         private bool forcePointEraser
         {
-            get => InputStateViewModel?.ForcePointEraser != false;
+            get => InputStateViewModel?.ForcePointEraser ?? true;
             set => InputStateViewModel?.SetForcePointEraser(value, false);
         }
 
@@ -38,7 +38,7 @@ namespace Ink_Canvas
 
         private bool lastIsInMultiTouchMode
         {
-            get => InputStateViewModel?.IsTwoFingerGestureTemporarilySuspended == true;
+            get => InputStateViewModel?.IsTwoFingerGestureTemporarilySuspended ?? false;
             set => InputStateViewModel?.SetTwoFingerGestureTemporarilySuspended(value);
         }
 

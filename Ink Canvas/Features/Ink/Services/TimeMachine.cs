@@ -128,13 +128,13 @@ namespace Ink_Canvas.Features.Ink.Services
     {
         public TimeMachineHistoryType CommitType;
         public bool StrokeHasBeenCleared = false;
-        public StrokeCollection CurrentStroke;
-        public StrokeCollection ReplacedStroke;
-        public UIElement Element;
+        public StrokeCollection? CurrentStroke;
+        public StrokeCollection? ReplacedStroke;
+        public UIElement? Element;
         //这里说一下 Tuple 的 Value1 是初始值 ; Value 2 是改变值
-        public Dictionary<Stroke, Tuple<StylusPointCollection, StylusPointCollection>> StylusPointDictionary;
-        public Dictionary<string, Tuple<object, TransformGroup>> ElementsManipulationHistory;
-        public Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>> DrawingAttributes;
+        public Dictionary<Stroke, Tuple<StylusPointCollection, StylusPointCollection>>? StylusPointDictionary;
+        public Dictionary<string, Tuple<object, TransformGroup>>? ElementsManipulationHistory;
+        public Dictionary<Stroke, Tuple<DrawingAttributes, DrawingAttributes>>? DrawingAttributes;
         // UserInput
         public TimeMachineHistory(StrokeCollection currentStroke, TimeMachineHistoryType commitType, bool strokeHasBeenCleared)
         {

@@ -82,20 +82,12 @@ namespace Ink_Canvas.Features.Ink.Services
             XDocument document = XDocument.Load(reader, LoadOptions.None);
             XElement root = document.Root ?? throw new InvalidDataException("Elements archive is empty.");
 
-            List<UIElement> elements = new List<UIElement>();
-
             if (string.Equals(root.Name.LocalName, RootElementName, StringComparison.Ordinal))
             {
-                foreach (XElement element in root.Elements())
-                {
-                    UIElement uiElement = DeserializeElement(element, dependencyRoot, useDependencyFileAttribute: true);
-                    if (uiElement != null)
-                    {
-                        elements.Add(uiElement);
-                    }
-                }
-
-                return elements;
+                return root.Elements()
+                    .Select(element => DeserializeElement(element, dependencyRoot, useDependencyFileAttribute: true))
+                    .OfType<UIElement>()
+                    .ToList();
             }
 
             if (!string.Equals(root.Name.LocalName, nameof(InkCanvas), StringComparison.Ordinal))
@@ -103,21 +95,11 @@ namespace Ink_Canvas.Features.Ink.Services
                 throw new InvalidDataException($"Unsupported elements root '{root.Name.LocalName}'.");
             }
 
-            foreach (XElement element in root.Elements())
-            {
-                if (!IsSupportedElementName(element.Name.LocalName))
-                {
-                    continue;
-                }
-
-                UIElement uiElement = DeserializeElement(element, dependencyRoot, useDependencyFileAttribute: false);
-                if (uiElement != null)
-                {
-                    elements.Add(uiElement);
-                }
-            }
-
-            return elements;
+            return root.Elements()
+                .Where(element => IsSupportedElementName(element.Name.LocalName))
+                .Select(element => DeserializeElement(element, dependencyRoot, useDependencyFileAttribute: false))
+                .OfType<UIElement>()
+                .ToList();
         }
 
         public bool TryGetDependencySourcePath(UIElement element, out string sourcePath)
@@ -128,7 +110,7 @@ namespace Ink_Canvas.Features.Ink.Services
             {
                 case Image image:
                     return TryGetImageSourcePath(image.Source, out sourcePath);
-                case MediaElement mediaElement when mediaElement.Source?.IsFile == true:
+                case MediaElement mediaElement when mediaElement.Source?.IsFile is true:
                     sourcePath = mediaElement.Source.LocalPath;
                     return !string.IsNullOrWhiteSpace(sourcePath);
                 default:
@@ -165,7 +147,7 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private XElement SerializeMediaElement(MediaElement mediaElement)
         {
-            if (mediaElement.Source?.IsFile != true || string.IsNullOrWhiteSpace(mediaElement.Source.LocalPath))
+            if (mediaElement.Source?.IsFile is not true || string.IsNullOrWhiteSpace(mediaElement.Source.LocalPath))
             {
                 logger.Error("Elements Save | Media source could not be resolved to a local file.");
                 return null;
@@ -614,12 +596,9 @@ namespace Ink_Canvas.Features.Ink.Services
             }
 
             StringBuilder builder = new StringBuilder(requestedName.Length);
-            foreach (char character in requestedName)
+            foreach (char character in requestedName.Where(character => char.IsLetterOrDigit(character) || character == '_'))
             {
-                if (char.IsLetterOrDigit(character) || character == '_')
-                {
-                    builder.Append(character);
-                }
+                builder.Append(character);
             }
 
             if (builder.Length == 0 || (!char.IsLetter(builder[0]) && builder[0] != '_'))

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,27 +17,17 @@ namespace Ink_Canvas.Features.Ink.Services
 
         public static bool IsNotCanvasElementSelected(InkCanvas inkCanvas)
         {
-            return (inkCanvas.GetSelectedStrokes().Count == 0 && inkCanvas.GetSelectedElements().Count == 0);
+            return inkCanvas.GetSelectedStrokes().Count == 0 && inkCanvas.GetSelectedElements().Count == 0;
         }
 
         public static List<UIElement> GetAllElements(InkCanvas inkCanvas)
         {
-            List<UIElement> canvasElements = new List<UIElement>();
-            foreach (UIElement element in inkCanvas.Children)
-            {
-                canvasElements.Add(element);
-            }
-            return canvasElements;
+            return inkCanvas.Children.Cast<UIElement>().ToList();
         }
 
         public static List<UIElement> GetSelectedElements(InkCanvas inkCanvas)
         {
-            List<UIElement> selectedImages = new List<UIElement>();
-            foreach (UIElement element in inkCanvas.GetSelectedElements())
-            {
-                selectedImages.Add(element);
-            }
-            return selectedImages;
+            return inkCanvas.GetSelectedElements().Cast<UIElement>().ToList();
         }
 
         public class ElementData
@@ -52,11 +43,9 @@ namespace Ink_Canvas.Features.Ink.Services
             int key = 0;
             foreach (UIElement element in inkCanvas.GetSelectedElements())
             {
-                UIElement clonedElement = CloneUIElement(element);
-                if (clonedElement != null)
+                if (CloneUIElement(element) is FrameworkElement frameworkElement)
                 {
-                    FrameworkElement frameworkElement = clonedElement as FrameworkElement;
-                    string timestamp = "ele_" + DateTime.Now.ToString("ddHHmmssfff") + key.ToString();
+                    string timestamp = $"ele_{DateTime.Now:ddHHmmssfff}{key}";
                     frameworkElement.Name = timestamp;
                     ++key;
                     InkCanvas.SetLeft(frameworkElement, InkCanvas.GetLeft(element));
@@ -80,11 +69,9 @@ namespace Ink_Canvas.Features.Ink.Services
             int key = 0;
             foreach (UIElement element in inkCanvas.GetSelectedElements())
             {
-                UIElement clonedElement = CloneUIElement(element);
-                if (clonedElement != null)
+                if (CloneUIElement(element) is FrameworkElement frameworkElement)
                 {
-                    FrameworkElement frameworkElement = clonedElement as FrameworkElement;
-                    string timestamp = "ele_" + DateTime.Now.ToString("ddHHmmssfff") + key.ToString();
+                    string timestamp = $"ele_{DateTime.Now:ddHHmmssfff}{key}";
                     frameworkElement.Name = timestamp;
                     ++key;
                     InkCanvas.SetLeft(frameworkElement, InkCanvas.GetLeft(element));

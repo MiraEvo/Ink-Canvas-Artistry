@@ -3,12 +3,14 @@ using Ink_Canvas.Helpers;
 using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     internal sealed partial class RotPresentationDiscovery
     {
         private const string PowerPointApplicationMoniker = "!{91493441-5A91-11CF-8700-00AA0060263B}";
@@ -181,15 +183,8 @@ namespace Ink_Canvas.Controllers.Presentation
                 return true;
             }
 
-            foreach (string extension in PresentationExtensions)
-            {
-                if (displayName.IndexOf(extension, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return PresentationExtensions.Any(extension =>
+                displayName.IndexOf(extension, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         // Source-generated COM marshalling does not currently cover these classic COM interface outputs well.

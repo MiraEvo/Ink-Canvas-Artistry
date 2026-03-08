@@ -129,7 +129,7 @@ namespace Ink_Canvas.Controllers.Input
             hideSubPanels?.Invoke();
 
             double touchBoundsWidth = e.GetTouchPoint(null).Bounds.Width;
-            if ((settings.Advanced.TouchMultiplier != 0 || !settings.Advanced.IsSpecialScreen)
+            if ((!NumericComparisonHelper.IsNearlyZero(settings.Advanced.TouchMultiplier) || !settings.Advanced.IsSpecialScreen)
                 && touchBoundsWidth > boundsWidthThreshold)
             {
                 if (!isShapeDrawing && forceEraser)

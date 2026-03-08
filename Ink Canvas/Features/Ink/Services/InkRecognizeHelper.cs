@@ -13,7 +13,7 @@ namespace Ink_Canvas.Features.Ink.Services
             if (strokes == null || strokes.Count == 0)
                 return default;
 
-            var analyzer = new InkAnalyzer();
+            using var analyzer = new InkAnalyzer();
             analyzer.AddStrokes(strokes);
             analyzer.SetStrokesType(strokes, System.Windows.Ink.StrokeType.Drawing);
 
@@ -25,9 +25,12 @@ namespace Ink_Canvas.Features.Ink.Services
                 var alternates = analyzer.GetAlternates();
                 if (alternates.Count > 0)
                 {
-                    while ((!alternates[0].Strokes.Contains(strokes.Last()) ||
-                        !IsContainShapeType(((InkDrawingNode)alternates[0].AlternateNodes[0]).GetShapeName()))
-                        && strokesCount >= 2)
+                    while (strokesCount >= 2
+                        && alternates.Count > 0
+                        && alternates[0].AlternateNodes.Count > 0
+                        && alternates[0].AlternateNodes[0] is InkDrawingNode currentNode
+                        && (!alternates[0].Strokes.Contains(strokes.Last())
+                            || !IsContainShapeType(currentNode.GetShapeName())))
                     {
                         analyzer.RemoveStroke(strokes[strokes.Count - strokesCount]);
                         strokesCount--;
@@ -41,11 +44,10 @@ namespace Ink_Canvas.Features.Ink.Services
                 }
             }
 
-            analyzer.Dispose();
-
-            if (analysisAlternate != null && analysisAlternate.AlternateNodes.Count > 0)
+            if (analysisAlternate != null
+                && analysisAlternate.AlternateNodes.Count > 0
+                && analysisAlternate.AlternateNodes[0] is InkDrawingNode node)
             {
-                var node = analysisAlternate.AlternateNodes[0] as InkDrawingNode;
                 return new ShapeRecognizeResult(node.Centroid, node.HotPoints, analysisAlternate, node);
             }
 
@@ -54,14 +56,13 @@ namespace Ink_Canvas.Features.Ink.Services
 
         public static bool IsContainShapeType(string name)
         {
-            if (name.Contains("Triangle") || name.Contains("Circle") ||
-                name.Contains("Rectangle") || name.Contains("Diamond") ||
-                name.Contains("Parallelogram") || name.Contains("Square")
-                || name.Contains("Ellipse"))
-            {
-                return true;
-            }
-            return false;
+            return name.Contains("Triangle")
+                || name.Contains("Circle")
+                || name.Contains("Rectangle")
+                || name.Contains("Diamond")
+                || name.Contains("Parallelogram")
+                || name.Contains("Square")
+                || name.Contains("Ellipse");
         }
     }
 

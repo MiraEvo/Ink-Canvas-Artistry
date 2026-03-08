@@ -3,12 +3,14 @@ using Microsoft.Office.Interop.PowerPoint;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     internal static partial class PresentationWindowLocator
     {
         private const int TextCapacity = 512;
@@ -155,6 +157,11 @@ namespace Ink_Canvas.Controllers.Presentation
                 return string.Empty;
             }
 
+            if (processId > int.MaxValue)
+            {
+                return string.Empty;
+            }
+
             try
             {
                 using Process process = Process.GetProcessById((int)processId);
@@ -199,13 +206,10 @@ namespace Ink_Canvas.Controllers.Presentation
                 return true;
             }
 
-            foreach (string keyword in titleKeywords)
+            if (titleKeywords.Any(keyword =>
+                windowTitle.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0))
             {
-                if (windowTitle.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    candidateWindowHandles.Add(windowHandle);
-                    break;
-                }
+                candidateWindowHandles.Add(windowHandle);
             }
 
             return true;

@@ -1,9 +1,12 @@
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 
 namespace Ink_Canvas.Helpers
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     internal static partial class ComInteropHelper
     {
         [LibraryImport("ole32.dll", EntryPoint = "CLSIDFromProgIDEx", StringMarshalling = StringMarshalling.Utf16)]
@@ -58,9 +61,11 @@ namespace Ink_Canvas.Helpers
             }
             catch (ArgumentException)
             {
+                Debug.WriteLine("ComInteropHelper | SafeRelease ignored ArgumentException.");
             }
             catch (InvalidComObjectException)
             {
+                Debug.WriteLine("ComInteropHelper | SafeRelease ignored InvalidComObjectException.");
             }
         }
 
@@ -77,9 +82,11 @@ namespace Ink_Canvas.Helpers
             }
             catch (ArgumentException)
             {
+                Debug.WriteLine("ComInteropHelper | SafeFinalRelease ignored ArgumentException.");
             }
             catch (InvalidComObjectException)
             {
+                Debug.WriteLine("ComInteropHelper | SafeFinalRelease ignored InvalidComObjectException.");
             }
         }
 

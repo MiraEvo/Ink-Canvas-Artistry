@@ -392,7 +392,7 @@ namespace Ink_Canvas
 
             inkCanvas.Opacity = 1;
             double boundsWidth = GetTouchBoundWidth(e);
-            if ((Settings.Advanced.TouchMultiplier != 0 || !Settings.Advanced.IsSpecialScreen)
+            if ((!IsNearlyZero(Settings.Advanced.TouchMultiplier) || !Settings.Advanced.IsSpecialScreen)
                 && boundsWidth > BoundsWidth)
             {
                 gestureState.IsLastTouchEraser = true;
@@ -635,12 +635,9 @@ namespace Ink_Canvas
 
             Settings.Canvas.UsingWhiteboard = !Settings.Canvas.UsingWhiteboard;
             SaveSettingsToFile();
-            if (Settings.Canvas.UsingWhiteboard)
+            if (Settings.Canvas.UsingWhiteboard && inkColor == 5)
             {
-                if (inkColor == 5)
-                {
-                    lastBoardInkColor = 0;
-                }
+                lastBoardInkColor = 0;
             }
             else if (inkColor == 0)
             {
@@ -649,19 +646,19 @@ namespace Ink_Canvas
 
             ComboBoxTheme_SelectionChanged(null, null);
             CheckColorTheme(true);
-            if (BoardPen.Opacity == 1)
+            if (IsNearlyEqual(BoardPen.Opacity, 1.0))
             {
                 BoardPen.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
             }
-            if (BoardEraser.Opacity == 1)
+            if (IsNearlyEqual(BoardEraser.Opacity, 1.0))
             {
                 BoardEraser.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
             }
-            if (BoardSelect.Opacity == 1)
+            if (IsNearlyEqual(BoardSelect.Opacity, 1.0))
             {
                 BoardSelect.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
             }
-            if (BoardEraserByStrokes.Opacity == 1)
+            if (IsNearlyEqual(BoardEraserByStrokes.Opacity, 1.0))
             {
                 BoardEraserByStrokes.Background = (Brush)Application.Current.FindResource("BoardBarBackground");
             }
@@ -726,10 +723,9 @@ namespace Ink_Canvas
         {
             if (ShellViewModel.IsDesktopAnnotationMode)
             {
-                StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
+                StrokeCollection strokes = inkCanvas.GetSelectedStrokes().Clone();
                 List<UIElement> elements = InkCanvasElementsHelper.GetSelectedElementsCloned(inkCanvas);
                 inkCanvas.Select(new StrokeCollection());
-                strokes = strokes.Clone();
                 EnterBlackboardSession();
                 inkCanvas.Strokes.Add(strokes);
                 foreach (UIElement element in elements)
@@ -740,10 +736,9 @@ namespace Ink_Canvas
                 return;
             }
 
-            StrokeCollection selectedStrokes = inkCanvas.GetSelectedStrokes();
+            StrokeCollection selectedStrokes = inkCanvas.GetSelectedStrokes().Clone();
             List<UIElement> selectedElements = InkCanvasElementsHelper.GetSelectedElementsCloned(inkCanvas);
             inkCanvas.Select(new StrokeCollection());
-            selectedStrokes = selectedStrokes.Clone();
             BtnWhiteBoardAdd_Click(null, null);
             inkCanvas.Strokes.Add(selectedStrokes);
             foreach (UIElement element in selectedElements)

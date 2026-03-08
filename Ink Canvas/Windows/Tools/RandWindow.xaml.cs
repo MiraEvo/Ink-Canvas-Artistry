@@ -1,6 +1,7 @@
 using Ink_Canvas.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -101,6 +102,7 @@ namespace Ink_Canvas {
             }
             catch (OperationCanceledException)
             {
+                Debug.WriteLine("RandWindow | Randomization was canceled.");
             }
             finally
             {
