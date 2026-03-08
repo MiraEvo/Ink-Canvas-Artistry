@@ -20,7 +20,8 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : IToolbarUiHost
     {
-        int BoundsWidth = 5;
+        private int BoundsWidth = 5;
+        private static readonly Point UnsetFloatingBarPosition = new(-1, -1);
 
         private bool isDragDropInEffect
         {
@@ -375,13 +376,13 @@ namespace Ink_Canvas
                 double screenHeight = screen.Bounds.Height / dpiScaleY;
                 pos = new Point(
                     (screenWidth - ViewboxFloatingBar.ActualWidth * ViewboxFloatingBarScaleTransform.ScaleX) / 2,
-                    screenHeight - marginFromEdge * (ViewboxFloatingBarScaleTransform.ScaleY == 1 ? 1 : 0.9));
+                    screenHeight - marginFromEdge * (IsNearlyEqual(ViewboxFloatingBarScaleTransform.ScaleY, 1d) ? 1d : 0.9d));
 
-                if (marginFromEdge != -60)
+                if (!IsNearlyEqual(marginFromEdge, -60d))
                 {
                     if (IsPresentationSlideShowRunning)
                     {
-                        if (pointPPT.X != -1 || pointPPT.Y != -1)
+                        if (!AreNearlyEqual(pointPPT, UnsetFloatingBarPosition))
                         {
                             if (Math.Abs(pointPPT.Y - pos.Y) > 50)
                             {
@@ -400,7 +401,7 @@ namespace Ink_Canvas
                             pointDesktop = pos;
                             shouldRestoreDefaultDesktopFloatingBarPosition = false;
                         }
-                        else if (pointDesktop.X != -1 || pointDesktop.Y != -1)
+                        else if (!AreNearlyEqual(pointDesktop, UnsetFloatingBarPosition))
                         {
                             if (Math.Abs(pointDesktop.Y - pos.Y) > 50)
                             {

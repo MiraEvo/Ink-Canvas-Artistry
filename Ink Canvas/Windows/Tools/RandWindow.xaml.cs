@@ -59,7 +59,7 @@ namespace Ink_Canvas {
                 return;
             }
 
-            Random random = RandomSeed == 0 ? new Random() : new Random(RandomSeed);
+            Random random = RandomSeed == 0 ? Random.Shared : new Random(RandomSeed);
             List<string> outputs = [];
             List<int> rands = [];
             CancellationToken cancellationToken = windowLifetimeCancellationTokenSource.Token;
@@ -77,19 +77,19 @@ namespace Ink_Canvas {
                         rand = random.Next(1, PeopleCount + 1);
                     }
                     rands.Add(rand);
-                    if (rands.Count >= PeopleCount) rands = [];
+                    if (rands.Count >= PeopleCount) rands.Clear();
                     LabelOutput.Content = GetOutputValue(rand);
                     await Task.Delay(150, cancellationToken);
                 }
 
-                rands = [];
+                rands.Clear();
                 for (int i = 0; i < TotalCount; i++) {
                     int rand = random.Next(1, PeopleCount + 1);
                     while (rands.Contains(rand)) {
                         rand = random.Next(1, PeopleCount + 1);
                     }
                     rands.Add(rand);
-                    if (rands.Count >= PeopleCount) rands = [];
+                    if (rands.Count >= PeopleCount) rands.Clear();
                     outputs.Add(GetOutputValue(rand));
                 }
 
@@ -132,10 +132,10 @@ namespace Ink_Canvas {
                         }
                     }
 
-                    if (s != "") Names.Add(s);
+                    if (!string.IsNullOrEmpty(s)) Names.Add(s);
                 }
 
-                PeopleCount = Names.Count();
+                PeopleCount = Names.Count;
                 TextBlockPeopleCount.Text = PeopleCount.ToString();
                 if (PeopleCount == 0) {
                     PeopleCount = 60;
@@ -196,7 +196,7 @@ namespace Ink_Canvas {
 
         private string GetOutputValue(int rand)
         {
-            return Names.Count > 0 ? Names[rand - 1] : rand.ToString();
+            return Names.Count != 0 ? Names[rand - 1] : rand.ToString();
         }
 
         private void RenderOutputs(IReadOnlyList<string> outputs)

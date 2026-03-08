@@ -75,7 +75,9 @@ namespace Ink_Canvas
                 return;
             }
 
-            senderScrollViewer.ScrollToVerticalOffset(senderScrollViewer.VerticalOffset - e.Delta * 10 * System.Windows.Forms.SystemInformation.MouseWheelScrollLines / 120d);
+            double scrollLines = System.Windows.Forms.SystemInformation.MouseWheelScrollLines;
+            double offsetDelta = (e.Delta / 120d) * 10d * scrollLines;
+            senderScrollViewer.ScrollToVerticalOffset(senderScrollViewer.VerticalOffset - offsetDelta);
             e.Handled = true;
         }
     }

@@ -27,7 +27,17 @@ namespace Ink_Canvas.Helpers
         [LibraryImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
         private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
+        [LibraryImport("user32.dll", EntryPoint = "EnumWindows")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+
+        [LibraryImport("user32.dll", EntryPoint = "IsWindowVisible")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool IsWindowVisibleNative(IntPtr hWnd);
+
         private const int TextCapacity = 256;
+
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct RECT
@@ -43,19 +53,7 @@ namespace Ink_Canvas.Helpers
 
         public static string WindowTitle()
         {
-            IntPtr foregroundWindowHandle = GetForegroundWindow();
-            if (foregroundWindowHandle == IntPtr.Zero)
-            {
-                return string.Empty;
-            }
-
-            StringBuilder windowTitle = new(TextCapacity);
-            if (GetWindowText(foregroundWindowHandle, windowTitle, TextCapacity) <= 0)
-            {
-                return string.Empty;
-            }
-
-            return windowTitle.ToString();
+            return ReadWindowTitle(GetForegroundWindowHandle());
         }
 
         public static string WindowClassName()
@@ -77,7 +75,7 @@ namespace Ink_Canvas.Helpers
 
         public static RECT WindowRect()
         {
-            IntPtr foregroundWindowHandle = GetForegroundWindow();
+            IntPtr foregroundWindowHandle = GetForegroundWindowHandle();
             if (foregroundWindowHandle == IntPtr.Zero || !GetWindowRect(foregroundWindowHandle, out RECT windowRect))
             {
                 return default;
@@ -88,13 +86,7 @@ namespace Ink_Canvas.Helpers
 
         public static string ProcessName()
         {
-            IntPtr foregroundWindowHandle = GetForegroundWindow();
-            if (foregroundWindowHandle == IntPtr.Zero)
-            {
-                return "Unknown";
-            }
-
-            GetWindowThreadProcessId(foregroundWindowHandle, out uint processId);
+            uint processId = GetWindowProcessId(GetForegroundWindowHandle());
             if (processId == 0 || processId > int.MaxValue)
             {
                 return "Unknown";
@@ -114,6 +106,47 @@ namespace Ink_Canvas.Helpers
             {
                 return "Unknown";
             }
+        }
+
+        internal static IntPtr GetForegroundWindowHandle() => GetForegroundWindow();
+
+        internal static uint GetWindowProcessId(IntPtr windowHandle)
+        {
+            if (windowHandle == IntPtr.Zero)
+            {
+                return 0;
+            }
+
+            GetWindowThreadProcessId(windowHandle, out uint processId);
+            return processId;
+        }
+
+        internal static string ReadWindowTitle(IntPtr windowHandle)
+        {
+            if (windowHandle == IntPtr.Zero)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder windowTitle = new(TextCapacity);
+            if (GetWindowText(windowHandle, windowTitle, TextCapacity) <= 0)
+            {
+                return string.Empty;
+            }
+
+            return windowTitle.ToString();
+        }
+
+        internal static bool IsWindowVisible(IntPtr windowHandle) =>
+            windowHandle != IntPtr.Zero && IsWindowVisibleNative(windowHandle);
+
+        internal static void EnumerateTopLevelWindows(Func<IntPtr, bool> callback)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
+
+            EnumWindows(
+                (windowHandle, _) => callback(windowHandle),
+                IntPtr.Zero);
         }
     }
 }

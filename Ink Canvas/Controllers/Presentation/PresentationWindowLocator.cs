@@ -3,18 +3,14 @@ using Microsoft.Office.Interop.PowerPoint;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
-    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     internal static partial class PresentationWindowLocator
     {
-        private const int TextCapacity = 512;
-
         internal static PresentationProvider DetectProvider(string? presentationIdentity, string? applicationName)
         {
             IntPtr matchedWindowHandle = TryFindPresentationWindowHandle(presentationIdentity, applicationName, out string matchedProcessName);
@@ -40,13 +36,13 @@ namespace Ink_Canvas.Controllers.Presentation
             string? applicationName,
             PresentationProvider provider)
         {
-            IntPtr foregroundWindowHandle = GetForegroundWindow();
+            IntPtr foregroundWindowHandle = ForegroundWindowInfo.GetForegroundWindowHandle();
             if (foregroundWindowHandle == IntPtr.Zero)
             {
                 return false;
             }
 
-            GetWindowThreadProcessId(foregroundWindowHandle, out uint foregroundProcessId);
+            uint foregroundProcessId = ForegroundWindowInfo.GetWindowProcessId(foregroundWindowHandle);
             string foregroundProcessName = TryGetProcessName(foregroundProcessId);
 
             IntPtr targetWindowHandle = TryGetSlideShowWindowHandle(slideShowWindowObject);
@@ -62,7 +58,7 @@ namespace Ink_Canvas.Controllers.Presentation
                     && foregroundProcessName.StartsWith("wps", StringComparison.OrdinalIgnoreCase);
             }
 
-            GetWindowThreadProcessId(targetWindowHandle, out uint targetProcessId);
+            uint targetProcessId = ForegroundWindowInfo.GetWindowProcessId(targetWindowHandle);
             if (string.IsNullOrWhiteSpace(targetProcessName))
             {
                 targetProcessName = TryGetProcessName(targetProcessId);
@@ -107,20 +103,19 @@ namespace Ink_Canvas.Controllers.Presentation
             }
 
             List<IntPtr> candidateWindowHandles = [];
-            EnumWindows(
-                (windowHandle, _) => TryCollectPresentationWindowCandidate(
+            ForegroundWindowInfo.EnumerateTopLevelWindows(windowHandle =>
+                TryCollectPresentationWindowCandidate(
                     windowHandle,
                     presentationFileName,
                     titleKeywords,
-                    candidateWindowHandles),
-                IntPtr.Zero);
+                    candidateWindowHandles));
 
             if (candidateWindowHandles.Count != 1)
             {
                 return IntPtr.Zero;
             }
 
-            GetWindowThreadProcessId(candidateWindowHandles[0], out uint processId);
+            uint processId = ForegroundWindowInfo.GetWindowProcessId(candidateWindowHandles[0]);
             processName = TryGetProcessName(processId);
             return candidateWindowHandles[0];
         }
@@ -183,24 +178,17 @@ namespace Ink_Canvas.Controllers.Presentation
             HashSet<string> titleKeywords,
             ICollection<IntPtr> candidateWindowHandles)
         {
-            if (!IsWindowVisible(windowHandle))
+            if (!ForegroundWindowInfo.IsWindowVisible(windowHandle))
             {
                 return true;
             }
 
-            int textLength = GetWindowTextLength(windowHandle);
-            if (textLength <= 0)
+            string windowTitle = ForegroundWindowInfo.ReadWindowTitle(windowHandle);
+            if (string.IsNullOrWhiteSpace(windowTitle))
             {
                 return true;
             }
 
-            StringBuilder title = new(textLength + 1);
-            if (GetWindowText(windowHandle, title, title.Capacity) <= 0)
-            {
-                return true;
-            }
-
-            string windowTitle = title.ToString();
             if (windowTitle.IndexOf(presentationFileName, StringComparison.OrdinalIgnoreCase) < 0)
             {
                 return true;
@@ -214,29 +202,6 @@ namespace Ink_Canvas.Controllers.Presentation
 
             return true;
         }
-
-        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        [LibraryImport("user32.dll", EntryPoint = "GetForegroundWindow")]
-        private static partial IntPtr GetForegroundWindow();
-
-        [LibraryImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
-        private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-        // Source-generated P/Invoke does not support StringBuilder marshalling for this Win32 signature.
-        [DllImport("user32.dll", EntryPoint = "GetWindowTextW", CharSet = CharSet.Unicode)]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);
-
-        [DllImport("user32.dll", EntryPoint = "GetWindowTextLengthW", CharSet = CharSet.Unicode)]
-        private static extern int GetWindowTextLength(IntPtr hWnd);
-
-        [LibraryImport("user32.dll", EntryPoint = "EnumWindows")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
-
-        [LibraryImport("user32.dll", EntryPoint = "IsWindowVisible")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsWindowVisible(IntPtr hWnd);
     }
 }
 

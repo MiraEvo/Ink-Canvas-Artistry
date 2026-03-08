@@ -299,7 +299,7 @@ namespace Ink_Canvas.Controllers.Automation
         }
 
         private static bool IsCompactDesktopAnnotationWindow(ForegroundWindowState foregroundWindow) =>
-            foregroundWindow.WindowTitle.Length == 0 && foregroundWindow.WindowRect.Height < 500;
+            string.IsNullOrEmpty(foregroundWindow.WindowTitle) && foregroundWindow.WindowRect.Height < 500;
 
         private void UpdateForegroundWindowState(ForegroundWindowState foregroundWindow)
         {

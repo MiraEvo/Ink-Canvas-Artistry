@@ -65,8 +65,9 @@ namespace Ink_Canvas.Helpers
                 return path;
             }
 
-            return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
-                || path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), StringComparison.Ordinal)
+            char trailingCharacter = path[^1];
+            return trailingCharacter == Path.DirectorySeparatorChar
+                || trailingCharacter == Path.AltDirectorySeparatorChar
                 ? path
                 : path + Path.DirectorySeparatorChar;
         }

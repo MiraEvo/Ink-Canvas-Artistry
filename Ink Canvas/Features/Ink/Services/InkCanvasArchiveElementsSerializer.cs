@@ -10,6 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml;
 using System.Xml.Linq;
+using Ink_Canvas.Helpers;
 using Ink_Canvas.Services.Logging;
 
 namespace Ink_Canvas.Features.Ink.Services
@@ -488,24 +489,13 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static void EnsurePathIsUnderRoot(string candidatePath, string rootPath, string context)
         {
-            string normalizedRoot = AppendDirectorySeparator(Path.GetFullPath(rootPath));
+            string normalizedRoot = PathSafetyHelper.AppendDirectorySeparator(Path.GetFullPath(rootPath));
             string normalizedCandidate = Path.GetFullPath(candidatePath);
 
             if (!normalizedCandidate.StartsWith(normalizedRoot, PathComparison))
             {
                 throw new InvalidDataException($"{context} path escaped the target directory.");
             }
-        }
-
-        private static string AppendDirectorySeparator(string path)
-        {
-            if (path.EndsWith(Path.DirectorySeparatorChar.ToString(), PathComparison) ||
-                path.EndsWith(Path.AltDirectorySeparatorChar.ToString(), PathComparison))
-            {
-                return path;
-            }
-
-            return path + Path.DirectorySeparatorChar;
         }
 
         private static bool TryGetImageSourcePath(ImageSource imageSource, out string sourcePath)
@@ -575,11 +565,10 @@ namespace Ink_Canvas.Features.Ink.Services
 
             foreach (XAttribute attribute in element.Attributes())
             {
-                string fullName = attribute.Name.ToString();
-                if (string.Equals(fullName, attributeName, StringComparison.Ordinal) ||
-                    string.Equals(attribute.Name.LocalName, attributeName, StringComparison.Ordinal) ||
-                    string.Equals(attribute.Name.LocalName, suffix, StringComparison.Ordinal) ||
-                    fullName.EndsWith("." + suffix, StringComparison.Ordinal))
+                string localName = attribute.Name.LocalName;
+                if (string.Equals(localName, attributeName, StringComparison.Ordinal) ||
+                    string.Equals(localName, suffix, StringComparison.Ordinal) ||
+                    localName.EndsWith("." + suffix, StringComparison.Ordinal))
                 {
                     return attribute.Value;
                 }

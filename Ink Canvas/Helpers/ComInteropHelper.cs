@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.InteropServices.Marshalling;
 
 namespace Ink_Canvas.Helpers
@@ -14,6 +15,12 @@ namespace Ink_Canvas.Helpers
 
         [LibraryImport("ole32.dll", EntryPoint = "CLSIDFromProgID", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int CLSIDFromProgID(string progId, out Guid clsid);
+
+        [DllImport("ole32.dll", EntryPoint = "GetRunningObjectTable")]
+        private static extern int NativeGetRunningObjectTable(int reserved, out IRunningObjectTable? runningObjectTable);
+
+        [DllImport("ole32.dll", EntryPoint = "CreateBindCtx")]
+        private static extern int NativeCreateBindCtx(int reserved, out IBindCtx? bindContext);
 
         // Source-generated COM marshalling does not currently cover this late-bound IUnknown shape well.
         [DllImport("oleaut32.dll", EntryPoint = "GetActiveObject")]
@@ -46,6 +53,18 @@ namespace Ink_Canvas.Helpers
             }
 
             return typedObject;
+        }
+
+        public static bool TryGetRunningObjectTable(out IRunningObjectTable? runningObjectTable)
+        {
+            int result = NativeGetRunningObjectTable(0, out runningObjectTable);
+            return result == 0 && runningObjectTable != null;
+        }
+
+        public static bool TryCreateBindContext(out IBindCtx? bindContext)
+        {
+            int result = NativeCreateBindCtx(0, out bindContext);
+            return result == 0 && bindContext != null;
         }
 
         public static void SafeRelease(object? comObject)

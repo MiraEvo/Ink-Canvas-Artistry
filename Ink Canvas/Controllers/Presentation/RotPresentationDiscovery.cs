@@ -3,14 +3,12 @@ using Ink_Canvas.Helpers;
 using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
-    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
     internal sealed partial class RotPresentationDiscovery
     {
         private const string PowerPointApplicationMoniker = "!{91493441-5A91-11CF-8700-00AA0060263B}";
@@ -47,8 +45,7 @@ namespace Ink_Canvas.Controllers.Presentation
 
             try
             {
-                int result = GetRunningObjectTable(0, out runningObjectTable);
-                if (result != 0 || runningObjectTable == null)
+                if (!ComInteropHelper.TryGetRunningObjectTable(out runningObjectTable))
                 {
                     return null;
                 }
@@ -70,8 +67,7 @@ namespace Ink_Canvas.Controllers.Presentation
 
                     try
                     {
-                        int bindContextResult = CreateBindCtx(0, out bindContext);
-                        if (bindContextResult != 0 || bindContext == null || moniker == null)
+                        if (!ComInteropHelper.TryCreateBindContext(out bindContext) || moniker == null)
                         {
                             continue;
                         }
@@ -186,13 +182,6 @@ namespace Ink_Canvas.Controllers.Presentation
             return PresentationExtensions.Any(extension =>
                 displayName.IndexOf(extension, StringComparison.OrdinalIgnoreCase) >= 0);
         }
-
-        // Source-generated COM marshalling does not currently cover these classic COM interface outputs well.
-        [DllImport("ole32.dll", EntryPoint = "GetRunningObjectTable")]
-        private static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable? prot);
-
-        [DllImport("ole32.dll", EntryPoint = "CreateBindCtx")]
-        private static extern int CreateBindCtx(int reserved, out IBindCtx? bindContext);
     }
 }
 

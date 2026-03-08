@@ -125,8 +125,7 @@ namespace Ink_Canvas
                     SetTheme("Dark");
                     break;
                 case 2:
-                    if (IsSystemThemeLight()) SetTheme("Light");
-                    else SetTheme("Dark");
+                    SetTheme(IsSystemThemeLight() ? "Light" : "Dark");
                     break;
             }
         }
