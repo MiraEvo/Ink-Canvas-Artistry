@@ -1,6 +1,7 @@
 using global::System;
 using global::System.Runtime.InteropServices;
 using global::System.Runtime.CompilerServices;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Services.System.Integration
 {
@@ -125,7 +126,7 @@ namespace Ink_Canvas.Services.System.Integration
                         case VarEnum.VT_BLOB:
                             return GetBlob();
                     }
-                    throw new NotImplementedException("PropVariant " + ve.ToString());
+                    throw new NotImplementedException($"PropVariant {ve}");
                 }
             }
         }
@@ -208,7 +209,7 @@ namespace Ink_Canvas.Services.System.Integration
             {
                 if (pPropStore != null)
                 {
-                    Marshal.FinalReleaseComObject(pPropStore);
+                    ComInteropHelper.SafeFinalRelease(pPropStore);
                 }
             }
         }

@@ -10,6 +10,8 @@ namespace Ink_Canvas.ProcessBars
     /// </summary>
     public partial class CycleProcessBar : UserControl
     {
+        private const double ProgressTolerance = 0.000001;
+
         public CycleProcessBar()
         {
             InitializeComponent();
@@ -64,12 +66,14 @@ namespace Ink_Canvas.ProcessBars
         /// <param name="percentValue"></param>
         private void SetValue(double percentValue)
         {
+            double normalizedPercentValue = Math.Clamp(percentValue, 0, 1);
+
             /*****************************************
               方形矩阵边长为34，半长为17
               环形半径为14，所以距离边框3个像素
               环形描边3个像素
             ******************************************/
-            double angel = percentValue * 360; //角度
+            double angel = normalizedPercentValue * 360; //角度
 
             double radius = 14; //环形半径
 
@@ -81,12 +85,13 @@ namespace Ink_Canvas.ProcessBars
             double endLeft = 0;
             double endTop = 0;
 
-            if (percentValue == 0) myCycleProcessBar.Visibility = Visibility.Hidden;
-            else myCycleProcessBar.Visibility = Visibility.Visible;
+            myCycleProcessBar.Visibility = normalizedPercentValue <= ProgressTolerance
+                ? Visibility.Hidden
+                : Visibility.Visible;
 
 
             //数字显示
-            lbValue.Content = (percentValue * 100).ToString("0") + "%";
+            lbValue.Content = (normalizedPercentValue * 100).ToString("0") + "%";
 
             /***********************************************
             * 整个环形进度条使用Path来绘制，采用三角函数来计算
@@ -146,7 +151,7 @@ namespace Ink_Canvas.ProcessBars
                 endTop = topStart + radius + Math.Cos(ra) * radius;
             }
 
-            else if (angel < 360)
+            else if (angel < 360 - ProgressTolerance)
             {
                 /*****************
                       *   *
@@ -195,7 +200,7 @@ namespace Ink_Canvas.ProcessBars
             //Data赋值
             myCycleProcessBar.Data = pathGeometry;
             //达到100%则闭合整个
-            if (angel == 360)
+            if (angel >= 360 - ProgressTolerance)
             {
                 myCycleProcessBar.Data = Geometry.Parse(myCycleProcessBar.Data.ToString() + " z");
             }

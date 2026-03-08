@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using File = System.IO.File;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Features.Presentation.Services
 {
@@ -17,16 +18,19 @@ namespace Ink_Canvas.Features.Presentation.Services
 
         public string GetPresentationStoragePath(string autoSavedStrokesLocation, string presentationName, int slideCount)
         {
-            return Path.Combine(
+            string safeFolderName = PathSafetyHelper.NormalizeLeafName(
+                $"{presentationName}_{slideCount}",
+                $"Presentation_{slideCount}");
+            return PathSafetyHelper.ResolveRelativePath(
                 autoSavedStrokesLocation,
                 "Auto Saved - Presentations",
-                $"{presentationName}_{slideCount}");
+                safeFolderName);
         }
 
         public bool TryReadPosition(string folderPath, out int page)
         {
             page = 0;
-            string positionFilePath = Path.Combine(folderPath, "Position");
+            string positionFilePath = PathSafetyHelper.ResolveRelativePath(folderPath, "Position");
 
             try
             {
@@ -117,7 +121,7 @@ namespace Ink_Canvas.Features.Presentation.Services
 
         public void SavePosition(string folderPath, int slideIndex)
         {
-            string positionFilePath = Path.Combine(folderPath, "Position");
+            string positionFilePath = PathSafetyHelper.ResolveRelativePath(folderPath, "Position");
             try
             {
                 Directory.CreateDirectory(folderPath);
@@ -128,6 +132,14 @@ namespace Ink_Canvas.Features.Presentation.Services
                 logger.Error(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
             }
             catch (UnauthorizedAccessException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
+            }
+            catch (ArgumentException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
+            }
+            catch (InvalidOperationException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save presentation position to '{positionFilePath}'");
             }
@@ -149,7 +161,7 @@ namespace Ink_Canvas.Features.Presentation.Services
 
         private static (string icartFilePath, string icstkFilePath) GetInkFilePaths(string folderPath, int slideIndex)
         {
-            string baseFilePath = Path.Combine(folderPath, slideIndex.ToString("0000"));
+            string baseFilePath = PathSafetyHelper.ResolveRelativePath(folderPath, slideIndex.ToString("0000"));
             return (baseFilePath + ".icart", baseFilePath + ".icstk");
         }
 
@@ -179,17 +191,49 @@ namespace Ink_Canvas.Features.Presentation.Services
             catch (IOException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                File.Delete(icstkFilePath);
+                TryDeleteFile(icstkFilePath, slideIndex);
             }
             catch (UnauthorizedAccessException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                File.Delete(icstkFilePath);
+                TryDeleteFile(icstkFilePath, slideIndex);
             }
             catch (ArgumentException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                File.Delete(icstkFilePath);
+                TryDeleteFile(icstkFilePath, slideIndex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
+                TryDeleteFile(icstkFilePath, slideIndex);
+            }
+        }
+
+        private void TryDeleteFile(string filePath, int slideIndex)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch (IOException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to clean up strokes for slide {slideIndex}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to clean up strokes for slide {slideIndex}");
+            }
+            catch (ArgumentException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to clean up strokes for slide {slideIndex}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to clean up strokes for slide {slideIndex}");
             }
         }
     }

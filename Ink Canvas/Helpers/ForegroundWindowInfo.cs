@@ -11,10 +11,11 @@ namespace Ink_Canvas.Helpers
         [LibraryImport("user32.dll", EntryPoint = "GetForegroundWindow")]
         private static partial IntPtr GetForegroundWindow();
 
-        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        // Source-generated P/Invoke does not support StringBuilder marshalling for this Win32 signature.
+        [DllImport("user32.dll", EntryPoint = "GetWindowTextW", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport("user32.dll", EntryPoint = "GetClassNameW", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
         [LibraryImport("user32.dll", EntryPoint = "GetWindowRect")]

@@ -44,18 +44,22 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
         public void HandleStrokesChanged(StrokeCollectionChangedEventArgs e, bool isEraseByPoint)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             if (!host.IsHidingSubPanelsWhenInking)
             {
                 host.IsHidingSubPanelsWhenInking = true;
                 host.HideSubPanels();
             }
 
-            foreach (var stroke in e?.Removed)
+            StrokeCollection removed = e.Removed;
+            foreach (var stroke in removed)
             {
                 HistoryState.StrokeInitialHistory.Remove(stroke);
             }
 
-            foreach (var stroke in e?.Added)
+            StrokeCollection added = e.Added;
+            foreach (var stroke in added)
             {
                 HistoryState.StrokeInitialHistory[stroke] = stroke.StylusPoints.Clone();
             }
@@ -66,39 +70,39 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 return;
             }
 
-            if ((e.Added.Count != 0 || e.Removed.Count != 0) && isEraseByPoint)
+            if ((added.Count > 0 || removed.Count > 0) && isEraseByPoint)
             {
                 HistoryState.AddedStroke ??= new StrokeCollection();
                 HistoryState.ReplacedStroke ??= new StrokeCollection();
-                HistoryState.AddedStroke.Add(e.Added);
-                HistoryState.ReplacedStroke.Add(e.Removed);
+                HistoryState.AddedStroke.Add(added);
+                HistoryState.ReplacedStroke.Add(removed);
                 return;
             }
 
-            if (e.Added.Count != 0)
+            if (added.Count > 0)
             {
                 if (HistoryState.CurrentCommitReason == CommitReason.ShapeRecognition)
                 {
-                    CommitShapeRecognition(HistoryState.ReplacedStroke, e.Added);
+                    CommitShapeRecognition(HistoryState.ReplacedStroke, added);
                     HistoryState.ReplacedStroke = null;
                     return;
                 }
 
-                CommitUserInput(e.Added);
+                CommitUserInput(added);
                 return;
             }
 
-            if (e.Removed.Count != 0)
+            if (removed.Count > 0)
             {
                 if (HistoryState.CurrentCommitReason == CommitReason.ShapeRecognition)
                 {
-                    HistoryState.ReplacedStroke = e.Removed;
+                    HistoryState.ReplacedStroke = removed;
                     return;
                 }
 
                 if (!isEraseByPoint || HistoryState.CurrentCommitReason == CommitReason.ClearingCanvas)
                 {
-                    CommitErase(e.Removed);
+                    CommitErase(removed);
                 }
             }
         }
@@ -118,7 +122,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             if (needUpdateValue)
             {
                 HistoryState.DrawingAttributesHistoryFlag[e.PropertyGuid].Add(stroke);
-                Debug.Write(e.PreviousValue.ToString());
+                Debug.Write(e.PreviousValue);
             }
 
             if (e.PropertyGuid == DrawingAttributeIds.Color && needUpdateValue)

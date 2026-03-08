@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Services.Logging
 {
@@ -98,18 +99,30 @@ namespace Ink_Canvas.Services.Logging
                     }
 
                     Directory.CreateDirectory(directoryPath);
-                    string activeFilePath = Path.Combine(directoryPath, sharedState.Options.ActiveFileName);
+                    string activeFilePath = ResolveLogFilePath(directoryPath, sharedState.Options.ActiveFileName);
                     RotateIfNeeded(activeFilePath, GetEncodedLineLength(line));
 
                     using StreamWriter writer = new(activeFilePath, append: true, new UTF8Encoding(false));
                     writer.WriteLine(line);
                 }
             }
-            catch (Exception ex) when (
-                ex is IOException
-                || ex is UnauthorizedAccessException
-                || ex is ArgumentException
-                || ex is NotSupportedException)
+            catch (IOException ex)
+            {
+                Debug.WriteLine($"FileAppLogger write failure: {ex}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Debug.WriteLine($"FileAppLogger write failure: {ex}");
+            }
+            catch (ArgumentException ex)
+            {
+                Debug.WriteLine($"FileAppLogger write failure: {ex}");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Debug.WriteLine($"FileAppLogger write failure: {ex}");
+            }
+            catch (NotSupportedException ex)
             {
                 Debug.WriteLine($"FileAppLogger write failure: {ex}");
             }
@@ -149,10 +162,10 @@ namespace Ink_Canvas.Services.Logging
 
             string directoryPath = activeFile.DirectoryName ?? sharedState.Options.DirectoryPath;
             string archiveName = $"Log.{DateTime.Now:yyyyMMdd-HHmmss}.txt";
-            string archivePath = Path.Combine(directoryPath, archiveName);
+            string archivePath = ResolveLogFilePath(directoryPath, archiveName);
             if (File.Exists(archivePath))
             {
-                archivePath = Path.Combine(directoryPath, $"Log.{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}.txt");
+                archivePath = ResolveLogFilePath(directoryPath, $"Log.{DateTime.Now:yyyyMMdd-HHmmss}-{Environment.ProcessId}.txt");
             }
 
             File.Move(activeFilePath, archivePath);
@@ -162,7 +175,7 @@ namespace Ink_Canvas.Services.Logging
         private void TrimArchives(string directoryPath)
         {
             int retainedArchiveCount = Math.Max(0, sharedState.Options.RetainedArchiveCount);
-            string activeFilePath = Path.Combine(directoryPath, sharedState.Options.ActiveFileName);
+            string activeFilePath = ResolveLogFilePath(directoryPath, sharedState.Options.ActiveFileName);
 
             string[] archiveFiles = Directory.GetFiles(directoryPath, "Log.*.txt")
                 .Where(path => !string.Equals(path, activeFilePath, StringComparison.OrdinalIgnoreCase))
@@ -178,6 +191,12 @@ namespace Ink_Canvas.Services.Logging
         private static int GetEncodedLineLength(string line)
         {
             return Encoding.UTF8.GetByteCount(line + Environment.NewLine);
+        }
+
+        private static string ResolveLogFilePath(string directoryPath, string fileName)
+        {
+            string safeFileName = PathSafetyHelper.NormalizeLeafName(fileName, "Log.txt");
+            return PathSafetyHelper.ResolveRelativePath(directoryPath, safeFileName);
         }
 
         private static string GetLevelName(AppLogLevel level)

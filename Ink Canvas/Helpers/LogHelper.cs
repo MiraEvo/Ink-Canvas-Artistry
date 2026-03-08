@@ -112,7 +112,7 @@ namespace Ink_Canvas.Helpers
                 Directory.CreateDirectory(App.RootPath);
             }
 
-            string filePath = Path.Combine(App.RootPath, LogFile);
+            string filePath = PathSafetyHelper.ResolveRelativePath(App.RootPath, LogFile);
             using StreamWriter streamWriter = new StreamWriter(filePath, true);
             streamWriter.WriteLine(line);
         }

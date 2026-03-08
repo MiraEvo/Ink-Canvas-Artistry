@@ -9,7 +9,7 @@ using System.Text;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
-    internal static class PresentationWindowLocator
+    internal static partial class PresentationWindowLocator
     {
         private const int TextCapacity = 512;
 
@@ -104,49 +104,14 @@ namespace Ink_Canvas.Controllers.Presentation
                 titleKeywords.Add(applicationName);
             }
 
-            List<IntPtr> candidateWindowHandles = new List<IntPtr>();
-            EnumWindows((windowHandle, _) =>
-            {
-                try
-                {
-                    if (!IsWindowVisible(windowHandle))
-                    {
-                        return true;
-                    }
-
-                    int textLength = GetWindowTextLength(windowHandle);
-                    if (textLength == 0)
-                    {
-                        return true;
-                    }
-
-                    StringBuilder title = new StringBuilder(textLength + 1);
-                    if (GetWindowText(windowHandle, title, title.Capacity) <= 0)
-                    {
-                        return true;
-                    }
-
-                    string windowTitle = title.ToString();
-                    if (windowTitle.IndexOf(presentationFileName, StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        return true;
-                    }
-
-                    foreach (string keyword in titleKeywords)
-                    {
-                        if (windowTitle.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            candidateWindowHandles.Add(windowHandle);
-                            break;
-                        }
-                    }
-                }
-                catch
-                {
-                }
-
-                return true;
-            }, IntPtr.Zero);
+            List<IntPtr> candidateWindowHandles = [];
+            EnumWindows(
+                (windowHandle, _) => TryCollectPresentationWindowCandidate(
+                    windowHandle,
+                    presentationFileName,
+                    titleKeywords,
+                    candidateWindowHandles),
+                IntPtr.Zero);
 
             if (candidateWindowHandles.Count != 1)
             {
@@ -169,7 +134,15 @@ namespace Ink_Canvas.Controllers.Presentation
             {
                 return new IntPtr(slideShowWindow.HWND);
             }
-            catch
+            catch (COMException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (InvalidOperationException)
+            {
+                return IntPtr.Zero;
+            }
+            catch (ArgumentException)
             {
                 return IntPtr.Zero;
             }
@@ -187,33 +160,79 @@ namespace Ink_Canvas.Controllers.Presentation
                 using Process process = Process.GetProcessById((int)processId);
                 return process.ProcessName;
             }
-            catch
+            catch (ArgumentException)
+            {
+                return string.Empty;
+            }
+            catch (InvalidOperationException)
             {
                 return string.Empty;
             }
         }
 
+        private static bool TryCollectPresentationWindowCandidate(
+            IntPtr windowHandle,
+            string presentationFileName,
+            HashSet<string> titleKeywords,
+            ICollection<IntPtr> candidateWindowHandles)
+        {
+            if (!IsWindowVisible(windowHandle))
+            {
+                return true;
+            }
+
+            int textLength = GetWindowTextLength(windowHandle);
+            if (textLength <= 0)
+            {
+                return true;
+            }
+
+            StringBuilder title = new(textLength + 1);
+            if (GetWindowText(windowHandle, title, title.Capacity) <= 0)
+            {
+                return true;
+            }
+
+            string windowTitle = title.ToString();
+            if (windowTitle.IndexOf(presentationFileName, StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return true;
+            }
+
+            foreach (string keyword in titleKeywords)
+            {
+                if (windowTitle.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    candidateWindowHandles.Add(windowHandle);
+                    break;
+                }
+            }
+
+            return true;
+        }
+
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
 
-        [DllImport("user32.dll")]
-        private static extern IntPtr GetForegroundWindow();
+        [LibraryImport("user32.dll", EntryPoint = "GetForegroundWindow")]
+        private static partial IntPtr GetForegroundWindow();
 
-        [DllImport("user32.dll")]
-        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+        [LibraryImport("user32.dll", EntryPoint = "GetWindowThreadProcessId")]
+        private static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        // Source-generated P/Invoke does not support StringBuilder marshalling for this Win32 signature.
+        [DllImport("user32.dll", EntryPoint = "GetWindowTextW", CharSet = CharSet.Unicode)]
         private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int maxCount);
 
-        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        [DllImport("user32.dll", EntryPoint = "GetWindowTextLengthW", CharSet = CharSet.Unicode)]
         private static extern int GetWindowTextLength(IntPtr hWnd);
 
-        [DllImport("user32.dll")]
+        [LibraryImport("user32.dll", EntryPoint = "EnumWindows")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
+        private static partial bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
 
-        [DllImport("user32.dll")]
+        [LibraryImport("user32.dll", EntryPoint = "IsWindowVisible")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool IsWindowVisible(IntPtr hWnd);
+        private static partial bool IsWindowVisible(IntPtr hWnd);
     }
 }
 

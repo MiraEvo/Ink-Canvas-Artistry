@@ -596,7 +596,7 @@ namespace Ink_Canvas.ViewModels.Settings
         [RelayCommand]
         private void SetAutoSavedStrokesLocationToDocuments()
         {
-            AutoSavedStrokesLocation = System.IO.Path.Combine(
+            AutoSavedStrokesLocation = System.IO.Path.Join(
                 Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "Ink Canvas");
         }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,7 +32,7 @@ namespace Ink_Canvas {
             _ = TriggerInitialRandomizeAsync(windowLifetimeCancellationTokenSource.Token);
         }
 
-        public static int randSeed = 0;
+        public static int RandomSeed { get; set; }
         public bool isAutoClose = false;
         public bool isNotRepeatName = false;
 
@@ -57,10 +58,9 @@ namespace Ink_Canvas {
                 return;
             }
 
-            Random random = new Random();// randSeed + DateTime.Now.Millisecond / 10 % 10);
-            string outputString = "";
-            List<string> outputs = new List<string>();
-            List<int> rands = new List<int>();
+            Random random = RandomSeed == 0 ? new Random() : new Random(RandomSeed);
+            List<string> outputs = [];
+            List<int> rands = [];
             CancellationToken cancellationToken = windowLifetimeCancellationTokenSource.Token;
 
             LabelOutput2.Visibility = Visibility.Collapsed;
@@ -76,62 +76,23 @@ namespace Ink_Canvas {
                         rand = random.Next(1, PeopleCount + 1);
                     }
                     rands.Add(rand);
-                    if (rands.Count >= PeopleCount) rands = new List<int>();
-                    LabelOutput.Content = Names.Count != 0 ? Names[rand - 1] : rand.ToString();
+                    if (rands.Count >= PeopleCount) rands = [];
+                    LabelOutput.Content = GetOutputValue(rand);
                     await Task.Delay(150, cancellationToken);
                 }
 
-                rands = new List<int>();
+                rands = [];
                 for (int i = 0; i < TotalCount; i++) {
                     int rand = random.Next(1, PeopleCount + 1);
                     while (rands.Contains(rand)) {
                         rand = random.Next(1, PeopleCount + 1);
                     }
                     rands.Add(rand);
-                    if (rands.Count >= PeopleCount) rands = new List<int>();
-
-                    if (Names.Count != 0) {
-                        outputs.Add(Names[rand - 1]);
-                        outputString += Names[rand - 1] + Environment.NewLine;
-                    } else {
-                        outputs.Add(rand.ToString());
-                        outputString += rand.ToString() + Environment.NewLine;
-                    }
+                    if (rands.Count >= PeopleCount) rands = [];
+                    outputs.Add(GetOutputValue(rand));
                 }
 
-                if (TotalCount <= 5) {
-                    LabelOutput.Content = outputString.Trim();
-                } else if (TotalCount <= 10) {
-                    LabelOutput2.Visibility = Visibility.Visible;
-                    outputString = "";
-                    for (int i = 0; i < (outputs.Count + 1) / 2; i++) {
-                        outputString += outputs[i] + Environment.NewLine;
-                    }
-                    LabelOutput.Content = outputString.Trim();
-                    outputString = "";
-                    for (int i = (outputs.Count + 1) / 2; i < outputs.Count; i++) {
-                        outputString += outputs[i] + Environment.NewLine;
-                    }
-                    LabelOutput2.Content = outputString.Trim();
-                } else {
-                    LabelOutput2.Visibility = Visibility.Visible;
-                    LabelOutput3.Visibility = Visibility.Visible;
-                    outputString = "";
-                    for (int i = 0; i < (outputs.Count + 1) / 3; i++) {
-                        outputString += outputs[i] + Environment.NewLine;
-                    }
-                    LabelOutput.Content = outputString.Trim();
-                    outputString = "";
-                    for (int i = (outputs.Count + 1) / 3; i < (outputs.Count + 1) * 2 / 3; i++) {
-                        outputString += outputs[i] + Environment.NewLine;
-                    }
-                    LabelOutput2.Content = outputString.Trim();
-                    outputString = "";
-                    for (int i = (outputs.Count + 1) * 2 / 3; i < outputs.Count; i++) {
-                        outputString += outputs[i] + Environment.NewLine;
-                    }
-                    LabelOutput3.Content = outputString.Trim();
-                }
+                RenderOutputs(outputs);
 
                 if (isAutoClose) {
                     await Task.Delay(1500, cancellationToken);
@@ -149,7 +110,7 @@ namespace Ink_Canvas {
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
-            Names = new List<string>();
+            Names = [];
             if (File.Exists(App.RootPath + "Names.txt")) {
                 string[] fileNames = File.ReadAllLines(App.RootPath + "Names.txt");
                 string[] replaces = new string[0];
@@ -229,6 +190,53 @@ namespace Ink_Canvas {
         {
             await Task.Delay(100, cancellationToken);
             BorderBtnRand_MouseUp(BorderBtnRand, null);
+        }
+
+        private string GetOutputValue(int rand)
+        {
+            return Names.Count > 0 ? Names[rand - 1] : rand.ToString();
+        }
+
+        private void RenderOutputs(IReadOnlyList<string> outputs)
+        {
+            if (outputs.Count <= 5)
+            {
+                LabelOutput.Content = BuildOutputChunk(outputs, 0, outputs.Count);
+                return;
+            }
+
+            if (outputs.Count <= 10)
+            {
+                int middleIndex = (outputs.Count + 1) / 2;
+                LabelOutput2.Visibility = Visibility.Visible;
+                LabelOutput.Content = BuildOutputChunk(outputs, 0, middleIndex);
+                LabelOutput2.Content = BuildOutputChunk(outputs, middleIndex, outputs.Count);
+                return;
+            }
+
+            int firstSplit = (outputs.Count + 1) / 3;
+            int secondSplit = (outputs.Count + 1) * 2 / 3;
+            LabelOutput2.Visibility = Visibility.Visible;
+            LabelOutput3.Visibility = Visibility.Visible;
+            LabelOutput.Content = BuildOutputChunk(outputs, 0, firstSplit);
+            LabelOutput2.Content = BuildOutputChunk(outputs, firstSplit, secondSplit);
+            LabelOutput3.Content = BuildOutputChunk(outputs, secondSplit, outputs.Count);
+        }
+
+        private static string BuildOutputChunk(IReadOnlyList<string> outputs, int startIndex, int endIndex)
+        {
+            StringBuilder builder = new();
+            for (int i = startIndex; i < endIndex; i++)
+            {
+                if (builder.Length > 0)
+                {
+                    builder.AppendLine();
+                }
+
+                builder.Append(outputs[i]);
+            }
+
+            return builder.ToString();
         }
     }
 }

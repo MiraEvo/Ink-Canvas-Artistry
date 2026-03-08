@@ -17,8 +17,8 @@ namespace Ink_Canvas
         private System.Threading.Mutex mutex;
         private readonly IAppLogger appLogger;
 
-        public static string[] StartArgs = null;
-        public static string RootPath = Environment.GetEnvironmentVariable("APPDATA") + "\\Ink Canvas\\";
+        public static IReadOnlyList<string> StartArgs { get; private set; } = Array.Empty<string>();
+        public static string RootPath { get; } = AppContext.BaseDirectory;
 
         public FileAppLogger Logger { get; }
 
@@ -27,7 +27,7 @@ namespace Ink_Canvas
             Logger = new FileAppLogger(new LogOptions
             {
                 Enabled = true,
-                DirectoryPath = Path.Combine(AppContext.BaseDirectory, "Logs"),
+                DirectoryPath = Path.Join(AppContext.BaseDirectory, "Logs"),
                 ActiveFileName = "Log.txt",
                 MaxFileSizeBytes = 512 * 1024,
                 RetainedArchiveCount = 5
@@ -46,8 +46,6 @@ namespace Ink_Canvas
 
         private void App_Startup(object sender, StartupEventArgs e)
         {
-            /*if (!StoreHelper.IsStoreApp) */RootPath = AppContext.BaseDirectory;
-
             appLogger.Info(string.Format("Ink Canvas Starting (Version: {0})", Assembly.GetExecutingAssembly().GetName().Version));
 
             bool ret;

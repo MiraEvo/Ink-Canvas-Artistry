@@ -57,7 +57,7 @@ namespace Ink_Canvas
             }
         }
 
-        public static bool IsShowingRestoreHiddenSlidesWindow = false;
+        public static bool IsShowingRestoreHiddenSlidesWindow { get; set; }
 
         public Microsoft.Office.Interop.PowerPoint.Application? pptApplication => presentationSessionController?.PowerPointApplication;
 

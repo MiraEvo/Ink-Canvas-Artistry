@@ -150,7 +150,7 @@ namespace Ink_Canvas
 
         #region Definations and Loading
 
-        public static Settings Settings = new Settings();
+        public static Settings Settings { get; private set; } = new();
         public static readonly string settingsFileName = "Settings.json";
         bool isLoaded = false;
 

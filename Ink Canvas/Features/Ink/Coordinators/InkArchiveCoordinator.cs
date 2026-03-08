@@ -29,10 +29,10 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         {
             try
             {
-                string directory = Path.Combine(
+                string directory = archiveService.BuildArchiveDirectory(
                     host.Settings.Automation.AutoSavedStrokesLocation,
-                    saveByUser ? "User Saved - " : "Auto Saved - ",
-                    host.IsDesktopAnnotationMode ? "Annotation Strokes" : "BlackBoard Strokes");
+                    saveByUser,
+                    host.IsDesktopAnnotationMode);
                 string filePath = archiveService.BuildArchiveFilePath(
                     directory,
                     host.IsBlackboardMode,

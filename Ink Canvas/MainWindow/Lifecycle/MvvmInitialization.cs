@@ -1,5 +1,6 @@
 using Ink_Canvas.Features.Settings;
 using Ink_Canvas.Features.Shell;
+using Ink_Canvas.Helpers;
 using Ink_Canvas.Services;
 using Ink_Canvas.ViewModels;
 using iNKORE.UI.WPF.Modern.Controls;
@@ -29,7 +30,7 @@ namespace Ink_Canvas
         private void InitializeMvvm()
         {
             settingsService = new JsonSettingsService(
-                () => System.IO.Path.Combine(App.RootPath, settingsFileName),
+                () => PathSafetyHelper.ResolveRelativePath(App.RootPath, settingsFileName),
                 appLogger);
 
             mainWindowViewModel = new MainWindowViewModel(

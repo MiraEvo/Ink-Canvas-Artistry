@@ -1,4 +1,5 @@
 using Ink_Canvas.Controllers;
+using Ink_Canvas.Helpers;
 using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Runtime.InteropServices.ComTypes;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
-    internal sealed class RotPresentationDiscovery
+    internal sealed partial class RotPresentationDiscovery
     {
         private const string PowerPointApplicationMoniker = "!{91493441-5A91-11CF-8700-00AA0060263B}";
         private static readonly string[] PresentationExtensions =
@@ -39,7 +40,7 @@ namespace Ink_Canvas.Controllers.Presentation
         {
             IRunningObjectTable? runningObjectTable = null;
             IEnumMoniker? enumMoniker = null;
-            List<object> scannedApplications = new List<object>();
+            List<object> scannedApplications = [];
             PresentationBindingCandidate? bestCandidate = null;
 
             try
@@ -60,20 +61,26 @@ namespace Ink_Canvas.Controllers.Presentation
                 while (enumMoniker.Next(1, monikers, IntPtr.Zero) == 0)
                 {
                     IBindCtx? bindContext = null;
+                    IMoniker? moniker = monikers[0];
                     object? runningObject = null;
                     object? applicationObject = null;
                     bool keepApplicationAlive = false;
 
                     try
                     {
-                        CreateBindCtx(0, out bindContext);
-                        monikers[0].GetDisplayName(bindContext, null, out string displayName);
+                        int bindContextResult = CreateBindCtx(0, out bindContext);
+                        if (bindContextResult != 0 || bindContext == null || moniker == null)
+                        {
+                            continue;
+                        }
+
+                        moniker.GetDisplayName(bindContext, null, out string displayName);
                         if (!LooksLikePresentationMoniker(displayName))
                         {
                             continue;
                         }
 
-                        runningObjectTable.GetObject(monikers[0], out runningObject);
+                        runningObjectTable.GetObject(moniker, out runningObject);
                         if (runningObject == null)
                         {
                             continue;
@@ -85,17 +92,8 @@ namespace Ink_Canvas.Controllers.Presentation
                             continue;
                         }
 
-                        bool isDuplicate = false;
-                        foreach (object scannedApplication in scannedApplications)
-                        {
-                            if (ComInteropHelper.AreSameComObjects(scannedApplication, applicationObject))
-                            {
-                                isDuplicate = true;
-                                break;
-                            }
-                        }
-
-                        if (isDuplicate)
+                        if (scannedApplications.Exists(scannedApplication =>
+                                ComInteropHelper.AreSameComObjects(scannedApplication, applicationObject)))
                         {
                             continue;
                         }
@@ -135,15 +133,9 @@ namespace Ink_Canvas.Controllers.Presentation
                             ComInteropHelper.SafeRelease(runningObject);
                         }
 
-                        if (bindContext != null)
-                        {
-                            Marshal.ReleaseComObject(bindContext);
-                        }
-
-                        if (monikers[0] != null)
-                        {
-                            Marshal.ReleaseComObject(monikers[0]);
-                        }
+                        ComInteropHelper.SafeRelease(bindContext);
+                        ComInteropHelper.SafeRelease(moniker);
+                        monikers[0] = null!;
                     }
                 }
             }
@@ -159,15 +151,8 @@ namespace Ink_Canvas.Controllers.Presentation
                     ComInteropHelper.SafeRelease(scannedApplication);
                 }
 
-                if (enumMoniker != null)
-                {
-                    Marshal.ReleaseComObject(enumMoniker);
-                }
-
-                if (runningObjectTable != null)
-                {
-                    Marshal.ReleaseComObject(runningObjectTable);
-                }
+                ComInteropHelper.SafeRelease(enumMoniker);
+                ComInteropHelper.SafeRelease(runningObjectTable);
             }
 
             return bestCandidate;
@@ -207,10 +192,11 @@ namespace Ink_Canvas.Controllers.Presentation
             return false;
         }
 
-        [DllImport("ole32.dll")]
+        // Source-generated COM marshalling does not currently cover these classic COM interface outputs well.
+        [DllImport("ole32.dll", EntryPoint = "GetRunningObjectTable")]
         private static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable? prot);
 
-        [DllImport("ole32.dll")]
+        [DllImport("ole32.dll", EntryPoint = "CreateBindCtx")]
         private static extern int CreateBindCtx(int reserved, out IBindCtx? bindContext);
     }
 }

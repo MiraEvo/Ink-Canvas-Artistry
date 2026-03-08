@@ -24,7 +24,7 @@ namespace Ink_Canvas.Features.Automation.Services
         private static readonly HttpClient HttpClient = new();
         private static readonly TimeSpan VersionRequestTimeout = TimeSpan.FromSeconds(15);
         private static readonly TimeSpan DownloadRequestTimeout = TimeSpan.FromMinutes(5);
-        private static readonly string updatesFolderPath = Path.Combine(
+        private static readonly string updatesFolderPath = Path.Join(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Ink Canvas Artistry",
             "AutoUpdate");

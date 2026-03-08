@@ -398,7 +398,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                     e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint(),
                     e.Stroke.StylusPoints[random.Next(0, e.Stroke.StylusPoints.Count - 1)].ToPoint());
 
-                RandWindow.randSeed = (int)(speed * 100000 * 1000);
+                        RandWindow.RandomSeed = (int)(speed * 100000 * 1000);
             }
 
             switch (inkCanvasHost.Settings.Canvas.InkStyle)

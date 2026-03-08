@@ -14,7 +14,9 @@ namespace Ink_Canvas
         private static string GetStartupShortcutPath(string exeName)
         {
             string safeExeName = Path.GetFileNameWithoutExtension(exeName);
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), safeExeName + ".lnk");
+            return PathSafetyHelper.ResolveRelativePath(
+                Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+                PathSafetyHelper.NormalizeLeafName(safeExeName + ".lnk", "Ink Canvas Artistry.lnk"));
         }
 
         private static bool StartupEntryExists(string exeName)

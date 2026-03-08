@@ -12,8 +12,9 @@ namespace Ink_Canvas.Helpers
         [LibraryImport("ole32.dll", EntryPoint = "CLSIDFromProgID", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int CLSIDFromProgID(string progId, out Guid clsid);
 
-        [DllImport("oleaut32.dll")]
-        private static extern int GetActiveObject(ref Guid rclsid, IntPtr reserved, [MarshalAs(UnmanagedType.IUnknown)] out object comObject);
+        // Source-generated COM marshalling does not currently cover this late-bound IUnknown shape well.
+        [DllImport("oleaut32.dll", EntryPoint = "GetActiveObject")]
+        private static extern int NativeGetActiveObject(ref Guid rclsid, IntPtr reserved, [MarshalAs(UnmanagedType.IUnknown)] out object? comObject);
 
         public static T GetActiveObject<T>(string progId) where T : class
         {
@@ -30,7 +31,7 @@ namespace Ink_Canvas.Helpers
                 Marshal.ThrowExceptionForHR(hResult);
             }
 
-            hResult = GetActiveObject(ref clsid, IntPtr.Zero, out object comObject);
+            hResult = NativeGetActiveObject(ref clsid, IntPtr.Zero, out object? comObject);
             if (hResult < 0)
             {
                 Marshal.ThrowExceptionForHR(hResult);
@@ -55,7 +56,10 @@ namespace Ink_Canvas.Helpers
             {
                 Marshal.ReleaseComObject(comObject);
             }
-            catch
+            catch (ArgumentException)
+            {
+            }
+            catch (InvalidComObjectException)
             {
             }
         }
@@ -71,7 +75,10 @@ namespace Ink_Canvas.Helpers
             {
                 Marshal.FinalReleaseComObject(comObject);
             }
-            catch
+            catch (ArgumentException)
+            {
+            }
+            catch (InvalidComObjectException)
             {
             }
         }
@@ -96,7 +103,11 @@ namespace Ink_Canvas.Helpers
                 rightUnknown = Marshal.GetIUnknownForObject(right);
                 return leftUnknown == rightUnknown;
             }
-            catch
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidComObjectException)
             {
                 return false;
             }

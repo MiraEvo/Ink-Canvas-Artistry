@@ -7,6 +7,7 @@ using System.Security;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
+using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Features.Ink.Services
 {
@@ -23,7 +24,7 @@ namespace Ink_Canvas.Features.Ink.Services
 
         public string BuildArchiveDirectory(string rootDirectory, bool saveByUser, bool isDesktopAnnotationMode)
         {
-            return Path.Combine(
+            return PathSafetyHelper.ResolveRelativePath(
                 rootDirectory,
                 saveByUser ? "User Saved - " : "Auto Saved - ",
                 isDesktopAnnotationMode ? "Annotation Strokes" : "BlackBoard Strokes");
@@ -33,12 +34,14 @@ namespace Ink_Canvas.Features.Ink.Services
         {
             string fileName = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss-fff")
                 + (isBlackboardMode ? $" Page-{currentWhiteboardIndex} StrokesCount-{strokeCount}.icart" : ".icart");
-            return Path.Combine(directory, fileName);
+            return PathSafetyHelper.ResolveRelativePath(
+                directory,
+                PathSafetyHelper.NormalizeLeafName(fileName, "InkArchive.icart"));
         }
 
         public void SaveArchive(string filePath, InkCanvas inkCanvas)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+            Directory.CreateDirectory(PathSafetyHelper.GetRequiredDirectoryPath(filePath));
 
             using FileStream fileStream = new(filePath, FileMode.Create);
             using ZipArchive archive = new(fileStream, ZipArchiveMode.Create);
@@ -95,7 +98,9 @@ namespace Ink_Canvas.Features.Ink.Services
                 using var elementsStream = elementsEntry.Open();
                 elements = elementsSerializer.LoadElements(
                     elementsStream,
-                    Path.Combine(dependencyRoot, InkCanvasArchiveElementsSerializer.DependencyFolderName));
+                    PathSafetyHelper.ResolveRelativePath(
+                        dependencyRoot,
+                        InkCanvasArchiveElementsSerializer.DependencyFolderName));
             }
 
             return new InkArchiveLoadResult(strokes, elements);
@@ -133,7 +138,8 @@ namespace Ink_Canvas.Features.Ink.Services
                 return;
             }
 
-            var fileEntry = archive.CreateEntry(folderName + "/" + fileName);
+            string safeFileName = PathSafetyHelper.NormalizeLeafName(fileName, "dependency.bin");
+            var fileEntry = archive.CreateEntry(folderName + "/" + safeFileName);
             using var entryStream = fileEntry.Open();
             using var sourceStream = File.OpenRead(filePath);
             sourceStream.CopyTo(entryStream);
@@ -141,7 +147,6 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private void ExtractDependencies(ZipArchive archive, string outputDirectory)
         {
-            string outputRoot = Path.GetFullPath(outputDirectory);
             foreach (var entry in archive.Entries)
             {
                 if (!entry.FullName.StartsWith(InkCanvasArchiveElementsSerializer.DependencyFolderName + "/", StringComparison.OrdinalIgnoreCase)
@@ -153,22 +158,8 @@ namespace Ink_Canvas.Features.Ink.Services
                 try
                 {
                     string relativePath = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
-                    string filePath = Path.GetFullPath(Path.Join(outputRoot, relativePath));
-                    string normalizedRoot = AppendDirectorySeparator(outputRoot);
-
-                    if (!filePath.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase))
-                    {
-                        logger.Error($"Elements Load | Rejected archive entry outside dependency directory: {entry.FullName}");
-                        continue;
-                    }
-
-                    string? directoryPath = Path.GetDirectoryName(filePath);
-                    if (string.IsNullOrWhiteSpace(directoryPath))
-                    {
-                        logger.Error($"Elements Load | Missing target directory for archive entry: {entry.FullName}");
-                        continue;
-                    }
-
+                    string filePath = PathSafetyHelper.ResolveRelativePath(outputDirectory, relativePath);
+                    string directoryPath = PathSafetyHelper.GetRequiredDirectoryPath(filePath);
                     Directory.CreateDirectory(directoryPath);
                     if (!File.Exists(filePath))
                     {
@@ -199,19 +190,11 @@ namespace Ink_Canvas.Features.Ink.Services
                 {
                     logger.Error(ex, $"Elements Load | Unsupported archive entry '{entry.FullName}'");
                 }
+                catch (InvalidOperationException ex)
+                {
+                    logger.Error(ex, $"Elements Load | Rejected archive entry '{entry.FullName}'");
+                }
             }
-        }
-
-        private static string AppendDirectorySeparator(string path)
-        {
-            if (string.IsNullOrEmpty(path))
-            {
-                return path;
-            }
-
-            return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
-                ? path
-                : path + Path.DirectorySeparatorChar;
         }
     }
 

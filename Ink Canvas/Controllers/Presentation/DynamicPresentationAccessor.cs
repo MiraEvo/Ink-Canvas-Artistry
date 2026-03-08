@@ -296,7 +296,27 @@ namespace Ink_Canvas.Controllers.Presentation
                     null);
                 return value != null;
             }
-            catch
+            catch (COMException)
+            {
+                return false;
+            }
+            catch (TargetInvocationException)
+            {
+                return false;
+            }
+            catch (MissingMethodException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (InvalidCastException)
             {
                 return false;
             }
@@ -580,7 +600,27 @@ namespace Ink_Canvas.Controllers.Presentation
                     [value]);
                 return true;
             }
-            catch
+            catch (COMException)
+            {
+                return false;
+            }
+            catch (TargetInvocationException)
+            {
+                return false;
+            }
+            catch (MissingMethodException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (InvalidCastException)
             {
                 return false;
             }
@@ -599,7 +639,27 @@ namespace Ink_Canvas.Controllers.Presentation
                     parameters);
                 return true;
             }
-            catch
+            catch (COMException)
+            {
+                return false;
+            }
+            catch (TargetInvocationException)
+            {
+                return false;
+            }
+            catch (MissingMethodException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (InvalidCastException)
             {
                 return false;
             }
@@ -618,22 +678,29 @@ namespace Ink_Canvas.Controllers.Presentation
                     [index]);
                 return item != null;
             }
-            catch
+            catch (COMException)
             {
-                try
-                {
-                    item = collection.GetType().InvokeMember(
-                        string.Empty,
-                        BindingFlags.GetProperty,
-                        null,
-                        collection,
-                        [index]);
-                    return item != null;
-                }
-                catch
-                {
-                    return false;
-                }
+                return TryGetDefaultCollectionItem(collection, index, out item);
+            }
+            catch (TargetInvocationException)
+            {
+                return TryGetDefaultCollectionItem(collection, index, out item);
+            }
+            catch (MissingMethodException)
+            {
+                return TryGetDefaultCollectionItem(collection, index, out item);
+            }
+            catch (ArgumentException)
+            {
+                return TryGetDefaultCollectionItem(collection, index, out item);
+            }
+            catch (InvalidOperationException)
+            {
+                return TryGetDefaultCollectionItem(collection, index, out item);
+            }
+            catch (InvalidCastException)
+            {
+                return TryGetDefaultCollectionItem(collection, index, out item);
             }
         }
 
@@ -650,7 +717,15 @@ namespace Ink_Canvas.Controllers.Presentation
                 value = Convert.ToInt32(propertyValue);
                 return true;
             }
-            catch
+            catch (FormatException)
+            {
+                return false;
+            }
+            catch (InvalidCastException)
+            {
+                return false;
+            }
+            catch (OverflowException)
             {
                 return false;
             }
@@ -663,7 +738,46 @@ namespace Ink_Canvas.Controllers.Presentation
                 return string.Empty;
             }
 
-            return propertyValue.ToString() ?? string.Empty;
+            return Convert.ToString(propertyValue) ?? string.Empty;
+        }
+
+        private static bool TryGetDefaultCollectionItem(object collection, int index, out object? item)
+        {
+            item = null;
+            try
+            {
+                item = collection.GetType().InvokeMember(
+                    string.Empty,
+                    BindingFlags.GetProperty,
+                    null,
+                    collection,
+                    [index]);
+                return item != null;
+            }
+            catch (COMException)
+            {
+                return false;
+            }
+            catch (TargetInvocationException)
+            {
+                return false;
+            }
+            catch (MissingMethodException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (InvalidCastException)
+            {
+                return false;
+            }
         }
     }
 }

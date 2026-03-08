@@ -130,7 +130,11 @@ namespace Ink_Canvas
         {
             string savePath = GetFileDependencyDirectory();
             string elementName = $"{namePrefix}_{DateTime.Now:yyyyMMdd_HH_mm_ss_fff}";
-            string copiedFilePath = Path.Combine(savePath, elementName + Path.GetExtension(sourceFilePath));
+            string copiedFilePath = Helpers.PathSafetyHelper.ResolveRelativePath(
+                savePath,
+                Helpers.PathSafetyHelper.NormalizeLeafName(
+                    elementName + Path.GetExtension(sourceFilePath),
+                    $"{namePrefix}.bin"));
 
             await Task.Run(() =>
             {
@@ -142,7 +146,7 @@ namespace Ink_Canvas
         }
 
         private string GetFileDependencyDirectory() =>
-            Path.Combine(Settings.Automation.AutoSavedStrokesLocation, "File Dependency");
+            Helpers.PathSafetyHelper.ResolveRelativePath(Settings.Automation.AutoSavedStrokesLocation, "File Dependency");
 
         private void CenterAndScaleElement(FrameworkElement element)
         {

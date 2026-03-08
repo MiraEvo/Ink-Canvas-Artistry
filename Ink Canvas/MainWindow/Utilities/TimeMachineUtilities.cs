@@ -22,7 +22,13 @@ namespace Ink_Canvas
 
         private void StrokesOnStrokesChanged(object sender, StrokeCollectionChangedEventArgs e)
         {
-            foreach (var stroke in e?.Removed)
+            if (e == null)
+            {
+                return;
+            }
+
+            StrokeCollection removed = e.Removed;
+            foreach (var stroke in removed)
             {
                 stroke.StylusPointsChanged -= Stroke_StylusPointsChanged;
                 stroke.StylusPointsReplaced -= Stroke_StylusPointsReplaced;
@@ -30,7 +36,8 @@ namespace Ink_Canvas
                 StrokeInitialHistory.Remove(stroke);
             }
 
-            foreach (var stroke in e?.Added)
+            StrokeCollection added = e.Added;
+            foreach (var stroke in added)
             {
                 stroke.StylusPointsChanged += Stroke_StylusPointsChanged;
                 stroke.StylusPointsReplaced += Stroke_StylusPointsReplaced;
