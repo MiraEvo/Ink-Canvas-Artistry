@@ -1,4 +1,5 @@
 using Ink_Canvas.Features.Automation.Services;
+using Ink_Canvas.Features.Ink.Services;
 using Ink_Canvas.Services.Logging;
 using iNKORE.UI.WPF.Modern;
 using System;
@@ -20,6 +21,7 @@ namespace Ink_Canvas
         private readonly IAppLogger mainWindowLogger;
         private readonly AutoUpdateHelper autoUpdateHelper;
         private readonly DelAutoSavedFiles autoSavedFilesCleaner;
+        private readonly InkDependencyCacheService inkDependencyCacheService;
 
         #region Window Initialization
 
@@ -30,6 +32,7 @@ namespace Ink_Canvas
             mainWindowLogger = appLogger.ForCategory(nameof(MainWindow));
             autoUpdateHelper = new AutoUpdateHelper(appLogger);
             autoSavedFilesCleaner = new DelAutoSavedFiles(appLogger);
+            inkDependencyCacheService = new InkDependencyCacheService(appLogger);
 
             /*
                 处于画板模式内：Topmost == false / Shell.IsBlackboardMode
@@ -195,6 +198,7 @@ namespace Ink_Canvas
         {
             StopPresentationMonitoring();
             DisposeAutomationControllers();
+            inkDependencyCacheService.CleanupCurrentSessions();
             mainWindowLogger.Event("Ink Canvas closed");
         }
 

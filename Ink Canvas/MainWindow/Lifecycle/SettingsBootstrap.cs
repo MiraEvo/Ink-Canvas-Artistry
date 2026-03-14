@@ -83,6 +83,8 @@ namespace Ink_Canvas
                 AutoUpdate();
             }
 
+            InitializeDependencyCacheSession();
+
             if (!isStartup)
             {
                 return;
@@ -98,6 +100,30 @@ namespace Ink_Canvas
             if (Settings.Startup.IsFoldAtStartup)
             {
                 FoldFloatingBar_Click(Fold_Icon, null);
+            }
+        }
+
+        private void InitializeDependencyCacheSession()
+        {
+            try
+            {
+                inkDependencyCacheService.InitializeSession(Settings.Automation.AutoSavedStrokesLocation);
+            }
+            catch (IOException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Load | Failed to initialize dependency cache session");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Load | Failed to initialize dependency cache session");
+            }
+            catch (ArgumentException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Load | Failed to initialize dependency cache session");
+            }
+            catch (InvalidOperationException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Load | Failed to initialize dependency cache session");
             }
         }
 

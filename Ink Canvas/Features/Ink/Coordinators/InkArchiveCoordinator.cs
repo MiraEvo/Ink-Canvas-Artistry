@@ -88,6 +88,10 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 historyCoordinator.ClearHistory();
                 host.ReplaceCanvasContent(result.Strokes, result.Elements);
                 host.EnsureCanvasVisibleAfterArchiveImport();
+                if (result.HasWarnings)
+                {
+                    host.ShowArchiveNotification(result.WarningMessage ?? "部分元素未恢复，已跳过部分元素");
+                }
             }
             catch (ArgumentException ex)
             {

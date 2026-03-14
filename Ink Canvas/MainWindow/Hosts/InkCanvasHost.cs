@@ -46,7 +46,7 @@ namespace Ink_Canvas
 
         private void InitializeInkFeature()
         {
-            inkArchiveService = new InkArchiveService(appLogger);
+            inkArchiveService = new InkArchiveService(appLogger, inkDependencyCacheService);
             inkHistoryCoordinator = new InkHistoryCoordinator(this, appLogger);
             inkRecognitionService = new InkRecognitionService(appLogger);
             inkInteractionCoordinator = new InkInteractionCoordinator(

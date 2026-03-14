@@ -1,18 +1,21 @@
+using Ink_Canvas.Features.Ink.Services;
+using Ink_Canvas.Helpers;
 using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using File = System.IO.File;
-using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Features.Presentation.Services
 {
     internal sealed class PresentationInkArchiveService
     {
+        private readonly InkArchiveService inkArchiveService;
         private readonly IAppLogger logger;
 
-        public PresentationInkArchiveService(IAppLogger logger)
+        public PresentationInkArchiveService(InkArchiveService inkArchiveService, IAppLogger logger)
         {
+            this.inkArchiveService = inkArchiveService ?? throw new ArgumentNullException(nameof(inkArchiveService));
             this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(PresentationInkArchiveService));
         }
 
@@ -62,30 +65,33 @@ namespace Ink_Canvas.Features.Presentation.Services
                 return slideInkBuffers;
             }
 
-            try
+            Dictionary<int, string> selectedFiles = SelectBestSlideFiles(folderPath);
+            foreach ((int slideIndex, string filePath) in selectedFiles)
             {
-                foreach (string filePath in Directory.GetFiles(folderPath))
+                try
                 {
-                    if (string.Equals(Path.GetFileName(filePath), "Position", StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    if (!TryParseSlideIndex(filePath, out int slideIndex))
-                    {
-                        continue;
-                    }
-
-                    slideInkBuffers[slideIndex] = File.ReadAllBytes(filePath);
+                    slideInkBuffers[slideIndex] = inkArchiveService.LoadStrokeData(filePath);
                 }
-            }
-            catch (IOException ex)
-            {
-                logger.Error(ex, "PowerPoint | Failed to load saved presentation strokes");
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                logger.Error(ex, "PowerPoint | Access denied while loading presentation strokes");
+                catch (IOException ex)
+                {
+                    logger.Error(ex, $"PowerPoint | Failed to load saved strokes for slide {slideIndex}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    logger.Error(ex, $"PowerPoint | Failed to load saved strokes for slide {slideIndex}");
+                }
+                catch (ArgumentException ex)
+                {
+                    logger.Error(ex, $"PowerPoint | Failed to load saved strokes for slide {slideIndex}");
+                }
+                catch (InvalidDataException ex)
+                {
+                    logger.Error(ex, $"PowerPoint | Failed to load saved strokes for slide {slideIndex}");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    logger.Error(ex, $"PowerPoint | Failed to load saved strokes for slide {slideIndex}");
+                }
             }
 
             return slideInkBuffers;
@@ -145,6 +151,42 @@ namespace Ink_Canvas.Features.Presentation.Services
             }
         }
 
+        private Dictionary<int, string> SelectBestSlideFiles(string folderPath)
+        {
+            Dictionary<int, (string FilePath, int Priority)> candidates = [];
+            foreach (string filePath in Directory.GetFiles(folderPath))
+            {
+                if (string.Equals(Path.GetFileName(filePath), "Position", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!TryParseSlideIndex(filePath, out int slideIndex))
+                {
+                    continue;
+                }
+
+                int priority = GetPriority(filePath);
+                if (priority < 0)
+                {
+                    continue;
+                }
+
+                if (!candidates.TryGetValue(slideIndex, out (string FilePath, int Priority) current) || priority > current.Priority)
+                {
+                    candidates[slideIndex] = (filePath, priority);
+                }
+            }
+
+            Dictionary<int, string> result = [];
+            foreach (KeyValuePair<int, (string FilePath, int Priority)> candidate in candidates)
+            {
+                result[candidate.Key] = candidate.Value.FilePath;
+            }
+
+            return result;
+        }
+
         private static bool TryParseSlideIndex(string filePath, out int slideIndex)
         {
             slideIndex = -1;
@@ -157,6 +199,22 @@ namespace Ink_Canvas.Features.Presentation.Services
                 slideIndex = -1;
                 return false;
             }
+        }
+
+        private static int GetPriority(string filePath)
+        {
+            string extension = Path.GetExtension(filePath);
+            if (string.Equals(extension, ".icart", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+
+            if (string.Equals(extension, ".icstk", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            return -1;
         }
 
         private static (string icartFilePath, string icstkFilePath) GetInkFilePaths(string folderPath, int slideIndex)
@@ -173,40 +231,39 @@ namespace Ink_Canvas.Features.Presentation.Services
             {
                 if (inkData.Length > 8)
                 {
-                    if (File.Exists(icartFilePath))
-                    {
-                        File.WriteAllBytes(icartFilePath, inkData);
-                    }
-                    else
-                    {
-                        File.WriteAllBytes(icstkFilePath, inkData);
-                    }
+                    inkArchiveService.SaveStrokeOnlyArchive(icartFilePath, inkData);
+                    TryDeleteFile(icstkFilePath, slideIndex);
                 }
                 else
                 {
-                    File.Delete(icartFilePath);
-                    File.Delete(icstkFilePath);
+                    TryDeleteFile(icartFilePath, slideIndex);
+                    TryDeleteFile(icstkFilePath, slideIndex);
                 }
             }
             catch (IOException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                TryDeleteFile(icstkFilePath, slideIndex);
+                TryDeleteFile(icartFilePath, slideIndex);
             }
             catch (UnauthorizedAccessException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                TryDeleteFile(icstkFilePath, slideIndex);
+                TryDeleteFile(icartFilePath, slideIndex);
             }
             catch (ArgumentException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                TryDeleteFile(icstkFilePath, slideIndex);
+                TryDeleteFile(icartFilePath, slideIndex);
+            }
+            catch (InvalidDataException ex)
+            {
+                logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
+                TryDeleteFile(icartFilePath, slideIndex);
             }
             catch (InvalidOperationException ex)
             {
                 logger.Error(ex, $"PowerPoint | Failed to save strokes for slide {slideIndex}");
-                TryDeleteFile(icstkFilePath, slideIndex);
+                TryDeleteFile(icartFilePath, slideIndex);
             }
         }
 
@@ -238,4 +295,3 @@ namespace Ink_Canvas.Features.Presentation.Services
         }
     }
 }
-

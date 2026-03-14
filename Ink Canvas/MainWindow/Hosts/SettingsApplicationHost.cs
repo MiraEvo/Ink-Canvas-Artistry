@@ -1,6 +1,10 @@
 using Ink_Canvas.Features.Settings;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 
@@ -51,6 +55,9 @@ namespace Ink_Canvas
         void ISettingsApplicationHost.RefreshProcessKillMonitoring() => RefreshProcessKillMonitoring();
 
         void ISettingsApplicationHost.ApplyAutoSaveStrokesAtClearHeader() => ApplyAutoSaveStrokesAtClearHeader();
+
+        void ISettingsApplicationHost.ApplyAutoSavedStrokesLocationChanged(string? previousRoot, string currentRoot) =>
+            ApplyAutoSavedStrokesLocationChanged(previousRoot, currentRoot);
 
         private void ApplyRunAtStartup()
         {
@@ -266,6 +273,39 @@ namespace Ink_Canvas
             ToggleSwitchAutoSaveStrokesAtClear.Header = Settings.Automation.IsAutoSaveStrokesAtScreenshot
                 ? "清屏时自动截图并保存墨迹"
                 : "清屏时自动截图";
+        }
+
+        private void ApplyAutoSavedStrokesLocationChanged(string? previousRoot, string currentRoot)
+        {
+            try
+            {
+                List<UIElement> referencedElements = inkCanvas.Children.Cast<UIElement>().ToList();
+                inkDependencyCacheService.SwitchSessionRoot(previousRoot, currentRoot, referencedElements);
+            }
+            catch (IOException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Apply | Failed to switch auto saved strokes location");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Apply | Failed to switch auto saved strokes location");
+            }
+            catch (ArgumentException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Apply | Failed to switch auto saved strokes location");
+            }
+            catch (InvalidOperationException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Apply | Failed to switch auto saved strokes location");
+            }
+            catch (NotSupportedException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Apply | Failed to switch auto saved strokes location");
+            }
+            catch (UriFormatException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Apply | Failed to switch auto saved strokes location");
+            }
         }
     }
 }

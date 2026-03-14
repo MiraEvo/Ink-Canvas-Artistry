@@ -45,6 +45,8 @@ namespace Ink_Canvas.Features.Settings.Hosts
         void RefreshProcessKillMonitoring();
 
         void ApplyAutoSaveStrokesAtClearHeader();
+
+        void ApplyAutoSavedStrokesLocationChanged(string? previousRoot, string currentRoot);
     }
 }
 

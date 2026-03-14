@@ -185,11 +185,14 @@ namespace Ink_Canvas.Features.Settings.Coordinators
         ISettingsApplicationHost host,
         SettingsViewModel settingsViewModel) : ISettingsChangeApplier
     {
+        private string? previousAutoSavedStrokesLocation;
+
         public void ApplyAll()
         {
             host.RefreshAutoFoldMonitoring();
             host.RefreshProcessKillMonitoring();
             host.ApplyAutoSaveStrokesAtClearHeader();
+            previousAutoSavedStrokesLocation = settingsViewModel.AutoSavedStrokesLocation;
         }
 
         public void ApplyPropertyChange(string propertyName)
@@ -229,6 +232,10 @@ namespace Ink_Canvas.Features.Settings.Coordinators
                     break;
                 case nameof(SettingsViewModel.IsAutoSaveStrokesAtScreenshot):
                     host.ApplyAutoSaveStrokesAtClearHeader();
+                    break;
+                case nameof(SettingsViewModel.AutoSavedStrokesLocation):
+                    host.ApplyAutoSavedStrokesLocationChanged(previousAutoSavedStrokesLocation, settingsViewModel.AutoSavedStrokesLocation);
+                    previousAutoSavedStrokesLocation = settingsViewModel.AutoSavedStrokesLocation;
                     break;
             }
         }

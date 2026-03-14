@@ -1,3 +1,5 @@
+using Ink_Canvas.Helpers;
+using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,14 +12,13 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Xml;
 using System.Xml.Linq;
-using Ink_Canvas.Helpers;
-using Ink_Canvas.Services.Logging;
 
 namespace Ink_Canvas.Features.Ink.Services
 {
     internal sealed class InkCanvasArchiveElementsSerializer
     {
-        internal const string DependencyFolderName = "File Dependency";
+        internal const string DependencyFolderName = "dependencies";
+        internal const string LegacyDependencyFolderName = "File Dependency";
 
         private const string RootElementName = "InkCanvasElements";
         private const string RootVersion = "2";
@@ -34,27 +35,34 @@ namespace Ink_Canvas.Features.Ink.Services
             this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkCanvasArchiveElementsSerializer));
         }
 
-        public void SaveElements(InkCanvas inkCanvas, Stream outputStream)
+        public InkCanvasElementsSaveResult SaveElements(InkCanvas inkCanvas, Stream outputStream)
         {
             ArgumentNullException.ThrowIfNull(inkCanvas);
             ArgumentNullException.ThrowIfNull(outputStream);
 
-            XElement root = new XElement(RootElementName, new XAttribute("version", RootVersion));
+            List<string> dependencyFilePaths = [];
+            XElement root = new(RootElementName, new XAttribute("version", RootVersion));
+            int serializedElementCount = 0;
+
             foreach (UIElement element in inkCanvas.Children)
             {
-                XElement serializedElement = SerializeElement(element);
-                if (serializedElement != null)
+                SerializedElementResult? serializedElement = SerializeElement(element);
+                if (serializedElement == null)
                 {
-                    root.Add(serializedElement);
+                    logger.Trace("Elements Save | Skipped unsupported or invalid element while serializing archive.");
+                    continue;
                 }
-                else
+
+                root.Add(serializedElement.Value.Element);
+                serializedElementCount++;
+                if (!string.IsNullOrWhiteSpace(serializedElement.Value.DependencyFilePath))
                 {
-                    logger.Trace("Elements Save | Skipped unsupported element while serializing archive.");
+                    dependencyFilePaths.Add(serializedElement.Value.DependencyFilePath);
                 }
             }
 
-            XDocument document = new XDocument(root);
-            XmlWriterSettings settings = new XmlWriterSettings
+            XDocument document = new(root);
+            XmlWriterSettings settings = new()
             {
                 CloseOutput = false,
                 Encoding = new UTF8Encoding(false),
@@ -64,15 +72,17 @@ namespace Ink_Canvas.Features.Ink.Services
             using XmlWriter writer = XmlWriter.Create(outputStream, settings);
             document.Save(writer);
             writer.Flush();
+
+            return new InkCanvasElementsSaveResult(serializedElementCount, dependencyFilePaths);
         }
 
-        public List<UIElement> LoadElements(Stream inputStream, string dependencyDirectory)
+        public InkCanvasElementsLoadResult LoadElements(Stream inputStream, string dependencyDirectory)
         {
             ArgumentNullException.ThrowIfNull(inputStream);
             ArgumentException.ThrowIfNullOrWhiteSpace(dependencyDirectory);
 
             string dependencyRoot = Path.GetFullPath(dependencyDirectory);
-            XmlReaderSettings settings = new XmlReaderSettings
+            XmlReaderSettings settings = new()
             {
                 DtdProcessing = DtdProcessing.Prohibit,
                 XmlResolver = null,
@@ -83,24 +93,46 @@ namespace Ink_Canvas.Features.Ink.Services
             XDocument document = XDocument.Load(reader, LoadOptions.None);
             XElement root = document.Root ?? throw new InvalidDataException("Elements archive is empty.");
 
+            bool useDependencyFileAttribute;
+            IEnumerable<XElement> candidates;
             if (string.Equals(root.Name.LocalName, RootElementName, StringComparison.Ordinal))
             {
-                return root.Elements()
-                    .Select(element => DeserializeElement(element, dependencyRoot, useDependencyFileAttribute: true))
-                    .OfType<UIElement>()
-                    .ToList();
+                useDependencyFileAttribute = true;
+                candidates = root.Elements();
             }
-
-            if (!string.Equals(root.Name.LocalName, nameof(InkCanvas), StringComparison.Ordinal))
+            else if (string.Equals(root.Name.LocalName, nameof(InkCanvas), StringComparison.Ordinal))
+            {
+                useDependencyFileAttribute = false;
+                candidates = root.Elements().Where(element => IsSupportedElementName(element.Name.LocalName));
+            }
+            else
             {
                 throw new InvalidDataException($"Unsupported elements root '{root.Name.LocalName}'.");
             }
 
-            return root.Elements()
-                .Where(element => IsSupportedElementName(element.Name.LocalName))
-                .Select(element => DeserializeElement(element, dependencyRoot, useDependencyFileAttribute: false))
-                .OfType<UIElement>()
-                .ToList();
+            List<UIElement> elements = [];
+            int skippedElementCount = 0;
+            foreach (XElement candidate in candidates)
+            {
+                try
+                {
+                    UIElement? element = DeserializeElement(candidate, dependencyRoot, useDependencyFileAttribute);
+                    if (element != null)
+                    {
+                        elements.Add(element);
+                    }
+                }
+                catch (Exception ex) when (IsRecoverableElementException(ex))
+                {
+                    skippedElementCount++;
+                    logger.Error(ex, $"Elements Load | Skipped element '{candidate.Name.LocalName}' during archive restore");
+                }
+            }
+
+            string? warningMessage = skippedElementCount > 0
+                ? $"部分元素未恢复，已跳过 {skippedElementCount} 个元素"
+                : null;
+            return new InkCanvasElementsLoadResult(elements, skippedElementCount, warningMessage);
         }
 
         public bool TryGetDependencySourcePath(UIElement element, out string sourcePath)
@@ -119,7 +151,7 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        private XElement SerializeElement(UIElement element)
+        private SerializedElementResult? SerializeElement(UIElement element)
         {
             switch (element)
             {
@@ -132,7 +164,7 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        private XElement SerializeImage(Image image)
+        private SerializedElementResult? SerializeImage(Image image)
         {
             if (!TryGetImageSourcePath(image.Source, out string sourcePath))
             {
@@ -143,10 +175,10 @@ namespace Ink_Canvas.Features.Ink.Services
             XElement element = CreateElementHeader("Image", image, sourcePath);
             element.Add(new XAttribute("Stretch", image.Stretch));
             AppendRenderTransform(element, image.RenderTransform);
-            return element;
+            return new SerializedElementResult(element, sourcePath);
         }
 
-        private XElement SerializeMediaElement(MediaElement mediaElement)
+        private SerializedElementResult? SerializeMediaElement(MediaElement mediaElement)
         {
             if (mediaElement.Source?.IsFile is not true || string.IsNullOrWhiteSpace(mediaElement.Source.LocalPath))
             {
@@ -161,18 +193,13 @@ namespace Ink_Canvas.Features.Ink.Services
             element.Add(new XAttribute("IsMuted", mediaElement.IsMuted));
             element.Add(new XAttribute("ScrubbingEnabled", mediaElement.ScrubbingEnabled));
             AppendRenderTransform(element, mediaElement.RenderTransform);
-            return element;
+            return new SerializedElementResult(element, mediaElement.Source.LocalPath);
         }
 
         private static XElement CreateElementHeader(string elementName, FrameworkElement element, string sourcePath)
         {
-            string dependencyFileName = Path.GetFileName(sourcePath);
-            if (string.IsNullOrWhiteSpace(dependencyFileName))
-            {
-                throw new InvalidDataException("Element dependency file name is empty.");
-            }
-
-            XElement header = new XElement(elementName,
+            string dependencyFileName = PathSafetyHelper.NormalizeLeafName(Path.GetFileName(sourcePath), "dependency.bin");
+            XElement header = new(elementName,
                 new XAttribute("Name", EnsureValidElementName(element.Name, elementName)),
                 new XAttribute("DependencyFile", dependencyFileName),
                 new XAttribute("Opacity", ToInvariantString(element.Opacity)));
@@ -202,7 +229,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return header;
         }
 
-        private UIElement DeserializeElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
+        private UIElement? DeserializeElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
             switch (element.Name.LocalName)
             {
@@ -219,13 +246,13 @@ namespace Ink_Canvas.Features.Ink.Services
         private Image DeserializeImage(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
             Uri sourceUri = ResolveDependencyUri(element, dependencyRoot, useDependencyFileAttribute);
-            BitmapImage bitmapImage = new BitmapImage();
+            BitmapImage bitmapImage = new();
             bitmapImage.BeginInit();
             bitmapImage.UriSource = sourceUri;
             bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
             bitmapImage.EndInit();
 
-            Image image = new Image
+            Image image = new()
             {
                 Source = bitmapImage,
                 Stretch = ParseEnumValue(element, nameof(Image.Stretch), Stretch.Uniform),
@@ -241,7 +268,7 @@ namespace Ink_Canvas.Features.Ink.Services
         private MediaElement DeserializeMediaElement(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
             Uri sourceUri = ResolveDependencyUri(element, dependencyRoot, useDependencyFileAttribute);
-            MediaElement mediaElement = new MediaElement
+            MediaElement mediaElement = new()
             {
                 Source = sourceUri,
                 Stretch = ParseEnumValue(element, nameof(MediaElement.Stretch), Stretch.Uniform),
@@ -286,14 +313,14 @@ namespace Ink_Canvas.Features.Ink.Services
             InkCanvas.SetLeft(element, left);
             InkCanvas.SetTop(element, top);
 
-            Transform renderTransform = ParseRenderTransform(sourceElement);
+            Transform? renderTransform = ParseRenderTransform(sourceElement);
             if (renderTransform != null)
             {
                 element.RenderTransform = renderTransform;
             }
         }
 
-        private Transform ParseRenderTransform(XElement element)
+        private Transform? ParseRenderTransform(XElement element)
         {
             foreach (XElement child in element.Elements())
             {
@@ -301,7 +328,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 if (string.Equals(localName, "RenderTransform", StringComparison.Ordinal) ||
                     localName.EndsWith(".RenderTransform", StringComparison.Ordinal))
                 {
-                    XElement transformElement = child.Elements().FirstOrDefault();
+                    XElement? transformElement = child.Elements().FirstOrDefault();
                     return ParseTransform(transformElement);
                 }
             }
@@ -309,7 +336,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return null;
         }
 
-        private Transform ParseTransform(XElement transformElement)
+        private Transform? ParseTransform(XElement? transformElement)
         {
             if (transformElement == null)
             {
@@ -319,15 +346,16 @@ namespace Ink_Canvas.Features.Ink.Services
             switch (transformElement.Name.LocalName)
             {
                 case nameof(TransformGroup):
-                    TransformGroup transformGroup = new TransformGroup();
+                    TransformGroup transformGroup = new();
                     foreach (XElement child in transformElement.Elements())
                     {
-                        Transform childTransform = ParseTransform(child);
+                        Transform? childTransform = ParseTransform(child);
                         if (childTransform != null)
                         {
                             transformGroup.Children.Add(childTransform);
                         }
                     }
+
                     return transformGroup;
                 case nameof(ScaleTransform):
                     return new ScaleTransform(
@@ -366,7 +394,7 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private void AppendRenderTransform(XElement element, Transform renderTransform)
         {
-            XElement transformElement = SerializeTransform(renderTransform);
+            XElement? transformElement = SerializeTransform(renderTransform);
             if (transformElement == null)
             {
                 return;
@@ -375,7 +403,7 @@ namespace Ink_Canvas.Features.Ink.Services
             element.Add(new XElement("RenderTransform", transformElement));
         }
 
-        private XElement SerializeTransform(Transform transform)
+        private XElement? SerializeTransform(Transform transform)
         {
             if (transform == null)
             {
@@ -385,10 +413,10 @@ namespace Ink_Canvas.Features.Ink.Services
             switch (transform)
             {
                 case TransformGroup transformGroup:
-                    XElement groupElement = new XElement(nameof(TransformGroup));
+                    XElement groupElement = new(nameof(TransformGroup));
                     foreach (Transform child in transformGroup.Children)
                     {
-                        XElement childElement = SerializeTransform(child);
+                        XElement? childElement = SerializeTransform(child);
                         if (childElement != null)
                         {
                             groupElement.Add(childElement);
@@ -434,7 +462,7 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static Uri ResolveDependencyUri(XElement element, string dependencyRoot, bool useDependencyFileAttribute)
         {
-            string sourceValue = useDependencyFileAttribute
+            string? sourceValue = useDependencyFileAttribute
                 ? GetAttributeValue(element, "DependencyFile")
                 : GetAttributeValue(element, "Source", "DependencyFile");
 
@@ -443,40 +471,30 @@ namespace Ink_Canvas.Features.Ink.Services
                 throw new InvalidDataException($"Element '{element.Name.LocalName}' is missing its source path.");
             }
 
-            if (Uri.TryCreate(sourceValue, UriKind.Absolute, out Uri absoluteUri))
+            if (!useDependencyFileAttribute)
             {
-                if (!absoluteUri.IsFile)
+                if (Uri.TryCreate(sourceValue, UriKind.Absolute, out Uri? absoluteUri))
                 {
-                    throw new InvalidDataException("Only local file sources are supported.");
-                }
+                    if (!absoluteUri.IsFile)
+                    {
+                        throw new InvalidDataException("Only local file sources are supported.");
+                    }
 
-                if (File.Exists(absoluteUri.LocalPath))
-                {
-                    return new Uri(Path.GetFullPath(absoluteUri.LocalPath));
-                }
+                    if (File.Exists(absoluteUri.LocalPath))
+                    {
+                        return new Uri(Path.GetFullPath(absoluteUri.LocalPath));
+                    }
 
-                sourceValue = Path.GetFileName(absoluteUri.LocalPath);
-            }
-            else if (Path.IsPathRooted(sourceValue))
-            {
-                if (File.Exists(sourceValue))
+                    sourceValue = absoluteUri.LocalPath;
+                }
+                else if (Path.IsPathRooted(sourceValue) && File.Exists(sourceValue))
                 {
                     return new Uri(Path.GetFullPath(sourceValue));
                 }
-
-                sourceValue = Path.GetFileName(sourceValue);
-            }
-            else
-            {
-                sourceValue = Path.GetFileName(sourceValue);
             }
 
-            if (string.IsNullOrWhiteSpace(sourceValue))
-            {
-                throw new InvalidDataException("Element dependency file name is empty.");
-            }
-
-            string candidatePath = Path.GetFullPath(Path.Join(dependencyRoot, sourceValue));
+            string dependencyFileName = PathSafetyHelper.NormalizeLeafName(Path.GetFileName(sourceValue), "dependency.bin");
+            string candidatePath = Path.GetFullPath(Path.Join(dependencyRoot, dependencyFileName));
             EnsurePathIsUnderRoot(candidatePath, dependencyRoot, "Element dependency");
 
             if (!File.Exists(candidatePath))
@@ -519,22 +537,33 @@ namespace Ink_Canvas.Features.Ink.Services
                    string.Equals(elementName, "MediaElement", StringComparison.Ordinal);
         }
 
+        private static bool IsRecoverableElementException(Exception exception)
+        {
+            return exception is ArgumentException
+                or FileNotFoundException
+                or InvalidDataException
+                or InvalidOperationException
+                or IOException
+                or NotSupportedException
+                or UriFormatException;
+        }
+
         private static TEnum ParseEnumValue<TEnum>(XElement element, string attributeName, TEnum defaultValue)
             where TEnum : struct
         {
-            string value = GetAttributeValue(element, attributeName);
+            string? value = GetAttributeValue(element, attributeName);
             return Enum.TryParse(value, true, out TEnum parsedValue) ? parsedValue : defaultValue;
         }
 
         private static bool ParseBoolAttribute(XElement element, string attributeName, bool defaultValue)
         {
-            string value = GetAttributeValue(element, attributeName);
+            string? value = GetAttributeValue(element, attributeName);
             return bool.TryParse(value, out bool parsedValue) ? parsedValue : defaultValue;
         }
 
         private static double ParseDoubleAttribute(XElement element, string attributeName, double defaultValue)
         {
-            string value = GetAttributeValue(element, attributeName);
+            string? value = GetAttributeValue(element, attributeName);
             if (double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsedValue))
             {
                 return parsedValue;
@@ -543,11 +572,11 @@ namespace Ink_Canvas.Features.Ink.Services
             return defaultValue;
         }
 
-        private static string GetAttributeValue(XElement element, params string[] attributeNames)
+        private static string? GetAttributeValue(XElement element, params string[] attributeNames)
         {
             foreach (string attributeName in attributeNames)
             {
-                string value = FindAttributeValue(element, attributeName);
+                string? value = FindAttributeValue(element, attributeName);
                 if (!string.IsNullOrWhiteSpace(value))
                 {
                     return value;
@@ -557,7 +586,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return null;
         }
 
-        private static string FindAttributeValue(XElement element, string attributeName)
+        private static string? FindAttributeValue(XElement element, string attributeName)
         {
             string suffix = attributeName.Contains('.')
                 ? attributeName[(attributeName.LastIndexOf('.') + 1)..]
@@ -577,14 +606,14 @@ namespace Ink_Canvas.Features.Ink.Services
             return null;
         }
 
-        private static string EnsureValidElementName(string requestedName, string prefix)
+        private static string EnsureValidElementName(string? requestedName, string prefix)
         {
             if (string.IsNullOrWhiteSpace(requestedName))
             {
                 return GenerateElementName(prefix);
             }
 
-            StringBuilder builder = new StringBuilder(requestedName.Length);
+            StringBuilder builder = new(requestedName.Length);
             foreach (char character in requestedName.Where(character => char.IsLetterOrDigit(character) || character == '_'))
             {
                 builder.Append(character);
@@ -608,6 +637,7 @@ namespace Ink_Canvas.Features.Ink.Services
         {
             return value.ToString("R", CultureInfo.InvariantCulture);
         }
+
+        private readonly record struct SerializedElementResult(XElement Element, string? DependencyFilePath);
     }
 }
-

@@ -128,25 +128,13 @@ namespace Ink_Canvas
 
         private async Task<(string ElementName, string CopiedFilePath)> CopyDependencyFileAsync(string sourceFilePath, string namePrefix)
         {
-            string savePath = GetFileDependencyDirectory();
             string elementName = $"{namePrefix}_{DateTime.Now:yyyyMMdd_HH_mm_ss_fff}";
-            string copiedFilePath = Helpers.PathSafetyHelper.ResolveRelativePath(
-                savePath,
-                Helpers.PathSafetyHelper.NormalizeLeafName(
-                    elementName + Path.GetExtension(sourceFilePath),
-                    $"{namePrefix}.bin"));
-
-            await Task.Run(() =>
-            {
-                Directory.CreateDirectory(savePath);
-                File.Copy(sourceFilePath, copiedFilePath, true);
-            });
+            string copiedFilePath = await inkDependencyCacheService.GetOrCreateDependencyFileAsync(
+                sourceFilePath,
+                $"{namePrefix}{Path.GetExtension(sourceFilePath)}");
 
             return (elementName, copiedFilePath);
         }
-
-        private string GetFileDependencyDirectory() =>
-            Helpers.PathSafetyHelper.ResolveRelativePath(Settings.Automation.AutoSavedStrokesLocation, "File Dependency");
 
         private void CenterAndScaleElement(FrameworkElement element)
         {

@@ -97,7 +97,7 @@ namespace Ink_Canvas
                 mainWindowViewModel.Settings,
                 mainWindowViewModel.Presentation,
                 this,
-                new PresentationInkArchiveService(appLogger),
+                new PresentationInkArchiveService(inkArchiveService, appLogger),
                 appLogger);
             presentationSessionController.PresentationConnected += PresentationSessionController_PresentationConnected;
             presentationSessionController.PresentationClosed += PptApplication_PresentationClose;
