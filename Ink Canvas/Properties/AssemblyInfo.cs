@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Windows;
@@ -19,4 +18,3 @@ using System.Windows;
     ResourceDictionaryLocation.SourceAssembly)]
 [assembly: AssemblyVersion("5.0.1.0")]
 [assembly: AssemblyFileVersion("5.0.1.0")]
-[assembly: InternalsVisibleTo("Ink Canvas.Tests")]
