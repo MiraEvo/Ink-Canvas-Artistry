@@ -1,0 +1,138 @@
+name: Office PIA Probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - windows-latest
+          - windows-2022
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Inspect Visual Studio Office workload
+      shell: pwsh
+      run: |
+        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+        if (-not (Test-Path $vswhere))
+        {
+            throw "vswhere.exe was not found."
+        }
+
+        $products = & $vswhere -format json | ConvertFrom-Json
+        if (-not $products)
+        {
+            throw "No Visual Studio installations were found."
+        }
+
+        $hasOfficeWorkload = $false
+        foreach ($product in $products)
+        {
+            Write-Host "Visual Studio instance: $($product.installationName)"
+            Write-Host "Installation path: $($product.installationPath)"
+
+            $workloadStatePath = Join-Path $product.installationPath "Common7\IDE\CommonExtensions\Microsoft\VSI\vs\state.json"
+            if (-not (Test-Path $workloadStatePath))
+            {
+                Write-Warning "Workload state file not found: $workloadStatePath"
+                continue
+            }
+
+            $state = Get-Content -Path $workloadStatePath -Raw | ConvertFrom-Json
+            $packages = @($state.packages)
+            if ($packages.id -contains "Microsoft.VisualStudio.Workload.Office")
+            {
+                $hasOfficeWorkload = $true
+                Write-Host "Office workload detected."
+            }
+        }
+
+        if (-not $hasOfficeWorkload)
+        {
+            throw "Microsoft.VisualStudio.Workload.Office was not detected."
+        }
+
+    - name: Locate Office interop assemblies
+      id: locate
+      shell: pwsh
+      run: |
+        $searchRoots = @(
+            "${env:ProgramFiles(x86)}\Microsoft Visual Studio",
+            "${env:ProgramFiles}\Microsoft Visual Studio"
+        ) | Where-Object { Test-Path $_ }
+
+        $office = Get-ChildItem -Path $searchRoots -Recurse -Filter Office.dll -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch '\\Reference Assemblies\\' } |
+            Sort-Object FullName |
+            Select-Object -First 1
+
+        $vbe = Get-ChildItem -Path $searchRoots -Recurse -Filter Microsoft.Vbe.Interop.dll -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -notmatch '\\Reference Assemblies\\' } |
+            Sort-Object FullName |
+            Select-Object -First 1
+
+        if ($null -eq $office -or $null -eq $vbe)
+        {
+            Write-Host "Discovered Office.dll: $($office?.FullName)"
+            Write-Host "Discovered Microsoft.Vbe.Interop.dll: $($vbe?.FullName)"
+            throw "Required Office interop assemblies were not found."
+        }
+
+        "office_path=$($office.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        "vbe_path=$($vbe.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        Write-Host "Office.dll => $($office.FullName)"
+        Write-Host "Microsoft.Vbe.Interop.dll => $($vbe.FullName)"
+
+    - name: Probe MSBuild resolution with direct references
+      shell: pwsh
+      run: |
+        $probeDir = Join-Path $env:RUNNER_TEMP "office-pia-probe"
+        New-Item -ItemType Directory -Path $probeDir -Force | Out-Null
+
+        $csproj = @"
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="office">
+      <HintPath>${{ steps.locate.outputs.office_path }}</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Vbe.Interop">
+      <HintPath>${{ steps.locate.outputs.vbe_path }}</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
+"@
+
+        $code = @"
+using Microsoft.Office.Core;
+using Microsoft.Vbe.Interop;
+
+public sealed class Probe
+{
+    public MsoTriState TriState { get; init; } = MsoTriState.msoTrue;
+
+    public Window? VbeWindow { get; init; }
+}
+"@
+
+        Set-Content -Path (Join-Path $probeDir "OfficePiaProbe.csproj") -Value $csproj -Encoding UTF8
+        Set-Content -Path (Join-Path $probeDir "Probe.cs") -Value $code -Encoding UTF8
+
+        dotnet build (Join-Path $probeDir "OfficePiaProbe.csproj") -c Debug
