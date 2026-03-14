@@ -23,17 +23,6 @@
 		<Using Remove="System.Windows.Forms" />
 	</ItemGroup>
 	<ItemGroup>
-		<Reference Include="IACore">
-			<HintPath>.\IACore.dll</HintPath>
-		</Reference>
-		<Reference Include="IALoader">
-			<HintPath>.\IALoader.dll</HintPath>
-		</Reference>
-		<Reference Include="IAWinFX">
-			<HintPath>.\IAWinFX.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-	<ItemGroup>
 		<PackageReference Include="iNKORE.UI.WPF.Modern">
 			<Version>0.10.2.1</Version>
 		</PackageReference>

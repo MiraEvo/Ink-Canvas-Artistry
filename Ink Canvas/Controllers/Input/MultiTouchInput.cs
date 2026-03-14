@@ -35,7 +35,7 @@ namespace Ink_Canvas.Controllers.Input
         public StrokeVisual() : this(new DrawingAttributes()
         {
             Color = Colors.Red,
-            //FitToCurve = true,
+            FitToCurve = true,
             Width = 3,
             Height = 3
         })

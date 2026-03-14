@@ -158,10 +158,6 @@ namespace Ink_Canvas
         {
             loadPenCanvas();
             LoadSettings(true);
-            if (Environment.Is64BitProcess)
-            {
-                GroupBoxInkRecognition.Visibility = Visibility.Collapsed;
-            }
 
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
             SystemEvents_UserPreferenceChanged(null, null);

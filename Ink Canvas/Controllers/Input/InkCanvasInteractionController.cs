@@ -1,5 +1,6 @@
 using Ink_Canvas.Services.Logging;
 using Ink_Canvas.ViewModels;
+using Ink_Canvas.Features.Ink.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -274,7 +275,8 @@ namespace Ink_Canvas.Controllers.Input
                 return visual;
             }
 
-            StrokeVisual strokeVisual = new StrokeVisual(inkCanvas.DefaultDrawingAttributes.Clone());
+            StrokeVisual strokeVisual = new StrokeVisual(
+                InkStrokeDrawingAttributesHelper.CreateFreehandDrawingAttributes(inkCanvas.DefaultDrawingAttributes));
             strokeVisualList[id] = strokeVisual;
             VisualCanvas visualCanvas = new VisualCanvas(strokeVisual);
             visualCanvasList[id] = visualCanvas;

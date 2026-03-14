@@ -1,3 +1,4 @@
+using Ink_Canvas.Features.Ink.Services;
 using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
@@ -34,12 +35,13 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 InkCanvas inkCanvas = inkCanvasHost.InkCanvas;
                 inkCanvas.Opacity = 1;
 
-                if (inkCanvasHost.Settings.InkToShape.IsInkToShapeEnabled && !Environment.Is64BitProcess)
+                if (inkCanvasHost.Settings.InkToShape.IsInkToShapeEnabled)
                 {
                     ProcessInkToShape(inkCanvasHost, inkHistoryHost, shapeDrawingState, e);
                 }
 
                 ApplyPressureStyle(inkCanvasHost, shapeDrawingState, e);
+                ApplyFreehandStrokeSmoothing(e.Stroke);
             }
             catch (ArgumentException ex)
             {
@@ -82,37 +84,41 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                     }
                 }
 
-                StrokeCollection strokeReco = new();
-                dynamic result = InkRecognizeHelper.RecognizeShape(shapeDrawingState.NewStrokes);
-                for (int i = shapeDrawingState.NewStrokes.Count - 1; i >= 0; i--)
+                RecognizedShapeResult? result = InkRecognizeHelper.RecognizeShape(shapeDrawingState.NewStrokes);
+
+                if (result == null)
                 {
-                    strokeReco.Add(shapeDrawingState.NewStrokes[i]);
-                    dynamic newResult = InkRecognizeHelper.RecognizeShape(strokeReco);
-                    string shapeName = newResult.InkDrawingNode.GetShapeName();
-                    if (shapeName == "Circle" || shapeName == "Ellipse")
-                    {
-                        result = newResult;
-                        break;
-                    }
+                    return;
                 }
 
-                string recognizedShapeName = result.InkDrawingNode.GetShapeName();
-                if (recognizedShapeName == "Circle")
+                if (result.Kind == RecognizedShapeKind.Circle)
                 {
                     HandleCircleRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
-                else if (recognizedShapeName.Contains("Ellipse", StringComparison.Ordinal))
+                else if (result.Kind == RecognizedShapeKind.Ellipse)
                 {
                     HandleEllipseRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
-                else if (recognizedShapeName.Contains("Triangle", StringComparison.Ordinal))
+                else if (result.Kind == RecognizedShapeKind.Triangle)
                 {
                     HandleTriangleRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
-                else if (recognizedShapeName.Contains("Rectangle", StringComparison.Ordinal)
-                    || recognizedShapeName.Contains("Diamond", StringComparison.Ordinal)
-                    || recognizedShapeName.Contains("Parallelogram", StringComparison.Ordinal)
-                    || recognizedShapeName.Contains("Square", StringComparison.Ordinal))
+                else if (result.Kind == RecognizedShapeKind.Line)
+                {
+                    HandleLineRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
+                }
+                else if (result.Kind == RecognizedShapeKind.Polyline)
+                {
+                    HandlePolylineRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
+                }
+                else if (result.Kind == RecognizedShapeKind.Arc)
+                {
+                    HandleArcRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
+                }
+                else if (result.Kind is RecognizedShapeKind.Rectangle
+                    or RecognizedShapeKind.Diamond
+                    or RecognizedShapeKind.Parallelogram
+                    or RecognizedShapeKind.Square)
                 {
                     HandleRectangleRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
@@ -127,35 +133,39 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
         }
 
-        private void HandleCircleRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleCircleRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
         {
             InkCanvas inkCanvas = inkCanvasHost.InkCanvas;
-            dynamic shape = result.InkDrawingNode.GetShape();
-            if (shape.Width <= 75)
+            double diameter = result.Width;
+            if (diameter <= 75)
             {
                 return;
             }
 
             foreach (Circle circle in shapeDrawingState.Circles)
             {
-                if (Math.Abs(result.Centroid.X - circle.Centroid.X) / shape.Width < 0.12
-                    && Math.Abs(result.Centroid.Y - circle.Centroid.Y) / shape.Width < 0.12)
+                if (Math.Abs(result.Centroid.X - circle.Centroid.X) / diameter < 0.12
+                    && Math.Abs(result.Centroid.Y - circle.Centroid.Y) / diameter < 0.12)
                 {
                     result.Centroid = circle.Centroid;
                     break;
                 }
 
                 double distance = GetDistance(result.Centroid, circle.Centroid);
-                double x = shape.Width / 2.0 + circle.R - distance;
-                if (Math.Abs(x) / shape.Width < 0.1)
+                double x = diameter / 2.0 + circle.R - distance;
+                if (Math.Abs(x) / diameter < 0.1 && distance > 0)
                 {
                     double sinTheta = (result.Centroid.Y - circle.Centroid.Y) / distance;
                     double cosTheta = (result.Centroid.X - circle.Centroid.X) / distance;
                     result.Centroid = new Point(result.Centroid.X + x * cosTheta, result.Centroid.Y + x * sinTheta);
                 }
 
-                x = Math.Abs(circle.R - shape.Width / 2.0) - distance;
-                if (Math.Abs(x) / shape.Width < 0.1)
+                x = Math.Abs(circle.R - diameter / 2.0) - distance;
+                if (Math.Abs(x) / diameter < 0.1 && distance > 0)
                 {
                     double sinTheta = (result.Centroid.Y - circle.Centroid.Y) / distance;
                     double cosTheta = (result.Centroid.X - circle.Centroid.X) / distance;
@@ -163,36 +173,33 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 }
             }
 
-            Point initialPoint = new(result.Centroid.X - shape.Width / 2, result.Centroid.Y - shape.Height / 2);
-            Point endPoint = new(result.Centroid.X + shape.Width / 2, result.Centroid.Y + shape.Height / 2);
-            Stroke stroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint));
+            Point initialPoint = new(result.Centroid.X - diameter / 2, result.Centroid.Y - diameter / 2);
+            Point endPoint = new(result.Centroid.X + diameter / 2, result.Centroid.Y + diameter / 2);
+            Stroke stroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint), fitToCurve: true);
 
-            shapeDrawingState.Circles.Add(new Circle(result.Centroid, shape.Width / 2.0, stroke));
-            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, false);
+            shapeDrawingState.Circles.Add(new Circle(result.Centroid, diameter / 2.0, stroke));
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { stroke }, false);
         }
 
-        private void HandleEllipseRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleEllipseRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
         {
             InkCanvas inkCanvas = inkCanvasHost.InkCanvas;
-            dynamic shape = result.InkDrawingNode.GetShape();
-            dynamic hotPoints = result.InkDrawingNode.HotPoints;
-            double a = GetDistance(ToPoint(hotPoints[0]), ToPoint(hotPoints[2])) / 2;
-            double b = GetDistance(ToPoint(hotPoints[1]), ToPoint(hotPoints[3])) / 2;
-            if (a < b)
-            {
-                (a, b) = (b, a);
-            }
-
-            result.Centroid = new Point((hotPoints[0].X + hotPoints[2].X) / 2, (hotPoints[0].Y + hotPoints[2].Y) / 2);
+            Point[] hotPoints = CreateEllipseHotPoints(result);
+            double a = result.MajorRadius;
+            double b = result.MinorRadius;
             bool needRotation = true;
 
-            if (!(shape.Width > 75 || shape.Height > 75 && hotPoints.Count == 4))
+            if (!(result.Width > 75 || result.Height > 75))
             {
                 return;
             }
 
-            Point initialPoint = new(result.Centroid.X - shape.Width / 2, result.Centroid.Y - shape.Height / 2);
-            Point endPoint = new(result.Centroid.X + shape.Width / 2, result.Centroid.Y + shape.Height / 2);
+            Point initialPoint = new(result.Centroid.X - result.Width / 2, result.Centroid.Y - result.Height / 2);
+            Point endPoint = new(result.Centroid.X + result.Width / 2, result.Centroid.Y + result.Height / 2);
 
             foreach (Circle circle in shapeDrawingState.Circles)
             {
@@ -200,12 +207,12 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                     && Math.Abs(result.Centroid.Y - circle.Centroid.Y) / a < 0.2)
                 {
                     result.Centroid = circle.Centroid;
-                    initialPoint = new Point(result.Centroid.X - shape.Width / 2, result.Centroid.Y - shape.Height / 2);
-                    endPoint = new Point(result.Centroid.X + shape.Width / 2, result.Centroid.Y + shape.Height / 2);
+                    initialPoint = new Point(result.Centroid.X - result.Width / 2, result.Centroid.Y - result.Height / 2);
+                    endPoint = new Point(result.Centroid.X + result.Width / 2, result.Centroid.Y + result.Height / 2);
 
                     if (Math.Abs(a - circle.R) / a < 0.2)
                     {
-                        if (shape.Width >= shape.Height)
+                        if (result.Width >= result.Height)
                         {
                             initialPoint.X = result.Centroid.X - circle.R;
                             endPoint.X = result.Centroid.X + circle.R;
@@ -238,10 +245,10 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
                         inkHistoryHost.BackupCurrentStrokes();
                         inkHistoryHost.SetCommitReason(CommitReason.ShapeRecognition);
-                        inkCanvas.Strokes.Remove(result.InkDrawingNode.Strokes);
+                        inkCanvas.Strokes.Remove(result.SourceStrokes);
                         shapeDrawingState.NewStrokes = new StrokeCollection();
 
-                        Stroke stroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint, false, true));
+                        Stroke stroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint, false, true), fitToCurve: true);
                         StrokeCollection dashedStroke = GenerateDashedLineEllipseStrokeCollection(inkCanvas, initialPoint, endPoint, true, false);
                         StrokeCollection strokes = new() { stroke };
                         strokes.Add(dashedStroke);
@@ -266,43 +273,49 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 }
             }
 
-            Point[] correctedPoints = FixPointsDirection(ToPoint(hotPoints[0]), ToPoint(hotPoints[2]));
+            Point[] correctedPoints = FixPointsDirection(hotPoints[0], hotPoints[2]);
             hotPoints[0] = correctedPoints[0];
             hotPoints[2] = correctedPoints[1];
-            correctedPoints = FixPointsDirection(ToPoint(hotPoints[1]), ToPoint(hotPoints[3]));
+            correctedPoints = FixPointsDirection(hotPoints[1], hotPoints[3]);
             hotPoints[1] = correctedPoints[0];
             hotPoints[3] = correctedPoints[1];
 
-            Stroke ellipseStroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint));
+            Stroke ellipseStroke = CreateStrokeFromPoints(inkCanvas, GenerateEllipseGeometry(initialPoint, endPoint), fitToCurve: true);
             if (needRotation)
             {
                 Matrix matrix = new();
-                double tanTheta = (hotPoints[2].Y - hotPoints[0].Y) / (hotPoints[2].X - hotPoints[0].X);
-                double theta = Math.Atan(tanTheta);
-                matrix.RotateAt(theta * 180.0 / Math.PI, result.Centroid.X, result.Centroid.Y);
+                matrix.RotateAt(result.RotationDegrees, result.Centroid.X, result.Centroid.Y);
                 ellipseStroke.Transform(matrix, false);
             }
 
-            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { ellipseStroke }, true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { ellipseStroke }, true);
         }
 
-        private void HandleTriangleRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleTriangleRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
         {
-            dynamic hotPoints = result.InkDrawingNode.HotPoints;
-            if (!((Math.Max(Math.Max(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X) - Math.Min(Math.Min(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X) >= 100
-                || Math.Max(Math.Max(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y) - Math.Min(Math.Min(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y) >= 100)
-                && hotPoints.Count == 3))
+            if (result.OrderedVertices.Count != 3)
             {
                 return;
             }
 
-            Point[] correctedPoints = FixPointsDirection(ToPoint(hotPoints[0]), ToPoint(hotPoints[1]));
+            Point[] hotPoints = result.OrderedVertices.ToArray();
+            if (!(Math.Max(Math.Max(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X) - Math.Min(Math.Min(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X) >= 100
+                || Math.Max(Math.Max(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y) - Math.Min(Math.Min(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y) >= 100))
+            {
+                return;
+            }
+
+            Point[] correctedPoints = FixPointsDirection(hotPoints[0], hotPoints[1]);
             hotPoints[0] = correctedPoints[0];
             hotPoints[1] = correctedPoints[1];
-            correctedPoints = FixPointsDirection(ToPoint(hotPoints[0]), ToPoint(hotPoints[2]));
+            correctedPoints = FixPointsDirection(hotPoints[0], hotPoints[2]);
             hotPoints[0] = correctedPoints[0];
             hotPoints[2] = correctedPoints[1];
-            correctedPoints = FixPointsDirection(ToPoint(hotPoints[1]), ToPoint(hotPoints[2]));
+            correctedPoints = FixPointsDirection(hotPoints[1], hotPoints[2]);
             hotPoints[1] = correctedPoints[0];
             hotPoints[2] = correctedPoints[1];
 
@@ -314,44 +327,106 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             ];
             Stroke stroke = new(GenerateFakePressureTriangle(points))
             {
-                DrawingAttributes = inkCanvasHost.InkCanvas.DefaultDrawingAttributes.Clone()
+                DrawingAttributes = InkStrokeDrawingAttributesHelper.CreateShapeDrawingAttributes(inkCanvasHost.InkCanvas.DefaultDrawingAttributes)
             };
 
-            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { stroke }, true);
         }
 
-        private void HandleRectangleRecognition(IInkCanvasHost inkCanvasHost, IInkHistoryHost inkHistoryHost, ShapeDrawingSessionState shapeDrawingState, dynamic result)
+        private void HandleLineRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
         {
-            dynamic hotPoints = result.InkDrawingNode.HotPoints;
-            if (!((Math.Max(Math.Max(Math.Max(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X), hotPoints[3].X)
-                - Math.Min(Math.Min(Math.Min(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X), hotPoints[3].X) >= 100
-                || Math.Max(Math.Max(Math.Max(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y), hotPoints[3].Y)
-                - Math.Min(Math.Min(Math.Min(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y), hotPoints[3].Y) >= 100)
-                && hotPoints.Count == 4))
+            if (result.OrderedVertices.Count < 2)
             {
                 return;
             }
 
-            Point[] correctedPoints = FixPointsDirection(ToPoint(hotPoints[0]), ToPoint(hotPoints[1]));
+            Stroke stroke = CreateStrokeFromPoints(
+                inkCanvasHost.InkCanvas,
+                result.OrderedVertices.Take(2),
+                fitToCurve: false);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { stroke }, true);
+        }
+
+        private void HandlePolylineRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
+        {
+            if (result.OrderedVertices.Count < 3)
+            {
+                return;
+            }
+
+            Stroke stroke = CreateStrokeFromPoints(
+                inkCanvasHost.InkCanvas,
+                result.OrderedVertices,
+                fitToCurve: false);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { stroke }, true);
+        }
+
+        private void HandleArcRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
+        {
+            if (result.MajorRadius <= 0 || result.MinorRadius <= 0)
+            {
+                return;
+            }
+
+            Stroke stroke = CreateStrokeFromPoints(
+                inkCanvasHost.InkCanvas,
+                GenerateArcGeometry(result),
+                fitToCurve: true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { stroke }, true);
+        }
+
+        private void HandleRectangleRecognition(
+            IInkCanvasHost inkCanvasHost,
+            IInkHistoryHost inkHistoryHost,
+            ShapeDrawingSessionState shapeDrawingState,
+            RecognizedShapeResult result)
+        {
+            if (result.OrderedVertices.Count != 4)
+            {
+                return;
+            }
+
+            Point[] hotPoints = result.OrderedVertices.ToArray();
+            if (!(Math.Max(Math.Max(Math.Max(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X), hotPoints[3].X)
+                - Math.Min(Math.Min(Math.Min(hotPoints[0].X, hotPoints[1].X), hotPoints[2].X), hotPoints[3].X) >= 100
+                || Math.Max(Math.Max(Math.Max(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y), hotPoints[3].Y)
+                - Math.Min(Math.Min(Math.Min(hotPoints[0].Y, hotPoints[1].Y), hotPoints[2].Y), hotPoints[3].Y) >= 100))
+            {
+                return;
+            }
+
+            Point[] correctedPoints = FixPointsDirection(hotPoints[0], hotPoints[1]);
             hotPoints[0] = correctedPoints[0];
             hotPoints[1] = correctedPoints[1];
-            correctedPoints = FixPointsDirection(ToPoint(hotPoints[1]), ToPoint(hotPoints[2]));
+            correctedPoints = FixPointsDirection(hotPoints[1], hotPoints[2]);
             hotPoints[1] = correctedPoints[0];
             hotPoints[2] = correctedPoints[1];
-            correctedPoints = FixPointsDirection(ToPoint(hotPoints[2]), ToPoint(hotPoints[3]));
+            correctedPoints = FixPointsDirection(hotPoints[2], hotPoints[3]);
             hotPoints[2] = correctedPoints[0];
             hotPoints[3] = correctedPoints[1];
-            correctedPoints = FixPointsDirection(ToPoint(hotPoints[3]), ToPoint(hotPoints[0]));
+            correctedPoints = FixPointsDirection(hotPoints[3], hotPoints[0]);
             hotPoints[3] = correctedPoints[0];
             hotPoints[0] = correctedPoints[1];
 
-            List<Point> pointList = [ToPoint(hotPoints[0]), ToPoint(hotPoints[1]), ToPoint(hotPoints[2]), ToPoint(hotPoints[3]), ToPoint(hotPoints[0])];
+            List<Point> pointList = [hotPoints[0], hotPoints[1], hotPoints[2], hotPoints[3], hotPoints[0]];
             Stroke stroke = new(GenerateFakePressureRectangle(new StylusPointCollection(pointList)))
             {
-                DrawingAttributes = inkCanvasHost.InkCanvas.DefaultDrawingAttributes.Clone()
+                DrawingAttributes = InkStrokeDrawingAttributesHelper.CreateShapeDrawingAttributes(inkCanvasHost.InkCanvas.DefaultDrawingAttributes)
             };
 
-            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.InkDrawingNode.Strokes, new StrokeCollection { stroke }, true);
+            ApplyRecognitionResult(inkCanvasHost, inkHistoryHost, shapeDrawingState, result.SourceStrokes, new StrokeCollection { stroke }, true);
         }
 
         private void ApplyRecognitionResult(
@@ -557,11 +632,16 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
         }
 
-        private static Stroke CreateStrokeFromPoints(InkCanvas inkCanvas, IEnumerable<Point> points)
+        private static void ApplyFreehandStrokeSmoothing(Stroke stroke)
+        {
+            stroke.DrawingAttributes = InkStrokeDrawingAttributesHelper.CreateFreehandDrawingAttributes(stroke.DrawingAttributes);
+        }
+
+        private static Stroke CreateStrokeFromPoints(InkCanvas inkCanvas, IEnumerable<Point> points, bool fitToCurve = false)
         {
             return new Stroke(new StylusPointCollection(points))
             {
-                DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
+                DrawingAttributes = InkStrokeDrawingAttributesHelper.CreateShapeDrawingAttributes(inkCanvas.DefaultDrawingAttributes, fitToCurve)
             };
         }
 
@@ -600,6 +680,38 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             return pointList;
         }
 
+        private static List<Point> GenerateArcGeometry(RecognizedShapeResult result)
+        {
+            double rotationRadians = result.RotationDegrees * Math.PI / 180.0;
+            double startRadians = result.StartAngleDegrees * Math.PI / 180.0;
+            double sweepRadians = result.SweepAngleDegrees * Math.PI / 180.0;
+            double step = Math.Max(0.01, Math.Abs(sweepRadians) / 180.0);
+            double cos = Math.Cos(rotationRadians);
+            double sin = Math.Sin(rotationRadians);
+            List<Point> points = [];
+
+            for (double angle = startRadians; angle <= startRadians + sweepRadians + 0.0001; angle += step)
+            {
+                double x = result.MajorRadius * Math.Cos(angle);
+                double y = result.MinorRadius * Math.Sin(angle);
+                points.Add(new Point(
+                    result.Centroid.X + x * cos - y * sin,
+                    result.Centroid.Y + x * sin + y * cos));
+            }
+
+            if (points.Count == 0 || GetDistance(points[^1], result.OrderedVertices.LastOrDefault()) > 1.0)
+            {
+                double angle = startRadians + sweepRadians;
+                double x = result.MajorRadius * Math.Cos(angle);
+                double y = result.MinorRadius * Math.Sin(angle);
+                points.Add(new Point(
+                    result.Centroid.X + x * cos - y * sin,
+                    result.Centroid.Y + x * sin + y * cos));
+            }
+
+            return points;
+        }
+
         private static StrokeCollection GenerateDashedLineEllipseStrokeCollection(InkCanvas inkCanvas, Point startPoint, Point endPoint, bool drawTop = true, bool drawBottom = true)
         {
             double a = 0.5 * (endPoint.X - startPoint.X);
@@ -617,7 +729,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                         pointList.Add(new Point(0.5 * (startPoint.X + endPoint.X) + a * Math.Cos(r), 0.5 * (startPoint.Y + endPoint.Y) + b * Math.Sin(r)));
                     }
 
-                    strokes.Add(CreateStrokeFromPoints(inkCanvas, pointList));
+                    strokes.Add(CreateStrokeFromPoints(inkCanvas, pointList, fitToCurve: true));
                 }
             }
 
@@ -631,7 +743,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                         pointList.Add(new Point(0.5 * (startPoint.X + endPoint.X) + a * Math.Cos(r), 0.5 * (startPoint.Y + endPoint.Y) + b * Math.Sin(r)));
                     }
 
-                    strokes.Add(CreateStrokeFromPoints(inkCanvas, pointList));
+                    strokes.Add(CreateStrokeFromPoints(inkCanvas, pointList, fitToCurve: true));
                 }
             }
 
@@ -712,14 +824,25 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             return newPoints;
         }
 
+        private static Point[] CreateEllipseHotPoints(RecognizedShapeResult result)
+        {
+            double theta = result.RotationDegrees * Math.PI / 180.0;
+            Vector majorAxis = new(Math.Cos(theta), Math.Sin(theta));
+            Vector minorAxis = new(-majorAxis.Y, majorAxis.X);
+            Point center = result.Centroid;
+
+            return
+            [
+                center - majorAxis * result.MajorRadius,
+                center - minorAxis * result.MinorRadius,
+                center + majorAxis * result.MajorRadius,
+                center + minorAxis * result.MinorRadius
+            ];
+        }
+
         private static StylusPoint GetCenterPoint(StylusPoint point1, StylusPoint point2)
         {
             return new StylusPoint((point1.X + point2.X) / 2, (point1.Y + point2.Y) / 2);
-        }
-
-        private static Point ToPoint(dynamic point)
-        {
-            return new Point(point.X, point.Y);
         }
 
         private static double GetDistance(Point point1, Point point2)
