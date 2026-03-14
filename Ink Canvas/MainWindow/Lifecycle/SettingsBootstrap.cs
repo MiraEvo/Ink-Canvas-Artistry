@@ -38,6 +38,11 @@ namespace Ink_Canvas
             {
                 return SettingsDefaults.Normalize(settingsService.Load());
             }
+            catch (SettingsLoadException ex)
+            {
+                errorHandler.NotifyUser("设置加载失败，已回退为默认推荐配置。");
+                mainWindowLogger.Error(ex, "Settings Load | Falling back to recommended settings");
+            }
             catch (ArgumentException ex)
             {
                 mainWindowLogger.Error(ex, "Settings Load | Invalid settings payload");

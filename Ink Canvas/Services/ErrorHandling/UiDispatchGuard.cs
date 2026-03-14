@@ -1,0 +1,91 @@
+using System;
+using System.Threading.Tasks;
+using System.Windows;
+
+namespace Ink_Canvas.Services.ErrorHandling
+{
+    public sealed class UiDispatchGuard
+    {
+        private readonly AppErrorHandler errorHandler;
+
+        public UiDispatchGuard(AppErrorHandler errorHandler)
+        {
+            this.errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
+        }
+
+        public bool TryInvoke(Action action, AppErrorContext context)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            ArgumentNullException.ThrowIfNull(context);
+
+            if (Application.Current?.Dispatcher is not { } dispatcher)
+            {
+                action();
+                return true;
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return true;
+            }
+
+            try
+            {
+                dispatcher.Invoke(action);
+                return true;
+            }
+            catch (TaskCanceledException ex)
+            {
+                errorHandler.Handle(ex, context);
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                errorHandler.Handle(ex, context);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                errorHandler.Handle(ex, context);
+                return false;
+            }
+        }
+
+        public T Invoke<T>(Func<T> action, T fallback, AppErrorContext context)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            ArgumentNullException.ThrowIfNull(context);
+
+            if (Application.Current?.Dispatcher is not { } dispatcher)
+            {
+                return action();
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                return action();
+            }
+
+            try
+            {
+                return dispatcher.Invoke(action);
+            }
+            catch (TaskCanceledException ex)
+            {
+                errorHandler.Handle(ex, context);
+                return fallback;
+            }
+            catch (InvalidOperationException ex)
+            {
+                errorHandler.Handle(ex, context);
+                return fallback;
+            }
+            catch (Exception ex)
+            {
+                errorHandler.Handle(ex, context);
+                return fallback;
+            }
+        }
+    }
+}

@@ -10,7 +10,15 @@ namespace Ink_Canvas
     {
         public void SaveSettingsToFile()
         {
-            settingsService.Save(Settings);
+            try
+            {
+                settingsService.Save(Settings);
+            }
+            catch (SettingsSaveException ex)
+            {
+                mainWindowLogger.Error(ex, "Settings Save | Manual settings save failed");
+                ShowNotificationAsync("设置未保存成功，当前修改可能不会在下次启动时保留。");
+            }
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

@@ -32,22 +32,22 @@ namespace Ink_Canvas.Services.Settings
             catch (IOException ex)
             {
                 logger.Error(ex, "Settings Load | Failed to read settings file");
-                return CreateRecommendedSettings();
+                throw new SettingsLoadException("Failed to read settings file.", ex);
             }
             catch (UnauthorizedAccessException ex)
             {
                 logger.Error(ex, "Settings Load | Access denied for settings file");
-                return CreateRecommendedSettings();
+                throw new SettingsLoadException("Access denied for settings file.", ex);
             }
             catch (JsonException ex)
             {
                 logger.Error(ex, "Settings Load | Invalid JSON in settings file");
-                return CreateRecommendedSettings();
+                throw new SettingsLoadException("Invalid JSON in settings file.", ex);
             }
             catch (ArgumentException ex)
             {
                 logger.Error(ex, "Settings Load | Invalid settings path");
-                return CreateRecommendedSettings();
+                throw new SettingsLoadException("Invalid settings path.", ex);
             }
         }
 
@@ -65,14 +65,17 @@ namespace Ink_Canvas.Services.Settings
             catch (IOException ex)
             {
                 logger.Error(ex, "Settings Save | Failed to write settings file");
+                throw new SettingsSaveException("Failed to write settings file.", ex);
             }
             catch (UnauthorizedAccessException ex)
             {
                 logger.Error(ex, "Settings Save | Access denied for settings file");
+                throw new SettingsSaveException("Access denied for settings file.", ex);
             }
             catch (ArgumentException ex)
             {
                 logger.Error(ex, "Settings Save | Invalid settings path");
+                throw new SettingsSaveException("Invalid settings path.", ex);
             }
         }
 

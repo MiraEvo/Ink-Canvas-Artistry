@@ -58,7 +58,7 @@ namespace Ink_Canvas
                 inkRecognitionService);
             inkGestureCoordinator = new InkGestureCoordinator(this);
             inkPaletteCoordinator = new InkPaletteCoordinator(this);
-            inkArchiveCoordinator = new InkArchiveCoordinator(this, inkHistoryCoordinator, inkArchiveService, appLogger);
+            inkArchiveCoordinator = new InkArchiveCoordinator(this, inkHistoryCoordinator, inkArchiveService, appLogger, errorHandler);
         }
 
         private bool isLongPressSelected
@@ -708,7 +708,12 @@ namespace Ink_Canvas
         {
             if (inkCanvas.Visibility != Visibility.Visible)
             {
-                _ = toolbarExperienceCoordinator?.HandleCursorRequestedAsync();
+            if (toolbarExperienceCoordinator != null)
+            {
+                taskGuard.Forget(
+                    toolbarExperienceCoordinator.HandleCursorRequestedAsync(),
+                    new AppErrorContext(nameof(MainWindow), "RestoreCursorToolAfterArchiveImport"));
+            }
             }
         }
 

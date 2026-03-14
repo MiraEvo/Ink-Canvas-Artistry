@@ -20,6 +20,7 @@ global using Ink_Canvas.Features.Settings.Hosts;
 global using Ink_Canvas.Features.Shell.Coordinators;
 global using Ink_Canvas.Features.Shell.Hosts;
 global using Ink_Canvas.Features.Shell.State;
+global using Ink_Canvas.Services.ErrorHandling;
 global using Ink_Canvas.Services.Settings;
 global using Ink_Canvas.Services.System;
 global using Ink_Canvas.Services.System.Integration;

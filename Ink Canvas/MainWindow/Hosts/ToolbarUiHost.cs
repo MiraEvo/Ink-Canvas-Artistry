@@ -227,7 +227,13 @@ namespace Ink_Canvas
 
         private void HideSubPanels(string? mode = null, bool autoAlignCenter = false)
         {
-            _ = HideSubPanelsAsync(mode, autoAlignCenter);
+            taskGuard.Forget(
+                HideSubPanelsAsync(mode, autoAlignCenter),
+                new AppErrorContext(nameof(MainWindow), "HideSubPanelsAsync")
+                {
+                    AllowRateLimit = true,
+                    RateLimitKey = "MainWindow|HideSubPanelsAsync"
+                });
         }
 
         private async Task HideSubPanelsAsync(string? mode = null, bool autoAlignCenter = false)
@@ -326,7 +332,13 @@ namespace Ink_Canvas
 
         private void ViewboxFloatingBarMarginAnimation()
         {
-            _ = ViewboxFloatingBarMarginAnimationAsync();
+            taskGuard.Forget(
+                ViewboxFloatingBarMarginAnimationAsync(),
+                new AppErrorContext(nameof(MainWindow), "ViewboxFloatingBarMarginAnimationAsync")
+                {
+                    AllowRateLimit = true,
+                    RateLimitKey = "MainWindow|ViewboxFloatingBarMarginAnimationAsync"
+                });
         }
 
         private async Task ViewboxFloatingBarMarginAnimationAfterDelayAsync(TimeSpan delay)
@@ -684,14 +696,26 @@ namespace Ink_Canvas
 
                         DeleteSelectionOrClear();
                         ShellViewModel.SetToolMode(ToolMode.Cursor, true, true);
-                        _ = AnimateSidePanelMarginsAsync(-16);
+                        taskGuard.Forget(
+                            AnimateSidePanelMarginsAsync(-16),
+                            new AppErrorContext(nameof(MainWindow), "AnimateSidePanelMargins")
+                            {
+                                AllowRateLimit = true,
+                                RateLimitKey = "MainWindow|AnimateSidePanelMargins"
+                            });
                     },
                     () =>
                     {
                         HidePresentationNavigation();
                         ViewboxFloatingBarMarginAnimation();
                         HideSubPanels("cursor");
-                        _ = AnimateSidePanelMarginsAsync(-16);
+                        taskGuard.Forget(
+                            AnimateSidePanelMarginsAsync(-16),
+                            new AppErrorContext(nameof(MainWindow), "AnimateSidePanelMargins")
+                            {
+                                AllowRateLimit = true,
+                                RateLimitKey = "MainWindow|AnimateSidePanelMargins"
+                            });
                     });
             }
             finally
@@ -717,7 +741,13 @@ namespace Ink_Canvas
                     {
                         ShowPresentationNavigationIfNeeded();
                         ViewboxFloatingBarMarginAnimation();
-                        _ = AnimateSidePanelMarginsAsync(-40);
+                        taskGuard.Forget(
+                            AnimateSidePanelMarginsAsync(-40),
+                            new AppErrorContext(nameof(MainWindow), "AnimateSidePanelMargins")
+                            {
+                                AllowRateLimit = true,
+                                RateLimitKey = "MainWindow|AnimateSidePanelMargins"
+                            });
                     });
             }
             finally

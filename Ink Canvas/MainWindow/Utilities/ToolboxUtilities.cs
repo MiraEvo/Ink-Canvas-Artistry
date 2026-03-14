@@ -17,7 +17,9 @@ namespace Ink_Canvas
 
         private void SymbolIconScreenshot_Click(object sender, RoutedEventArgs e)
         {
-            _ = SaveToolbarScreenshotAsync();
+            taskGuard.Forget(
+                SaveToolbarScreenshotAsync(),
+                new AppErrorContext(nameof(MainWindow), "SaveToolbarScreenshotAsync"));
         }
 
         private async Task SaveToolbarScreenshotAsync()
@@ -57,7 +59,9 @@ namespace Ink_Canvas
 
         private void GridInkReplayButton_Click(object sender, RoutedEventArgs e)
         {
-            _ = StartInkReplayAsync();
+            taskGuard.Forget(
+                StartInkReplayAsync(),
+                new AppErrorContext(nameof(MainWindow), "StartInkReplayAsync"));
         }
 
         private async Task StartInkReplayAsync()

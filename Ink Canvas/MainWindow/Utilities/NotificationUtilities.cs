@@ -17,7 +17,13 @@ namespace Ink_Canvas
 
         public void ShowNotificationAsync(string notice, bool isShowImmediately = true)
         {
-            _ = ShowNotificationCoreAsync(notice, isShowImmediately);
+            taskGuard.Forget(
+                ShowNotificationCoreAsync(notice, isShowImmediately),
+                new AppErrorContext(nameof(MainWindow), "ShowNotification")
+                {
+                    RateLimitKey = "MainWindow|ShowNotification",
+                    AllowRateLimit = true
+                });
         }
 
         private async Task ShowNotificationCoreAsync(string notice, bool isShowImmediately)

@@ -45,6 +45,7 @@ namespace Ink_Canvas
                 new WorkspaceSessionViewModel());
             mainWindowViewModel.Settings.PropertyChanged += SettingsViewModel_PropertyChanged;
             mainWindowViewModel.Settings.ReloadRequested += SettingsViewModel_ReloadRequested;
+            mainWindowViewModel.Settings.SettingsSaveFailed += SettingsViewModel_SettingsSaveFailed;
             mainWindowViewModel.Shell.WorkspaceModeChanged += ShellViewModel_WorkspaceModeChanged;
             mainWindowViewModel.Shell.ToolModeChanged += ShellViewModel_ToolModeChanged;
             mainWindowViewModel.Shell.ActiveSubPanelChanged += ShellViewModel_ActiveSubPanelChanged;
@@ -167,6 +168,12 @@ namespace Ink_Canvas
             {
                 ShowNotificationAsync(notificationMessage);
             }
+        }
+
+        private void SettingsViewModel_SettingsSaveFailed(string notificationMessage)
+        {
+            mainWindowLogger.Error("Settings Save | MainWindow received a settings save failure notification.");
+            ShowNotificationAsync(notificationMessage);
         }
 
         private void SettingsViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

@@ -29,6 +29,8 @@ namespace Ink_Canvas.Controllers.Automation
         private readonly Action onAutoKilledEasiNote;
         private readonly Action<string> installSilentUpdate;
         private readonly IAppLogger logger;
+        private readonly AppErrorHandler errorHandler;
+        private readonly UiDispatchGuard uiDispatchGuard;
         private readonly Timer autoFoldTimer;
         private readonly Timer processKillTimer;
         private readonly Timer silentUpdateTimer;
@@ -49,7 +51,9 @@ namespace Ink_Canvas.Controllers.Automation
             Action requestUnfoldFloatingBar,
             Action onAutoKilledEasiNote,
             Action<string> installSilentUpdate,
-            IAppLogger logger)
+            IAppLogger logger,
+            AppErrorHandler errorHandler,
+            UiDispatchGuard uiDispatchGuard)
         {
             ArgumentNullException.ThrowIfNull(settingsViewModel);
             ArgumentNullException.ThrowIfNull(presentationSessionViewModel);
@@ -63,6 +67,8 @@ namespace Ink_Canvas.Controllers.Automation
             ArgumentNullException.ThrowIfNull(onAutoKilledEasiNote);
             ArgumentNullException.ThrowIfNull(installSilentUpdate);
             ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(errorHandler);
+            ArgumentNullException.ThrowIfNull(uiDispatchGuard);
 
             this.settingsViewModel = settingsViewModel;
             this.presentationSessionViewModel = presentationSessionViewModel;
@@ -76,6 +82,8 @@ namespace Ink_Canvas.Controllers.Automation
             this.onAutoKilledEasiNote = onAutoKilledEasiNote;
             this.installSilentUpdate = installSilentUpdate;
             this.logger = logger.ForCategory(nameof(AutomationController));
+            this.errorHandler = errorHandler;
+            this.uiDispatchGuard = uiDispatchGuard;
 
             autoFoldTimer = CreateTimer(AutoFoldIntervalMs, AutoFoldTimer_Elapsed);
             processKillTimer = CreateTimer(ProcessKillIntervalMs, ProcessKillTimer_Elapsed);
@@ -134,11 +142,14 @@ namespace Ink_Canvas.Controllers.Automation
             DisposeTimer(silentUpdateTimer);
         }
 
-        private void AutoFoldTimer_Elapsed(object? sender, ElapsedEventArgs e) => RunGuarded(ref isCheckingAutoFold, EvaluateAutoFold);
+        private void AutoFoldTimer_Elapsed(object? sender, ElapsedEventArgs e) =>
+            RunGuarded(ref isCheckingAutoFold, EvaluateAutoFold, "EvaluateAutoFold", allowRateLimit: true);
 
-        private void ProcessKillTimer_Elapsed(object? sender, ElapsedEventArgs e) => RunGuarded(ref isKillingProcesses, EvaluateProcessKill);
+        private void ProcessKillTimer_Elapsed(object? sender, ElapsedEventArgs e) =>
+            RunGuarded(ref isKillingProcesses, EvaluateProcessKill, "EvaluateProcessKill", allowRateLimit: true);
 
-        private void SilentUpdateTimer_Elapsed(object? sender, ElapsedEventArgs e) => RunGuarded(ref isCheckingSilentUpdate, TryInstallSilentUpdate);
+        private void SilentUpdateTimer_Elapsed(object? sender, ElapsedEventArgs e) =>
+            RunGuarded(ref isCheckingSilentUpdate, TryInstallSilentUpdate, "TryInstallSilentUpdate", allowRateLimit: true);
 
         private void EvaluateAutoFold()
         {
@@ -236,7 +247,7 @@ namespace Ink_Canvas.Controllers.Automation
 
                 if (killedEasiNote)
                 {
-                    RunOnUiThread(onAutoKilledEasiNote, "Automation | Failed to notify after auto-killing EasiNote", logger);
+                    RunOnUiThread(onAutoKilledEasiNote, "NotifyAfterAutoKillEasiNote");
                 }
             }
             catch (Win32Exception ex)
@@ -271,7 +282,7 @@ namespace Ink_Canvas.Controllers.Automation
 
             string version = automationStateViewModel.PendingUpdateVersion;
             CancelSilentUpdate();
-            RunOnUiThread(() => installSilentUpdate(version), "Automation | Failed to install silent update on the UI thread", logger);
+            RunOnUiThread(() => installSilentUpdate(version), "InstallSilentUpdate");
         }
 
         private bool ShouldFoldForForegroundWindow(ForegroundWindowState foregroundWindow)
@@ -323,7 +334,7 @@ namespace Ink_Canvas.Controllers.Automation
             return timer;
         }
 
-        private static void RunGuarded(ref int guardFlag, Action action)
+        private void RunGuarded(ref int guardFlag, Action action, string operation, bool allowRateLimit)
         {
             if (Interlocked.Exchange(ref guardFlag, 1) == 1)
             {
@@ -333,6 +344,16 @@ namespace Ink_Canvas.Controllers.Automation
             try
             {
                 action();
+            }
+            catch (Exception ex)
+            {
+                errorHandler.Handle(ex, new AppErrorContext(nameof(AutomationController), operation)
+                {
+                    AllowRateLimit = allowRateLimit,
+                    RateLimitKey = allowRateLimit
+                        ? $"AutomationController|{operation}|{ex.GetType().FullName}"
+                        : null
+                });
             }
             finally
             {
@@ -371,7 +392,7 @@ namespace Ink_Canvas.Controllers.Automation
                 return;
             }
 
-            RunOnUiThread(action, failureContext, logger);
+            RunOnUiThread(action, failureContext);
         }
 
         private static string BuildTaskKillArguments(IEnumerable<string> imageNames) =>
@@ -387,35 +408,10 @@ namespace Ink_Canvas.Controllers.Automation
 
         private static bool IsProcessRunning(string processName) => Process.GetProcessesByName(processName).Length > 0;
 
-        private static void RunOnUiThread(Action action, string failureContext, IAppLogger logger)
+        private void RunOnUiThread(Action action, string operation)
         {
             ArgumentNullException.ThrowIfNull(action);
-            ArgumentNullException.ThrowIfNull(logger);
-
-            if (System.Windows.Application.Current?.Dispatcher is not { } dispatcher)
-            {
-                action();
-                return;
-            }
-
-            try
-            {
-                if (dispatcher.CheckAccess())
-                {
-                    action();
-                    return;
-                }
-
-                dispatcher.Invoke(action);
-            }
-            catch (TaskCanceledException ex)
-            {
-                logger.Error(ex, failureContext);
-            }
-            catch (InvalidOperationException ex)
-            {
-                logger.Error(ex, failureContext);
-            }
+            uiDispatchGuard.TryInvoke(action, new AppErrorContext(nameof(AutomationController), operation));
         }
 
         private readonly record struct ForegroundWindowState(

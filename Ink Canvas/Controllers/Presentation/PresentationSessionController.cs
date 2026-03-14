@@ -19,6 +19,9 @@ namespace Ink_Canvas.Controllers.Presentation
         private readonly Func<bool> isWpsSupportEnabled;
         private readonly Func<bool> shouldSkipDetection;
         private readonly IAppLogger logger;
+        private readonly AppErrorHandler errorHandler;
+        private readonly TaskGuard taskGuard;
+        private readonly UiDispatchGuard uiDispatchGuard;
         private readonly DynamicPresentationAccessor dynamicPresentationAccessor;
         private readonly RotPresentationDiscovery rotPresentationDiscovery;
         private readonly Timer monitorTimer;
@@ -36,17 +39,26 @@ namespace Ink_Canvas.Controllers.Presentation
             PresentationSessionViewModel presentationSessionViewModel,
             Func<bool> isWpsSupportEnabled,
             Func<bool> shouldSkipDetection,
-            IAppLogger logger)
+            IAppLogger logger,
+            AppErrorHandler errorHandler,
+            TaskGuard taskGuard,
+            UiDispatchGuard uiDispatchGuard)
         {
             ArgumentNullException.ThrowIfNull(presentationSessionViewModel);
             ArgumentNullException.ThrowIfNull(isWpsSupportEnabled);
             ArgumentNullException.ThrowIfNull(shouldSkipDetection);
             ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(errorHandler);
+            ArgumentNullException.ThrowIfNull(taskGuard);
+            ArgumentNullException.ThrowIfNull(uiDispatchGuard);
 
             this.presentationSessionViewModel = presentationSessionViewModel;
             this.isWpsSupportEnabled = isWpsSupportEnabled;
             this.shouldSkipDetection = shouldSkipDetection;
             this.logger = logger.ForCategory(nameof(PresentationSessionController));
+            this.errorHandler = errorHandler;
+            this.taskGuard = taskGuard;
+            this.uiDispatchGuard = uiDispatchGuard;
             dynamicPresentationAccessor = new DynamicPresentationAccessor(this.logger);
             rotPresentationDiscovery = new RotPresentationDiscovery(dynamicPresentationAccessor, this.logger);
 
@@ -88,31 +100,45 @@ namespace Ink_Canvas.Controllers.Presentation
         }
 
         public bool TryGoToSlide(int slideNumber) =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryGoToSlide(boundApplicationObject, slideNumber);
+            TryExecuteUserPresentationAction(
+                "GoToSlide",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryGoToSlide(boundApplicationObject, slideNumber));
 
         public bool TryGoToPreviousSlide() =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryGoToPreviousSlide(boundApplicationObject);
+            TryExecuteUserPresentationAction(
+                "GoToPreviousSlide",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryGoToPreviousSlide(boundApplicationObject));
 
         public bool TryGoToNextSlide() =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryGoToNextSlide(boundApplicationObject);
+            TryExecuteUserPresentationAction(
+                "GoToNextSlide",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryGoToNextSlide(boundApplicationObject));
 
         public bool TryExitSlideShow() =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryExitSlideShow(boundApplicationObject);
+            TryExecuteUserPresentationAction(
+                "ExitSlideShow",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryExitSlideShow(boundApplicationObject));
 
         public bool TryShowSlideNavigation() =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryShowSlideNavigation(boundApplicationObject);
+            TryExecuteUserPresentationAction(
+                "ShowSlideNavigation",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryShowSlideNavigation(boundApplicationObject));
 
         public bool HasHiddenSlides() =>
             boundApplicationObject != null && dynamicPresentationAccessor.HasHiddenSlides(boundApplicationObject);
 
         public bool TryUnhideHiddenSlides() =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryUnhideHiddenSlides(boundApplicationObject);
+            TryExecuteUserPresentationAction(
+                "UnhideHiddenSlides",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryUnhideHiddenSlides(boundApplicationObject));
 
         public bool HasAutomaticAdvance() =>
             boundApplicationObject != null && dynamicPresentationAccessor.HasAutomaticAdvance(boundApplicationObject);
 
         public bool TryDisableAutomaticAdvance() =>
-            boundApplicationObject != null && dynamicPresentationAccessor.TryDisableAutomaticAdvance(boundApplicationObject);
+            TryExecuteUserPresentationAction(
+                "DisableAutomaticAdvance",
+                () => boundApplicationObject != null && dynamicPresentationAccessor.TryDisableAutomaticAdvance(boundApplicationObject));
 
         private void MonitorTimer_Elapsed(object? sender, ElapsedEventArgs e) => QueueImmediateDetection();
 
@@ -129,7 +155,12 @@ namespace Ink_Canvas.Controllers.Presentation
                 return;
             }
 
-            _ = Task.Run(ProcessDetectionQueue);
+            taskGuard.Forget(
+                Task.Run(ProcessDetectionQueue),
+                new AppErrorContext(nameof(PresentationSessionController), "ProcessDetectionQueue")
+                {
+                    AllowRateLimit = true
+                });
         }
 
         private void ProcessDetectionQueue()
@@ -165,15 +196,15 @@ namespace Ink_Canvas.Controllers.Presentation
             }
             catch (COMException ex)
             {
-                logger.Error(ex, "Presentation Session | Detection failed during COM access");
+                errorHandler.Handle(ex, CreateDetectionErrorContext("TryMonitorSession"));
             }
             catch (InvalidOperationException ex)
             {
-                logger.Error(ex, "Presentation Session | Detection failed due to invalid state");
+                errorHandler.Handle(ex, CreateDetectionErrorContext("TryMonitorSession"));
             }
             catch (ArgumentException ex)
             {
-                logger.Error(ex, "Presentation Session | Detection failed due to invalid arguments");
+                errorHandler.Handle(ex, CreateDetectionErrorContext("TryMonitorSession"));
             }
         }
 
@@ -259,7 +290,7 @@ namespace Ink_Canvas.Controllers.Presentation
             PresentationRuntimeState previousState = publishedState;
             publishedState = newState;
 
-            RunOnUiThread(() =>
+            uiDispatchGuard.TryInvoke(() =>
             {
                 if (!IsMonitoringEnabled() && newState.IsConnected)
                 {
@@ -268,7 +299,10 @@ namespace Ink_Canvas.Controllers.Presentation
 
                 ApplyViewModelState(newState);
                 PublishTransitionEvents(previousState, newState);
-            }, "Presentation Session | Failed to publish session state");
+            }, new AppErrorContext(nameof(PresentationSessionController), "PublishState")
+            {
+                AllowRateLimit = true
+            });
         }
 
         private void ApplyViewModelState(PresentationRuntimeState newState)
@@ -475,35 +509,41 @@ namespace Ink_Canvas.Controllers.Presentation
             return timer;
         }
 
-        private void RunOnUiThread(Action action, string failureContext)
+        private bool TryExecuteUserPresentationAction(string operation, Func<bool> action)
         {
             ArgumentNullException.ThrowIfNull(action);
 
-            if (System.Windows.Application.Current?.Dispatcher is not { } dispatcher)
-            {
-                action();
-                return;
-            }
-
             try
             {
-                if (dispatcher.CheckAccess())
+                bool succeeded = action();
+                if (!succeeded)
                 {
-                    action();
-                    return;
+                    logger.Error($"Presentation Session | {operation} failed.");
                 }
 
-                dispatcher.Invoke(action);
+                return succeeded;
             }
-            catch (TaskCanceledException ex)
+            catch (COMException ex)
             {
-                logger.Error(ex, failureContext);
+                errorHandler.Handle(ex, new AppErrorContext(nameof(PresentationSessionController), operation));
             }
             catch (InvalidOperationException ex)
             {
-                logger.Error(ex, failureContext);
+                errorHandler.Handle(ex, new AppErrorContext(nameof(PresentationSessionController), operation));
             }
+            catch (ArgumentException ex)
+            {
+                errorHandler.Handle(ex, new AppErrorContext(nameof(PresentationSessionController), operation));
+            }
+
+            return false;
         }
+
+        private static AppErrorContext CreateDetectionErrorContext(string operation) =>
+            new(nameof(PresentationSessionController), operation)
+            {
+                AllowRateLimit = true
+            };
     }
 }
 

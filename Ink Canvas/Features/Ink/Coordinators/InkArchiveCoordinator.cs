@@ -12,17 +12,20 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         private readonly InkHistoryCoordinator historyCoordinator;
         private readonly InkArchiveService archiveService;
         private readonly IAppLogger logger;
+        private readonly AppErrorHandler errorHandler;
 
         public InkArchiveCoordinator(
             IInkArchiveHost host,
             InkHistoryCoordinator historyCoordinator,
             InkArchiveService archiveService,
-            IAppLogger logger)
+            IAppLogger logger,
+            AppErrorHandler errorHandler)
         {
             this.host = host ?? throw new ArgumentNullException(nameof(host));
             this.historyCoordinator = historyCoordinator ?? throw new ArgumentNullException(nameof(historyCoordinator));
             this.archiveService = archiveService ?? throw new ArgumentNullException(nameof(archiveService));
             this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkArchiveCoordinator));
+            this.errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
         public void SaveCurrentCanvas(bool showNotice, bool saveByUser)
@@ -133,8 +136,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
         private void HandleFailure(Exception exception, string context, string notification)
         {
-            host.ShowArchiveNotification(notification);
-            logger.Error(exception, context);
+            errorHandler.Handle(exception, new AppErrorContext(nameof(InkArchiveCoordinator), context)
+            {
+                ShouldNotifyUser = true,
+                UserMessage = notification
+            });
         }
     }
 }

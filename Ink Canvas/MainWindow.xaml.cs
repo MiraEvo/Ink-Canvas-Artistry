@@ -19,6 +19,9 @@ namespace Ink_Canvas
     {
         private readonly FileAppLogger appLogger;
         private readonly IAppLogger mainWindowLogger;
+        private readonly AppErrorHandler errorHandler;
+        private readonly TaskGuard taskGuard;
+        private readonly UiDispatchGuard uiDispatchGuard;
         private readonly AutoUpdateHelper autoUpdateHelper;
         private readonly DelAutoSavedFiles autoSavedFilesCleaner;
         private readonly InkDependencyCacheService inkDependencyCacheService;
@@ -27,9 +30,13 @@ namespace Ink_Canvas
 
         public MainWindow()
         {
-            appLogger = (Application.Current as App)?.Logger
-                ?? throw new InvalidOperationException("App logger is not available.");
+            App app = Application.Current as App
+                ?? throw new InvalidOperationException("App services are not available.");
+            appLogger = app.Logger;
             mainWindowLogger = appLogger.ForCategory(nameof(MainWindow));
+            errorHandler = app.ErrorHandler;
+            taskGuard = app.TaskGuard;
+            uiDispatchGuard = app.UiDispatchGuard;
             autoUpdateHelper = new AutoUpdateHelper(appLogger);
             autoSavedFilesCleaner = new DelAutoSavedFiles(appLogger);
             inkDependencyCacheService = new InkDependencyCacheService(appLogger);
@@ -39,6 +46,7 @@ namespace Ink_Canvas
                 处于 PPT 放映内：Presentation.IsSlideShowRunning
             */
             InitializeComponent();
+            errorHandler.RegisterNotificationSink(message => ShowNotificationAsync(message));
             InitializeMvvm();
 
             BlackboardLeftSide.Visibility = Visibility.Collapsed;

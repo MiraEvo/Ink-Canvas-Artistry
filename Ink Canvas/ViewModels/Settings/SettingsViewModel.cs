@@ -50,6 +50,8 @@ namespace Ink_Canvas.ViewModels.Settings
 
         public event Action<string?>? ReloadRequested;
 
+        public event Action<string>? SettingsSaveFailed;
+
         public SettingsModel Model => settings;
 
         public void Load(SettingsModel loadedSettings, bool isRunAtStartup)
@@ -715,7 +717,17 @@ namespace Ink_Canvas.ViewModels.Settings
             }
         }
 
-        private void PersistSettings() => settingsService.Save(settings);
+        private void PersistSettings()
+        {
+            try
+            {
+                settingsService.Save(settings);
+            }
+            catch (SettingsSaveException)
+            {
+                SettingsSaveFailed?.Invoke("设置未保存成功，当前修改可能不会在下次启动时保留。");
+            }
+        }
     }
 }
 

@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
 
@@ -22,6 +23,12 @@ namespace Ink_Canvas
 
         public FileAppLogger Logger { get; }
 
+        public AppErrorHandler ErrorHandler { get; }
+
+        public TaskGuard TaskGuard { get; }
+
+        public UiDispatchGuard UiDispatchGuard { get; }
+
         public App()
         {
             Logger = new FileAppLogger(new LogOptions
@@ -33,15 +40,45 @@ namespace Ink_Canvas
                 RetainedArchiveCount = 5
             });
             appLogger = Logger.ForCategory(nameof(App));
+            ErrorHandler = new AppErrorHandler(appLogger);
+            TaskGuard = new TaskGuard(ErrorHandler);
+            UiDispatchGuard = new UiDispatchGuard(ErrorHandler);
             Startup += App_Startup;
             DispatcherUnhandledException += App_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
         }
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
-            Ink_Canvas.MainWindow.ShowNewMessage("抱歉，出现未预期的异常，可能导致 Ink Canvas 画板运行不稳定。\n建议保存墨迹后重启应用。", true);
-            appLogger.Error(e.Exception, force: true);
+            ErrorHandler.Handle(
+                e.Exception,
+                new AppErrorContext(nameof(App), "DispatcherUnhandledException")
+                {
+                    Severity = AppErrorSeverity.Fatal,
+                    IsFatal = true,
+                    ShouldNotifyUser = true,
+                    UserMessage = "抱歉，程序发生未处理异常。建议重启应用后再继续使用。"
+                });
             e.Handled = true;
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception exception = e.ExceptionObject as Exception
+                ?? new InvalidOperationException("A non-exception object was raised as an unhandled exception.");
+            ErrorHandler.HandleCurrentDomainException(exception, "AppDomain.CurrentDomain.UnhandledException");
+        }
+
+        private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            ErrorHandler.Handle(
+                e.Exception.GetBaseException(),
+                new AppErrorContext(nameof(App), "TaskScheduler.UnobservedTaskException")
+                {
+                    AllowRateLimit = true
+                });
+            e.SetObserved();
         }
 
         private void App_Startup(object sender, StartupEventArgs e)

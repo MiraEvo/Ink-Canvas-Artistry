@@ -53,7 +53,10 @@ namespace Ink_Canvas
 
         void IShellUiHost.ApplySelectionToolModeVisuals() => ApplySelectionToolModeCore();
 
-        void IShellUiHost.CompleteBlackboardTransition() => _ = CompleteBlackboardTransitionAsync();
+        void IShellUiHost.CompleteBlackboardTransition() =>
+            taskGuard.Forget(
+                CompleteBlackboardTransitionAsync(),
+                new AppErrorContext(nameof(MainWindow), "CompleteBlackboardTransition"));
 
         void IShellUiHost.ApplyShellThemeRefresh() => ApplyShellThemeRefresh();
 
@@ -118,11 +121,17 @@ namespace Ink_Canvas
             if (!isFloatingBarFolded)
             {
                 HideSubPanels("cursor", true);
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(50);
-                    await Dispatcher.InvokeAsync(ViewboxFloatingBarMarginAnimation);
-                });
+                taskGuard.Forget(
+                    Task.Run(async () =>
+                    {
+                        await Task.Delay(50);
+                        await Dispatcher.InvokeAsync(ViewboxFloatingBarMarginAnimation);
+                    }),
+                    new AppErrorContext(nameof(MainWindow), "ApplyCursorToolModeCore")
+                    {
+                        AllowRateLimit = true,
+                        RateLimitKey = "MainWindow|ApplyCursorToolModeCore"
+                    });
             }
         }
 

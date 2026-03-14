@@ -27,7 +27,9 @@ namespace Ink_Canvas
                 automationExperienceCoordinator.HandleRequestUnfoldFloatingBar,
                 automationExperienceCoordinator.HandleAutoKilledEasiNote,
                 automationExperienceCoordinator.HandleInstallSilentUpdate,
-                appLogger);
+                appLogger,
+                errorHandler,
+                uiDispatchGuard);
 
             hotkeyController = new HotkeyController(
                 automationExperienceCoordinator.HandleExitPresentation,
@@ -68,27 +70,21 @@ namespace Ink_Canvas
 
         bool IAutomationUiHost.CanInstallSilentUpdate()
         {
-            try
-            {
-                return Dispatcher.CheckAccess()
-                    ? Topmost && inkCanvas.Strokes.Count == 0
-                    : Dispatcher.Invoke(() => Topmost && inkCanvas.Strokes.Count == 0);
-            }
-            catch (TaskCanceledException ex)
-            {
-                mainWindowLogger.Error(ex, "Automation | Dispatcher call was canceled while checking silent update readiness");
-                return false;
-            }
-            catch (InvalidOperationException ex)
-            {
-                mainWindowLogger.Error(ex, "Automation | Dispatcher call failed while checking silent update readiness");
-                return false;
-            }
+            return uiDispatchGuard.Invoke(
+                () => Topmost && inkCanvas.Strokes.Count == 0,
+                false,
+                new AppErrorContext(nameof(MainWindow), "CanInstallSilentUpdate"));
         }
 
-        void IAutomationUiHost.RequestFoldFloatingBar() => _ = toolbarExperienceCoordinator.HandleFoldFloatingBarAsync(false);
+        void IAutomationUiHost.RequestFoldFloatingBar() =>
+            taskGuard.Forget(
+                toolbarExperienceCoordinator.HandleFoldFloatingBarAsync(false),
+                new AppErrorContext(nameof(MainWindow), "RequestFoldFloatingBar"));
 
-        void IAutomationUiHost.RequestUnfoldFloatingBar() => _ = toolbarExperienceCoordinator.HandleUnfoldFloatingBarAsync(false);
+        void IAutomationUiHost.RequestUnfoldFloatingBar() =>
+            taskGuard.Forget(
+                toolbarExperienceCoordinator.HandleUnfoldFloatingBarAsync(false),
+                new AppErrorContext(nameof(MainWindow), "RequestUnfoldFloatingBar"));
 
         void IAutomationUiHost.EndPresentation() => BtnPPTSlideShowEnd_Click(null, null);
 
@@ -100,7 +96,10 @@ namespace Ink_Canvas
 
         void IAutomationUiHost.ActivatePenTool() => toolbarExperienceCoordinator.HandlePenRequested();
 
-        void IAutomationUiHost.ActivateCursorTool() => _ = toolbarExperienceCoordinator.HandleCursorRequestedAsync();
+        void IAutomationUiHost.ActivateCursorTool() =>
+            taskGuard.Forget(
+                toolbarExperienceCoordinator.HandleCursorRequestedAsync(),
+                new AppErrorContext(nameof(MainWindow), "ActivateCursorTool"));
 
         void IAutomationUiHost.ToggleBlackboard() => toolbarExperienceCoordinator.HandleToggleBlackboardRequested();
 

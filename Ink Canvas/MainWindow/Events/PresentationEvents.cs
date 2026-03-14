@@ -91,7 +91,10 @@ namespace Ink_Canvas
                 mainWindowViewModel.Presentation,
                 () => Settings.PowerPointSettings.IsSupportWPS,
                 () => IsShowingRestoreHiddenSlidesWindow,
-                appLogger);
+                appLogger,
+                errorHandler,
+                taskGuard,
+                uiDispatchGuard);
             presentationExperienceCoordinator = new PresentationExperienceCoordinator(
                 presentationSessionController!,
                 mainWindowViewModel.Settings,

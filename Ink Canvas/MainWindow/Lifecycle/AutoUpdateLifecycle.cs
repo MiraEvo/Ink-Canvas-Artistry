@@ -1,11 +1,23 @@
-﻿using Ink_Canvas.Helpers;
+using Ink_Canvas.Helpers;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        private async void AutoUpdate()
+        private void AutoUpdate()
+        {
+            taskGuard.Forget(
+                AutoUpdateAsync(),
+                new AppErrorContext(nameof(MainWindow), "AutoUpdate")
+                {
+                    AllowRateLimit = true,
+                    RateLimitKey = "MainWindow|AutoUpdate"
+                });
+        }
+
+        private async Task AutoUpdateAsync()
         {
             string? availableLatestVersion = await autoUpdateHelper.CheckForUpdates();
 
