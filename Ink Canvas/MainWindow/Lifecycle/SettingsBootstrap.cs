@@ -107,6 +107,7 @@ namespace Ink_Canvas
         {
             try
             {
+                inkArchiveService.MigrateLegacyArchiveDirectories(Settings.Automation.AutoSavedStrokesLocation);
                 inkDependencyCacheService.InitializeSession(Settings.Automation.AutoSavedStrokesLocation);
             }
             catch (IOException ex)

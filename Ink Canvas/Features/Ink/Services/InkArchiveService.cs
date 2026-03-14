@@ -55,6 +55,38 @@ namespace Ink_Canvas.Features.Ink.Services
                 PathSafetyHelper.NormalizeLeafName(fileName, "InkArchive.icart"));
         }
 
+        public void MigrateLegacyArchiveDirectories(string rootDirectory)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
+            if (!Directory.Exists(rootDirectory))
+            {
+                return;
+            }
+
+            foreach (string legacyParentPath in Directory.GetDirectories(rootDirectory))
+            {
+                string legacyParentName = Path.GetFileName(legacyParentPath).TrimEnd();
+                if (!string.Equals(legacyParentName, "Auto Saved -", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(legacyParentName, "User Saved -", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                foreach ((string childName, string targetDirectoryName) in GetLegacyArchiveDirectoryMappings(legacyParentName))
+                {
+                    string legacyChildPath = Path.Join(legacyParentPath, childName);
+                    string targetDirectoryPath = PathSafetyHelper.ResolveRelativePath(rootDirectory, targetDirectoryName);
+                    if (Directory.Exists(legacyChildPath))
+                    {
+                        MigrateDirectoryContents(legacyChildPath, targetDirectoryPath);
+                        TryDeleteDirectoryIfEmpty(legacyChildPath);
+                    }
+                }
+
+                TryDeleteDirectoryIfEmpty(legacyParentPath);
+            }
+        }
+
         public void SaveArchive(string filePath, InkCanvas inkCanvas)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -487,6 +519,56 @@ namespace Ink_Canvas.Features.Ink.Services
                 or SecurityException
                 or UnauthorizedAccessException
                 or XmlException;
+        }
+
+        private void MigrateDirectoryContents(string sourceDirectoryPath, string targetDirectoryPath)
+        {
+            Directory.CreateDirectory(targetDirectoryPath);
+
+            foreach (string sourceFilePath in Directory.GetFiles(sourceDirectoryPath))
+            {
+                string targetFilePath = PathSafetyHelper.ResolveRelativePath(
+                    targetDirectoryPath,
+                    PathSafetyHelper.NormalizeLeafName(Path.GetFileName(sourceFilePath), "archive.icart"));
+                if (File.Exists(targetFilePath))
+                {
+                    logger.Error($"Archive Storage | Skipped legacy file migration because target already exists: {targetFilePath}");
+                    continue;
+                }
+
+                File.Move(sourceFilePath, targetFilePath);
+            }
+
+            foreach (string sourceSubDirectoryPath in Directory.GetDirectories(sourceDirectoryPath))
+            {
+                string targetSubDirectoryPath = PathSafetyHelper.ResolveRelativePath(
+                    targetDirectoryPath,
+                    PathSafetyHelper.NormalizeLeafName(Path.GetFileName(sourceSubDirectoryPath), "archive"));
+                MigrateDirectoryContents(sourceSubDirectoryPath, targetSubDirectoryPath);
+                TryDeleteDirectoryIfEmpty(sourceSubDirectoryPath);
+            }
+        }
+
+        private void TryDeleteDirectoryIfEmpty(string directoryPath)
+        {
+            if (!Directory.Exists(directoryPath))
+            {
+                return;
+            }
+
+            if (Directory.EnumerateFileSystemEntries(directoryPath).Any())
+            {
+                return;
+            }
+
+            Directory.Delete(directoryPath, recursive: false);
+        }
+
+        private static IEnumerable<(string ChildName, string TargetDirectoryName)> GetLegacyArchiveDirectoryMappings(string legacyParentName)
+        {
+            string normalizedParentName = legacyParentName.TrimEnd();
+            yield return ("Annotation Strokes", normalizedParentName + " Annotation Strokes");
+            yield return ("BlackBoard Strokes", normalizedParentName + " BlackBoard Strokes");
         }
     }
 }
