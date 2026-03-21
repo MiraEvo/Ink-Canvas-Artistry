@@ -206,6 +206,7 @@ namespace Ink_Canvas
         {
             StopPresentationMonitoring();
             DisposeAutomationControllers();
+            inkEngineCoordinator?.Dispose();
             inkDependencyCacheService.CleanupCurrentSessions();
             mainWindowLogger.Event("Ink Canvas closed");
         }

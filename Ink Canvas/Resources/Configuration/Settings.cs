@@ -48,6 +48,12 @@ namespace Ink_Canvas
 
         [JsonProperty("hyperbolaAsymptoteOption")]
         public OptionalOperation HyperbolaAsymptoteOption { get; set; } = OptionalOperation.Ask;
+
+        [JsonProperty("inkBackend")]
+        public string InkBackend { get; set; } = InkRuntimeDefaults.InkBackendSkiaV1;
+
+        [JsonProperty("archiveWriteFormat")]
+        public string ArchiveWriteFormat { get; set; } = InkRuntimeDefaults.ArchiveWriteFormatV4;
     }
 
     public enum OptionalOperation
@@ -304,12 +310,27 @@ namespace Ink_Canvas
 
         [JsonProperty("isSecondConfimeWhenShutdownApp")]
         public bool IsSecondConfimeWhenShutdownApp { get; set; } = false;
+
+        [JsonProperty("inkEngineEmergencyFallback")]
+        public bool InkEngineEmergencyFallback { get; set; } = false;
+
+        [JsonProperty("inkBackendOverride")]
+        public string? InkBackendOverride { get; set; }
+
+        [JsonProperty("recognizerOverride")]
+        public string? RecognizerOverride { get; set; }
+
+        [JsonProperty("archiveWriteFormatOverride")]
+        public string? ArchiveWriteFormatOverride { get; set; }
     }
 
     public class InkToShape
     {
         [JsonProperty("isInkToShapeEnabled")]
         public bool IsInkToShapeEnabled { get; set; } = true;
+
+        [JsonProperty("recognizerVersion")]
+        public string RecognizerVersion { get; set; } = InkRuntimeDefaults.RecognizerV2;
     }
 
     public class RandSettings {
@@ -317,5 +338,17 @@ namespace Ink_Canvas
         public int PeopleCount { get; set; } = 60;
         [JsonProperty("isNotRepeatName")]
         public bool IsNotRepeatName { get; set; } = false;
+    }
+
+    public static class InkRuntimeDefaults
+    {
+        public const string InkBackendLegacy = "Legacy";
+        public const string InkBackendSkiaV1 = "SkiaV1";
+
+        public const string RecognizerV1 = "V1";
+        public const string RecognizerV2 = "V2";
+
+        public const string ArchiveWriteFormatV3 = "V3";
+        public const string ArchiveWriteFormatV4 = "V4";
     }
 }

@@ -1,5 +1,6 @@
 namespace Ink_Canvas.Services.Settings
 {
+    using Ink_Canvas.Features.Ink.Services;
     using SettingsModel = global::Ink_Canvas.Settings;
 
     public static class SettingsDefaults
@@ -83,6 +84,8 @@ namespace Ink_Canvas.Services.Settings
             settings.Canvas.HideStrokeWhenSelecting = false;
             settings.Canvas.UsingWhiteboard = false;
             settings.Canvas.HyperbolaAsymptoteOption = OptionalOperation.Yes;
+            settings.Canvas.InkBackend = InkRuntimeDefaults.InkBackendSkiaV1;
+            settings.Canvas.ArchiveWriteFormat = InkRuntimeDefaults.ArchiveWriteFormatV4;
 
             settings.Gesture.MatrixTransformCenterPoint = MatrixTransformCenterPointOptions.CanvasCenterPoint;
             settings.Gesture.AutoSwitchTwoFingerGesture = true;
@@ -92,6 +95,7 @@ namespace Ink_Canvas.Services.Settings
             settings.Gesture.IsEnableTwoFingerRotationOnSelection = true;
 
             settings.InkToShape.IsInkToShapeEnabled = true;
+            settings.InkToShape.RecognizerVersion = InkRuntimeDefaults.RecognizerV2;
 
             settings.Startup.IsEnableNibMode = false;
             settings.Startup.IsAutoUpdate = true;
@@ -120,6 +124,7 @@ namespace Ink_Canvas.Services.Settings
             settings.Automation.AutoSavedStrokesLocation ??= @"D:\Ink Canvas";
             settings.Startup.AutoUpdateWithSilenceStartTime ??= "00:00";
             settings.Startup.AutoUpdateWithSilenceEndTime ??= "00:00";
+            InkRuntimeSettingsResolver.Normalize(settings);
 
             return settings;
         }

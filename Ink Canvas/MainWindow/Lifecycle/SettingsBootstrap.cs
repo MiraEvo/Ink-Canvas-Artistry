@@ -30,6 +30,7 @@ namespace Ink_Canvas
             ApplyLegacyGestureSettings();
             ApplyLegacyCanvasSettings();
             settingsApplicationCoordinator.ApplyAll();
+            ApplyInkRuntimeRouting("SettingsLoaded");
         }
 
         private Settings LoadSettingsModel()

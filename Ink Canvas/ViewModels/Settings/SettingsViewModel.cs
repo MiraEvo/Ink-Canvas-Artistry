@@ -324,6 +324,24 @@ namespace Ink_Canvas.ViewModels.Settings
             set => SetSetting(settings.InkToShape.IsInkToShapeEnabled, value, v => settings.InkToShape.IsInkToShapeEnabled = v, nameof(IsEnableInkToShape));
         }
 
+        public string RecognizerVersion
+        {
+            get => settings.InkToShape.RecognizerVersion;
+            set => SetStringSetting(settings.InkToShape.RecognizerVersion, value, v => settings.InkToShape.RecognizerVersion = v, nameof(RecognizerVersion));
+        }
+
+        public string InkBackend
+        {
+            get => settings.Canvas.InkBackend;
+            set => SetStringSetting(settings.Canvas.InkBackend, value, v => settings.Canvas.InkBackend = v, nameof(InkBackend));
+        }
+
+        public string ArchiveWriteFormat
+        {
+            get => settings.Canvas.ArchiveWriteFormat;
+            set => SetStringSetting(settings.Canvas.ArchiveWriteFormat, value, v => settings.Canvas.ArchiveWriteFormat = v, nameof(ArchiveWriteFormat));
+        }
+
         public bool IsSpecialScreen
         {
             get => settings.Advanced.IsSpecialScreen;
@@ -388,6 +406,30 @@ namespace Ink_Canvas.ViewModels.Settings
         {
             get => settings.Advanced.IsSecondConfimeWhenShutdownApp;
             set => SetSetting(settings.Advanced.IsSecondConfimeWhenShutdownApp, value, v => settings.Advanced.IsSecondConfimeWhenShutdownApp = v, nameof(IsSecondConfimeWhenShutdownApp));
+        }
+
+        public bool InkEngineEmergencyFallback
+        {
+            get => settings.Advanced.InkEngineEmergencyFallback;
+            set => SetSetting(settings.Advanced.InkEngineEmergencyFallback, value, v => settings.Advanced.InkEngineEmergencyFallback = v, nameof(InkEngineEmergencyFallback));
+        }
+
+        public string InkBackendOverride
+        {
+            get => settings.Advanced.InkBackendOverride ?? string.Empty;
+            set => SetStringSetting(settings.Advanced.InkBackendOverride ?? string.Empty, value, v => settings.Advanced.InkBackendOverride = v, nameof(InkBackendOverride));
+        }
+
+        public string RecognizerOverride
+        {
+            get => settings.Advanced.RecognizerOverride ?? string.Empty;
+            set => SetStringSetting(settings.Advanced.RecognizerOverride ?? string.Empty, value, v => settings.Advanced.RecognizerOverride = v, nameof(RecognizerOverride));
+        }
+
+        public string ArchiveWriteFormatOverride
+        {
+            get => settings.Advanced.ArchiveWriteFormatOverride ?? string.Empty;
+            set => SetStringSetting(settings.Advanced.ArchiveWriteFormatOverride ?? string.Empty, value, v => settings.Advanced.ArchiveWriteFormatOverride = v, nameof(ArchiveWriteFormatOverride));
         }
 
         public bool IsEnableEdgeGestureUtil

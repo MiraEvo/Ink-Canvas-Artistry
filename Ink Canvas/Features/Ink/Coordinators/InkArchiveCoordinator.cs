@@ -1,4 +1,5 @@
 using Ink_Canvas.Services.Logging;
+using Ink_Canvas.Features.Ink.Services;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -41,8 +42,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                     host.IsBlackboardMode,
                     host.CurrentWhiteboardIndex,
                     host.InkCanvas.Strokes.Count);
-
-                archiveService.SaveArchive(filePath, host.InkCanvas);
+                InkRuntimeRouting runtimeRouting = InkRuntimeSettingsResolver.Resolve(host.Settings);
+                InkArchiveWriteFormat writeFormat = runtimeRouting.ArchiveWriteFormat == InkArchiveWriteFormatKind.V3
+                    ? InkArchiveWriteFormat.V3Legacy
+                    : InkArchiveWriteFormat.V4StrokeModel;
+                archiveService.SaveArchive(filePath, host.InkCanvas, writeFormat);
                 if (showNotice)
                 {
                     host.ShowArchiveNotification("墨迹及元素成功保存至 " + filePath);
@@ -89,6 +93,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 InkArchiveLoadResult result = archiveService.LoadArchive(filePath, host.Settings.Automation.AutoSavedStrokesLocation);
                 host.ClearCanvasForArchiveImport();
                 historyCoordinator.ClearHistory();
+                historyCoordinator.RecordSessionReset("ArchiveLoaded");
                 host.ReplaceCanvasContent(result.Strokes, result.Elements);
                 host.EnsureCanvasVisibleAfterArchiveImport();
                 if (result.HasWarnings)

@@ -1,6 +1,10 @@
 using Ink_Canvas.Controllers;
+using Ink_Canvas.Features.Ink.Engine;
 using Ink_Canvas.Features.Ink;
 using Ink_Canvas.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
 
@@ -9,6 +13,7 @@ namespace Ink_Canvas
     public partial class MainWindow
     {
         private IInkCanvasInteractionController inkCanvasInteractionController;
+        private InkEngineCoordinator inkEngineCoordinator = null!;
 
         private InputStateViewModel InputStateViewModel => mainWindowViewModel.Input;
 
@@ -44,8 +49,61 @@ namespace Ink_Canvas
 
         private void InitializeInputController()
         {
-            inkCanvasInteractionController = new InkCanvasInteractionController(inkCanvas, mainWindowViewModel.Input, appLogger);
+            inkEngineCoordinator = new InkEngineCoordinator(appLogger);
+            inkEngineCoordinator.AttachHost(this, new InkEngineOptions(EnablePressure: true, EnableRealtimePreview: true));
+            inkCanvasInteractionController = new InkCanvasInteractionController(
+                inkCanvas,
+                mainWindowViewModel.Input,
+                appLogger,
+                sample => inkEngineCoordinator.ProcessInput(sample));
             InitializeInkFeature();
+        }
+
+        private void ApplyInkRuntimeRouting(string reason)
+        {
+            if (inkEngineCoordinator == null)
+            {
+                return;
+            }
+
+            InkRuntimeRoutingChange change = inkEngineCoordinator.ApplySettings(Settings);
+            if (change.BackendChanged)
+            {
+                inkHistoryCoordinator?.ClearHistory();
+                inkHistoryCoordinator?.RecordSessionReset(reason);
+            }
+        }
+
+        private void EmitTouchInputSample(System.Windows.Input.TouchEventArgs e, InkInputPhase phase)
+        {
+            if (inkEngineCoordinator == null)
+            {
+                return;
+            }
+
+            Point position = e.GetTouchPoint(inkCanvas).Position;
+            inkEngineCoordinator.ProcessInput(new InkInputSample(
+                e.TouchDevice.Id,
+                InkInputDeviceKind.Touch,
+                phase,
+                DateTimeOffset.UtcNow,
+                [new InkInputPoint((float)position.X, (float)position.Y, 0.5f)]));
+        }
+
+        private void EmitMouseInputSample(System.Windows.Input.MouseEventArgs e, InkInputPhase phase)
+        {
+            if (inkEngineCoordinator == null)
+            {
+                return;
+            }
+
+            Point position = e.GetPosition(inkCanvas);
+            inkEngineCoordinator.ProcessInput(new InkInputSample(
+                -1,
+                InkInputDeviceKind.Mouse,
+                phase,
+                DateTimeOffset.UtcNow,
+                [new InkInputPoint((float)position.X, (float)position.Y, 0.5f)]));
         }
 
         private void ApplyCanvasInteractionMode(CanvasInteractionMode mode, double pointEraserDiameter = 50, double strokeEraserDiameter = 5)

@@ -19,10 +19,12 @@ namespace Ink_Canvas.Features.Ink.Services
     internal sealed class InkArchiveService
     {
         private const string ManifestEntryName = "manifest.json";
-        private const string StrokesEntryName = "strokes.icstk";
+        private const string LegacyStrokesEntryName = "strokes.icstk";
+        private const string V2StrokesEntryName = "strokes.v2.bin";
         private const string ElementsEntryName = "elements.xaml";
         private const string ArchiveFormatName = "icart";
-        private const int CurrentArchiveVersion = 3;
+        private const int LegacyArchiveVersion = 3;
+        private const int CurrentArchiveVersion = 4;
 
         private static readonly byte[] ZipMagicHeader = [0x50, 0x4B, 0x03, 0x04];
 
@@ -87,22 +89,24 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        public void SaveArchive(string filePath, InkCanvas inkCanvas)
+        public void SaveArchive(string filePath, InkCanvas inkCanvas, InkArchiveWriteFormat writeFormat = InkArchiveWriteFormat.V4StrokeModel)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             ArgumentNullException.ThrowIfNull(inkCanvas);
 
             Directory.CreateDirectory(PathSafetyHelper.GetRequiredDirectoryPath(filePath));
             using FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
-            SaveArchive(fileStream, inkCanvas);
+            SaveArchive(fileStream, inkCanvas, writeFormat);
         }
 
-        public void SaveArchive(Stream outputStream, InkCanvas inkCanvas)
+        public void SaveArchive(Stream outputStream, InkCanvas inkCanvas, InkArchiveWriteFormat writeFormat = InkArchiveWriteFormat.V4StrokeModel)
         {
             ArgumentNullException.ThrowIfNull(outputStream);
             ArgumentNullException.ThrowIfNull(inkCanvas);
 
-            byte[] strokesBytes = SerializeStrokeCollection(inkCanvas.Strokes);
+            byte[] strokesBytes = writeFormat == InkArchiveWriteFormat.V4StrokeModel
+                ? InkStrokeV2Serializer.Serialize(inkCanvas.Strokes)
+                : SerializeStrokeCollection(inkCanvas.Strokes);
             using MemoryStream elementsStream = new();
             InkCanvasElementsSaveResult elementsSaveResult = elementsSerializer.SaveElements(inkCanvas, elementsStream);
             byte[] elementsBytes = elementsStream.ToArray();
@@ -111,7 +115,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 ? InkArchiveSnapshotMode.FullCanvas
                 : InkArchiveSnapshotMode.StrokesOnly;
 
-            SaveArchive(outputStream, strokesBytes, mode, elementsBytes, elementsSaveResult.DependencyFilePaths);
+            SaveArchive(outputStream, strokesBytes, mode, elementsBytes, elementsSaveResult.DependencyFilePaths, writeFormat);
         }
 
         public void SaveStrokeOnlyArchive(string filePath, byte[] strokeData)
@@ -127,7 +131,7 @@ namespace Ink_Canvas.Features.Ink.Services
         {
             ArgumentNullException.ThrowIfNull(outputStream);
             ValidateStrokeData(strokeData);
-            SaveArchive(outputStream, strokeData, InkArchiveSnapshotMode.StrokesOnly, null, []);
+            SaveArchive(outputStream, strokeData, InkArchiveSnapshotMode.StrokesOnly, null, [], InkArchiveWriteFormat.V3Legacy);
         }
 
         public InkArchiveLoadResult LoadArchive(string filePath, string dependencyRoot)
@@ -154,8 +158,7 @@ namespace Ink_Canvas.Features.Ink.Services
 
             ZipArchiveEntry? manifestEntry = archive.GetEntry(ManifestEntryName);
             InkArchiveManifest? manifest = manifestEntry != null ? ReadAndValidateManifest(manifestEntry) : null;
-            byte[] strokesBytes = ReadStrokeBytes(archive, manifest);
-            StrokeCollection strokes = CreateStrokeCollection(strokesBytes);
+            StrokeCollection strokes = ReadStrokeCollection(archive, manifest);
 
             if (dependencyRoot == null)
             {
@@ -187,7 +190,8 @@ namespace Ink_Canvas.Features.Ink.Services
             using ZipArchive archive = new(bufferedStream, ZipArchiveMode.Read, leaveOpen: true);
             ZipArchiveEntry? manifestEntry = archive.GetEntry(ManifestEntryName);
             InkArchiveManifest? manifest = manifestEntry != null ? ReadAndValidateManifest(manifestEntry) : null;
-            return ReadStrokeBytes(archive, manifest);
+            StrokeCollection strokes = ReadStrokeCollection(archive, manifest);
+            return SerializeStrokeCollection(strokes);
         }
 
         private void SaveArchive(
@@ -195,14 +199,15 @@ namespace Ink_Canvas.Features.Ink.Services
             byte[] strokesBytes,
             InkArchiveSnapshotMode mode,
             byte[]? elementsBytes,
-            IReadOnlyList<string> dependencyFilePaths)
+            IReadOnlyList<string> dependencyFilePaths,
+            InkArchiveWriteFormat writeFormat)
         {
             ValidateStrokeData(strokesBytes);
 
-            InkArchiveManifest manifest = CreateManifest(mode);
+            InkArchiveManifest manifest = CreateManifest(mode, writeFormat);
             using ZipArchive archive = new(outputStream, ZipArchiveMode.Create, leaveOpen: true);
             WriteManifest(archive, manifest);
-            WriteEntry(archive, StrokesEntryName, strokesBytes);
+            WriteEntry(archive, manifest.Entries.Strokes, strokesBytes);
 
             if (mode == InkArchiveSnapshotMode.FullCanvas && elementsBytes is { Length: > 0 })
             {
@@ -388,15 +393,16 @@ namespace Ink_Canvas.Features.Ink.Services
             return Convert.ToHexString(hash).ToLowerInvariant();
         }
 
-        private static InkArchiveManifest CreateManifest(InkArchiveSnapshotMode mode)
+        private static InkArchiveManifest CreateManifest(InkArchiveSnapshotMode mode, InkArchiveWriteFormat writeFormat)
         {
+            bool isV4 = writeFormat == InkArchiveWriteFormat.V4StrokeModel;
             return new InkArchiveManifest(
                 ArchiveFormatName,
-                CurrentArchiveVersion,
+                isV4 ? CurrentArchiveVersion : LegacyArchiveVersion,
                 ToModeValue(mode),
                 DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
                 new InkArchiveManifestEntries(
-                    StrokesEntryName,
+                    isV4 ? V2StrokesEntryName : LegacyStrokesEntryName,
                     mode == InkArchiveSnapshotMode.FullCanvas ? ElementsEntryName : null,
                     mode == InkArchiveSnapshotMode.FullCanvas ? InkCanvasArchiveElementsSerializer.DependencyFolderName + "/" : null));
         }
@@ -444,7 +450,8 @@ namespace Ink_Canvas.Features.Ink.Services
                     throw new InvalidDataException($"Unsupported archive format '{manifest.Format}'.");
                 }
 
-                if (manifest.Version != CurrentArchiveVersion)
+                if (manifest.Version != CurrentArchiveVersion
+                    && manifest.Version != LegacyArchiveVersion)
                 {
                     throw new InvalidDataException($"Unsupported archive version '{manifest.Version}'.");
                 }
@@ -456,7 +463,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 }
 
                 if (manifest.Entries == null
-                    || !string.Equals(manifest.Entries.Strokes, StrokesEntryName, StringComparison.Ordinal)
+                    || !IsSupportedStrokesEntryName(manifest.Entries.Strokes)
                     || (string.IsNullOrWhiteSpace(manifest.CreatedAtUtc)))
                 {
                     throw new InvalidDataException("Archive manifest is incomplete.");
@@ -490,13 +497,42 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
+        private static bool IsSupportedStrokesEntryName(string? strokeEntryName)
+        {
+            if (string.IsNullOrWhiteSpace(strokeEntryName))
+            {
+                return false;
+            }
+
+            return string.Equals(strokeEntryName, LegacyStrokesEntryName, StringComparison.Ordinal)
+                || string.Equals(strokeEntryName, V2StrokesEntryName, StringComparison.Ordinal);
+        }
+
+        private static StrokeCollection ReadStrokeCollection(ZipArchive archive, InkArchiveManifest? manifest)
+        {
+            byte[] strokeBytes = ReadStrokeBytes(archive, manifest);
+            if (IsV2StrokePayload(manifest))
+            {
+                return InkStrokeV2Serializer.Deserialize(strokeBytes);
+            }
+
+            return CreateStrokeCollection(strokeBytes);
+        }
+
+        private static bool IsV2StrokePayload(InkArchiveManifest? manifest)
+        {
+            return manifest != null
+                && manifest.Version >= CurrentArchiveVersion
+                && string.Equals(manifest.Entries.Strokes, V2StrokesEntryName, StringComparison.Ordinal);
+        }
+
         private static byte[] ReadStrokeBytes(ZipArchive archive, InkArchiveManifest? manifest)
         {
-            string strokeEntryName = manifest?.Entries.Strokes ?? StrokesEntryName;
+            string strokeEntryName = manifest?.Entries.Strokes ?? LegacyStrokesEntryName;
             ZipArchiveEntry? strokesEntry = archive.GetEntry(strokeEntryName);
             if (strokesEntry == null)
             {
-                throw new InvalidDataException("Ink archive is missing strokes.icstk.");
+                throw new InvalidDataException($"Ink archive is missing {strokeEntryName}.");
             }
 
             using Stream strokesStream = strokesEntry.Open();

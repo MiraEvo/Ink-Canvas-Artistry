@@ -299,6 +299,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             TimeMachine.ClearStrokeHistory();
         }
 
+        public void RecordSessionReset(string reason)
+        {
+            TimeMachine.RecordSessionReset(reason);
+        }
+
         public void SaveCurrentPageHistory(bool isBackupMain = false)
         {
             var history = TimeMachine.ExportTimeMachineHistory();

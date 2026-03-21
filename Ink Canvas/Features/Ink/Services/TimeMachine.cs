@@ -10,6 +10,7 @@ namespace Ink_Canvas.Features.Ink.Services
     public class TimeMachine
     {
         private readonly List<TimeMachineHistory> _currentStrokeHistory = new List<TimeMachineHistory>();
+        private readonly List<TimeMachineAuditEvent> _auditTrail = new List<TimeMachineAuditEvent>();
 
         private int _currentIndex = -1;
 
@@ -108,6 +109,16 @@ namespace Ink_Canvas.Features.Ink.Services
             return _currentStrokeHistory.ToArray();
         }
 
+        public IReadOnlyList<TimeMachineAuditEvent> ExportAuditTrail()
+        {
+            return _auditTrail.ToArray();
+        }
+
+        public void RecordSessionReset(string reason)
+        {
+            _auditTrail.Add(new TimeMachineAuditEvent(DateTimeOffset.UtcNow, "SessionReset", reason ?? string.Empty));
+        }
+
         public bool ImportTimeMachineHistory(TimeMachineHistory[] sourceHistory)
         {
             _currentStrokeHistory.Clear();
@@ -184,6 +195,20 @@ namespace Ink_Canvas.Features.Ink.Services
         Manipulation,
         DrawingAttributes,
         ElementInsert
+    }
+
+    public sealed class TimeMachineAuditEvent
+    {
+        public TimeMachineAuditEvent(DateTimeOffset timestampUtc, string eventType, string reason)
+        {
+            TimestampUtc = timestampUtc;
+            EventType = eventType ?? string.Empty;
+            Reason = reason ?? string.Empty;
+        }
+
+        public DateTimeOffset TimestampUtc { get; }
+        public string EventType { get; }
+        public string Reason { get; }
     }
 }
 

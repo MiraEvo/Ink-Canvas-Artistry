@@ -1,4 +1,5 @@
 using Ink_Canvas.ViewModels;
+using Ink_Canvas.Features.Ink.Services;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,7 +15,9 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         private readonly SettingsViewModel settingsViewModel;
         private readonly ShellViewModel shellViewModel;
         private readonly InputStateViewModel inputStateViewModel;
-        private readonly InkRecognitionService inkRecognitionService;
+        private readonly IInkRecognitionEngine recognitionEngineV1;
+        private readonly IInkRecognitionEngine recognitionEngineV2;
+        private readonly Func<InkRecognizerKind> recognizerResolver;
 
         public InkInteractionCoordinator(
             IInkCanvasHost inkCanvasHost,
@@ -22,14 +25,18 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             SettingsViewModel settingsViewModel,
             ShellViewModel shellViewModel,
             InputStateViewModel inputStateViewModel,
-            InkRecognitionService inkRecognitionService)
+            IInkRecognitionEngine recognitionEngineV1,
+            IInkRecognitionEngine recognitionEngineV2,
+            Func<InkRecognizerKind> recognizerResolver)
         {
             this.inkCanvasHost = inkCanvasHost ?? throw new ArgumentNullException(nameof(inkCanvasHost));
             this.inkHistoryHost = inkHistoryHost ?? throw new ArgumentNullException(nameof(inkHistoryHost));
             this.settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             this.shellViewModel = shellViewModel ?? throw new ArgumentNullException(nameof(shellViewModel));
             this.inputStateViewModel = inputStateViewModel ?? throw new ArgumentNullException(nameof(inputStateViewModel));
-            this.inkRecognitionService = inkRecognitionService ?? throw new ArgumentNullException(nameof(inkRecognitionService));
+            this.recognitionEngineV1 = recognitionEngineV1 ?? throw new ArgumentNullException(nameof(recognitionEngineV1));
+            this.recognitionEngineV2 = recognitionEngineV2 ?? throw new ArgumentNullException(nameof(recognitionEngineV2));
+            this.recognizerResolver = recognizerResolver ?? throw new ArgumentNullException(nameof(recognizerResolver));
         }
 
         public ShapeDrawingSessionState ShapeDrawingState { get; } = new();
@@ -154,7 +161,10 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
         public void HandleStrokeCollected(InkCanvasStrokeCollectedEventArgs e)
         {
-            inkRecognitionService.HandleStrokeCollected(inkCanvasHost, inkHistoryHost, ShapeDrawingState, e);
+            IInkRecognitionEngine engine = recognizerResolver() == InkRecognizerKind.V1
+                ? recognitionEngineV1
+                : recognitionEngineV2;
+            engine.HandleStrokeCollected(inkCanvasHost, inkHistoryHost, ShapeDrawingState, e);
         }
 
         private void PrepareForShapeDrawing()

@@ -1,4 +1,5 @@
 using Ink_Canvas.Helpers;
+using Ink_Canvas.Features.Ink.Engine;
 using iNKORE.UI.WPF.Modern.Controls;
 using System;
 using System.Collections.Generic;
@@ -212,6 +213,7 @@ namespace Ink_Canvas
 
         private void inkCanvas_TouchMove(object sender, TouchEventArgs e)
         {
+            EmitTouchInputSample(e, InkInputPhase.Move);
             if (isSingleFingerDragMode) return;
             if (drawingShapeMode != 0)
             {
@@ -867,6 +869,7 @@ namespace Ink_Canvas
 
         private void Main_Grid_TouchUp(object sender, TouchEventArgs e)
         {
+            EmitTouchInputSample(e, InkInputPhase.End);
             inkCanvas_MouseUp(sender, null);
             if (dec.Count == 0)
             {
@@ -1084,6 +1087,7 @@ namespace Ink_Canvas
 
         private void inkCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            EmitMouseInputSample(e, InkInputPhase.Begin);
             isMouseDown = true;
             if (NeedUpdateIniP())
             {
@@ -1093,6 +1097,7 @@ namespace Ink_Canvas
 
         private void inkCanvas_MouseMove(object sender, MouseEventArgs e)
         {
+            EmitMouseInputSample(e, InkInputPhase.Move);
             if (isMouseDown)
             {
                 MouseTouchMove(e.GetPosition(inkCanvas));
@@ -1101,6 +1106,11 @@ namespace Ink_Canvas
 
         private void inkCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (e != null)
+            {
+                EmitMouseInputSample(e, InkInputPhase.End);
+            }
+
             if (drawingShapeMode == 5)
             {
                 Circle circle = new Circle(new Point(), 0, lastTempStroke);

@@ -11,6 +11,12 @@ namespace Ink_Canvas.Features.Ink.Services
         FullCanvas
     }
 
+    internal enum InkArchiveWriteFormat
+    {
+        V3Legacy = 3,
+        V4StrokeModel = 4
+    }
+
     internal sealed record InkArchiveManifestEntries(
         string Strokes,
         string? Elements,

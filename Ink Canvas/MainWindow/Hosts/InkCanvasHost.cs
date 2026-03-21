@@ -1,4 +1,5 @@
 using Ink_Canvas.Features.Ink;
+using Ink_Canvas.Features.Ink.Services;
 using Ink_Canvas.ViewModels;
 using Microsoft.Win32;
 using System;
@@ -24,7 +25,8 @@ namespace Ink_Canvas
         private readonly InkPaletteSessionState inkPaletteFallbackState = new();
         private readonly InkHistorySessionState inkHistoryFallbackState = new();
         private readonly WhiteboardSessionState whiteboardFallbackState = new();
-        private InkRecognitionService inkRecognitionService = null!;
+        private IInkRecognitionEngine recognitionEngineV1 = null!;
+        private IInkRecognitionEngine recognitionEngineV2 = null!;
         private InkInteractionCoordinator inkInteractionCoordinator = null!;
         private InkGestureCoordinator inkGestureCoordinator = null!;
         private InkPaletteCoordinator inkPaletteCoordinator = null!;
@@ -48,14 +50,17 @@ namespace Ink_Canvas
         {
             inkArchiveService = new InkArchiveService(appLogger, inkDependencyCacheService);
             inkHistoryCoordinator = new InkHistoryCoordinator(this, appLogger);
-            inkRecognitionService = new InkRecognitionService(appLogger);
+            recognitionEngineV1 = new InkRecognitionV1Engine(appLogger);
+            recognitionEngineV2 = new InkRecognitionV2Engine(appLogger);
             inkInteractionCoordinator = new InkInteractionCoordinator(
                 this,
                 this,
                 mainWindowViewModel.Settings,
                 mainWindowViewModel.Shell,
                 mainWindowViewModel.Input,
-                inkRecognitionService);
+                recognitionEngineV1,
+                recognitionEngineV2,
+                () => inkEngineCoordinator?.CurrentRouting.Recognizer ?? InkRecognizerKind.V2);
             inkGestureCoordinator = new InkGestureCoordinator(this);
             inkPaletteCoordinator = new InkPaletteCoordinator(this);
             inkArchiveCoordinator = new InkArchiveCoordinator(this, inkHistoryCoordinator, inkArchiveService, appLogger, errorHandler);

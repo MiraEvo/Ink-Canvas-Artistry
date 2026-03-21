@@ -1,5 +1,6 @@
 using Ink_Canvas.Features.Settings;
 using Ink_Canvas.Features.Shell;
+using Ink_Canvas.Features.Ink.Services;
 using Ink_Canvas.Helpers;
 using Ink_Canvas.Services;
 using Ink_Canvas.ViewModels;
@@ -184,6 +185,10 @@ namespace Ink_Canvas
             }
 
             settingsApplicationCoordinator.ApplyPropertyChange(e.PropertyName);
+            if (InkRuntimeSettingsResolver.IsRoutingSettingProperty(e.PropertyName))
+            {
+                ApplyInkRuntimeRouting($"SettingsChanged:{e.PropertyName}");
+            }
         }
 
         private Binding CreateTwoWayBinding(string path)

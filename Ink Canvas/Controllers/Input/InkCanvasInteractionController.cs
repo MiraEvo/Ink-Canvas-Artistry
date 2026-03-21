@@ -1,8 +1,10 @@
 using Ink_Canvas.Services.Logging;
 using Ink_Canvas.ViewModels;
 using Ink_Canvas.Features.Ink.Services;
+using Ink_Canvas.Features.Ink.Engine;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +13,7 @@ using System.Windows.Input;
 
 namespace Ink_Canvas.Controllers.Input
 {
-    public sealed class InkCanvasInteractionController : IInkCanvasInteractionController
+    internal sealed class InkCanvasInteractionController : IInkCanvasInteractionController
     {
         private readonly InkCanvas inkCanvas;
         private readonly InputStateViewModel inputStateViewModel;
@@ -19,12 +21,18 @@ namespace Ink_Canvas.Controllers.Input
         private readonly Dictionary<int, StrokeVisual> strokeVisualList = new Dictionary<int, StrokeVisual>();
         private readonly Dictionary<int, VisualCanvas> visualCanvasList = new Dictionary<int, VisualCanvas>();
         private readonly IAppLogger logger;
+        private readonly Action<InkInputSample>? inputSampleSink;
 
-        public InkCanvasInteractionController(InkCanvas inkCanvas, InputStateViewModel inputStateViewModel, IAppLogger logger)
+        public InkCanvasInteractionController(
+            InkCanvas inkCanvas,
+            InputStateViewModel inputStateViewModel,
+            IAppLogger logger,
+            Action<InkInputSample>? inputSampleSink = null)
         {
             this.inkCanvas = inkCanvas;
             this.inputStateViewModel = inputStateViewModel;
             this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkCanvasInteractionController));
+            this.inputSampleSink = inputSampleSink;
         }
 
         public void ConfigureMultiTouchMode(
@@ -128,6 +136,7 @@ namespace Ink_Canvas.Controllers.Input
             }
 
             hideSubPanels?.Invoke();
+            EmitTouchSample(e, InkInputPhase.Begin);
 
             double touchBoundsWidth = e.GetTouchPoint(null).Bounds.Width;
             if ((!NumericComparisonHelper.IsNearlyZero(settings.Advanced.TouchMultiplier) || !settings.Advanced.IsSpecialScreen)
@@ -171,6 +180,8 @@ namespace Ink_Canvas.Controllers.Input
 
         public void HandleStylusDown(StylusDownEventArgs e)
         {
+            EmitStylusSample(e, InkInputPhase.Begin, inkCanvas);
+
             if (inkCanvas.EditingMode == InkCanvasEditingMode.EraseByPoint
                 || inkCanvas.EditingMode == InkCanvasEditingMode.EraseByStroke
                 || inkCanvas.EditingMode == InkCanvasEditingMode.Select)
@@ -183,6 +194,8 @@ namespace Ink_Canvas.Controllers.Input
 
         public void HandleStylusMove(StylusEventArgs e, IInputElement relativeTo)
         {
+            EmitStylusSample(e, InkInputPhase.Move, relativeTo);
+
             if (GetTouchDownMode(e.StylusDevice.Id) != InkCanvasEditingMode.None)
             {
                 return;
@@ -217,6 +230,8 @@ namespace Ink_Canvas.Controllers.Input
 
         public async Task HandleStylusUpAsync(StylusEventArgs e, Action<Stroke> onStrokeCollected)
         {
+            EmitStylusSample(e, InkInputPhase.End, inkCanvas);
+
             if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus)
             {
                 try
@@ -292,6 +307,62 @@ namespace Ink_Canvas.Controllers.Input
             }
 
             return null;
+        }
+
+        private void EmitStylusSample(StylusEventArgs e, InkInputPhase phase, IInputElement relativeTo)
+        {
+            if (inputSampleSink == null)
+            {
+                return;
+            }
+
+            StylusPointCollection stylusPoints;
+            try
+            {
+                stylusPoints = e.GetStylusPoints(relativeTo);
+            }
+            catch (ArgumentException)
+            {
+                return;
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+
+            List<InkInputPoint> points = new(stylusPoints.Count);
+            foreach (StylusPoint stylusPoint in stylusPoints)
+            {
+                points.Add(new InkInputPoint((float)stylusPoint.X, (float)stylusPoint.Y, stylusPoint.PressureFactor));
+            }
+
+            InkInputDeviceKind deviceKind = e.StylusDevice.TabletDevice.Type == TabletDeviceType.Stylus
+                ? InkInputDeviceKind.Stylus
+                : InkInputDeviceKind.Touch;
+
+            inputSampleSink(new InkInputSample(
+                e.StylusDevice.Id,
+                deviceKind,
+                phase,
+                DateTimeOffset.UtcNow,
+                points));
+        }
+
+        private void EmitTouchSample(TouchEventArgs e, InkInputPhase phase)
+        {
+            if (inputSampleSink == null)
+            {
+                return;
+            }
+
+            TouchPoint touchPoint = e.GetTouchPoint(inkCanvas);
+            InkInputPoint point = new((float)touchPoint.Position.X, (float)touchPoint.Position.Y, 0.5f);
+            inputSampleSink(new InkInputSample(
+                e.TouchDevice.Id,
+                InkInputDeviceKind.Touch,
+                phase,
+                DateTimeOffset.UtcNow,
+                [point]));
         }
     }
 }
