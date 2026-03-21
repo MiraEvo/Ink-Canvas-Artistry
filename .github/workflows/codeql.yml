@@ -1,4 +1,4 @@
-name: CodeQL
+﻿name: CodeQL
 
 on:
   push:
@@ -36,11 +36,12 @@ jobs:
           dependency-caching: true
 
       - name: Restore
-        run: dotnet restore "Ink Canvas.sln"
+        run: dotnet restore "Ink Canvas Modern.sln"
 
       - name: Build
         run: |
-          dotnet build "Ink Canvas.sln" -c Release -p:Platform="Any CPU" --no-restore /p:GitFlow="Github Action"
+          dotnet build "Ink Canvas Modern.sln" -c Release -p:Platform="Any CPU" --no-restore /p:GitFlow="Github Action"
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
+

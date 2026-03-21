@@ -65,13 +65,15 @@ namespace Ink_Canvas
             {
                 StartAutomaticallyDel("InkCanvas");
                 StartAutomaticallyDel("Ink Canvas Annotation");
-                StartAutomaticallyCreate("Ink Canvas Artistry");
+                StartAutomaticallyDel("Ink Canvas Artistry");
+                StartAutomaticallyCreate("Ink Canvas Modern");
             }
             else
             {
                 StartAutomaticallyDel("InkCanvas");
                 StartAutomaticallyDel("Ink Canvas Annotation");
                 StartAutomaticallyDel("Ink Canvas Artistry");
+                StartAutomaticallyDel("Ink Canvas Modern");
             }
         }
 

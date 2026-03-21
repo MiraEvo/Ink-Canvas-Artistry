@@ -1,12 +1,12 @@
-<div align="center">
+﻿<div align="center">
 
 <!--
-[![LOGO](Images/Ink%20Canvas%20Artistry.png?raw=true "LOGO")](# "LOGO")
+[![LOGO](Images/Ink%20Canvas%20Modern.png?raw=true "LOGO")](# "LOGO")
 -->
 
-<img src="./Images/Ink Canvas Artistry.png" style="width:96px;"/>
+<img src="./Images/Ink Canvas Modern.png" style="width:96px;"/>
 
-# Ink Canvas Artistry
+# Ink Canvas Modern
 [![UPSTREAM](https://img.shields.io/badge/UpStream-WXRIW%2FInk--Canvas-red.svg "LICENSE")](https://github.com/WXRIW/Ink-Canvas)
 [![LICENSE](https://img.shields.io/badge/License-GPL--3.0-red.svg "LICENSE")](./LICENSE)
 [![Latest release](https://img.shields.io/github/release/InkCanvas/Ink-Canvas-Artistry.svg?style=shield)](https://github.com/InkCanvas/Ink-Canvas-Artistry/releases/latest)

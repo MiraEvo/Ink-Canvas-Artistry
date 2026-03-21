@@ -1,4 +1,4 @@
-using Ink_Canvas.Features.Ink;
+﻿using Ink_Canvas.Features.Ink;
 using Ink_Canvas.Features.Ink.Services;
 using Ink_Canvas.ViewModels;
 using Microsoft.Win32;
@@ -685,7 +685,7 @@ namespace Ink_Canvas
             {
                 InitialDirectory = Settings.Automation.AutoSavedStrokesLocation,
                 Title = "打开墨迹文件",
-                Filter = "Ink Canvas Files (*.icart;*.icstk)|*.icart;*.icstk|Ink Canvas Artistry Files (*.icart)|*.icart|Ink Canvas Stroke Files (*.icstk)|*.icstk"
+                Filter = "Ink Canvas Modern Files (*.icart;*.icstk)|*.icart;*.icstk|Ink Canvas Modern Archive Files (*.icart)|*.icart|Ink Canvas Stroke Files (*.icstk)|*.icstk"
             };
 
             return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
@@ -861,3 +861,4 @@ namespace Ink_Canvas
         }
     }
 }
+

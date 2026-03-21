@@ -1,4 +1,4 @@
-using Ink_Canvas.Services.Logging;
+﻿using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -124,7 +124,7 @@ namespace Ink_Canvas.Services.ErrorHandling
                     return;
                 }
 
-                MessageBox.Show(fatalMessage, "Ink Canvas Artistry", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(fatalMessage, "Ink Canvas Modern", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             catch (Exception ex)
             {
@@ -145,7 +145,7 @@ namespace Ink_Canvas.Services.ErrorHandling
 
         private static void ShowFatalMessageAndShutdown(Application application, string fatalMessage)
         {
-            MessageBox.Show(fatalMessage, "Ink Canvas Artistry", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(fatalMessage, "Ink Canvas Modern", MessageBoxButton.OK, MessageBoxImage.Error);
             application.Shutdown();
         }
 
@@ -202,3 +202,4 @@ namespace Ink_Canvas.Services.ErrorHandling
         }
     }
 }
+

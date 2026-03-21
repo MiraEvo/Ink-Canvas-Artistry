@@ -4,7 +4,7 @@
 		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
 		<OutputType>WinExe</OutputType>
 		<GenerateAssemblyInfo>False</GenerateAssemblyInfo>
-		<AssemblyName>Ink Canvas Artistry</AssemblyName>
+		<AssemblyName>Ink Canvas Modern</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>annotations</Nullable>
 		<UseWindowsForms>true</UseWindowsForms>
@@ -12,7 +12,7 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-		<ApplicationIcon>Resources\Brand\Ink Canvas Artistry.ico</ApplicationIcon>
+		<ApplicationIcon>Resources\Brand\Ink Canvas Modern.ico</ApplicationIcon>
 		<Platforms>AnyCPU;x86;x64;ARM64</Platforms>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<PlatformTarget>AnyCPU</PlatformTarget>
@@ -57,7 +57,7 @@
 		<Resource Include="Resources\Brand\DeveloperAvatars\STBBRD.png" />
 		<Resource Include="Resources\Brand\DeveloperAvatars\WXRIW.png" />
 		
-		<Resource Include="Resources\Brand\Ink Canvas Artistry.ico" />
+		<Resource Include="Resources\Brand\Ink Canvas Modern.ico" />
 		<Resource Include="Resources\Media\Fonts\Segoe Fluent Icons.ttf" />
 		<Resource Include="Resources\Media\IconsPng\check-box-background.png" />
 		<Resource Include="Resources\Media\IconsPng\checked-black.png" />
@@ -80,3 +80,4 @@
 	  </None>
 	</ItemGroup>
 </Project>
+

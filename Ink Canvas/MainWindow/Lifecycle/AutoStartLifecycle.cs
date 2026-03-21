@@ -16,7 +16,7 @@ namespace Ink_Canvas
             string safeExeName = Path.GetFileNameWithoutExtension(exeName);
             return PathSafetyHelper.ResolveRelativePath(
                 Environment.GetFolderPath(Environment.SpecialFolder.Startup),
-                PathSafetyHelper.NormalizeLeafName(safeExeName + ".lnk", "Ink Canvas Artistry.lnk"));
+                PathSafetyHelper.NormalizeLeafName(safeExeName + ".lnk", "Ink Canvas Modern.lnk"));
         }
 
         private static bool StartupEntryExists(string exeName)
@@ -97,22 +97,25 @@ namespace Ink_Canvas
         {
             bool hasLegacyRegistration = StartupEntryExists("InkCanvas")
                 || StartupEntryExists("Ink Canvas Annotation")
+                || StartupEntryExists("Ink Canvas Artistry")
                 || File.Exists(GetStartupShortcutPath("InkCanvas"))
-                || File.Exists(GetStartupShortcutPath("Ink Canvas Annotation"));
-            bool hasCurrentRegistration = StartupEntryExists("Ink Canvas Artistry")
+                || File.Exists(GetStartupShortcutPath("Ink Canvas Annotation"))
                 || File.Exists(GetStartupShortcutPath("Ink Canvas Artistry"));
+            bool hasCurrentRegistration = StartupEntryExists("Ink Canvas Modern")
+                || File.Exists(GetStartupShortcutPath("Ink Canvas Modern"));
 
             if (hasLegacyRegistration)
             {
                 StartAutomaticallyDel("InkCanvas");
                 StartAutomaticallyDel("Ink Canvas Annotation");
-                StartAutomaticallyCreate("Ink Canvas Artistry");
+                StartAutomaticallyDel("Ink Canvas Artistry");
+                StartAutomaticallyCreate("Ink Canvas Modern");
                 return true;
             }
 
             if (hasCurrentRegistration)
             {
-                StartAutomaticallyCreate("Ink Canvas Artistry");
+                StartAutomaticallyCreate("Ink Canvas Modern");
                 return true;
             }
 

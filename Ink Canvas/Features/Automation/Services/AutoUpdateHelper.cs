@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -26,7 +26,7 @@ namespace Ink_Canvas.Features.Automation.Services
         private static readonly TimeSpan DownloadRequestTimeout = TimeSpan.FromMinutes(5);
         private static readonly string updatesFolderPath = Path.Join(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Ink Canvas Artistry",
+            "Ink Canvas Modern",
             "AutoUpdate");
         private readonly IAppLogger logger;
 
@@ -372,7 +372,7 @@ namespace Ink_Canvas.Features.Automation.Services
             ResolvePathWithinUpdatesFolder($"DownloadV{version}Status.txt");
 
         private static string GetSetupFileName(string version) =>
-            $"Ink.Canvas.Artistry.V{ValidateVersionOrThrow(version)}.Setup.exe";
+            $"Ink.Canvas.Modern.V{ValidateVersionOrThrow(version)}.Setup.exe";
 
         private static string ValidateVersionOrThrow(string version)
         {
@@ -597,4 +597,5 @@ namespace Ink_Canvas.Features.Automation.Services
         }
     }
 }
+
 
