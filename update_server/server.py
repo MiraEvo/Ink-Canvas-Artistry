@@ -16,6 +16,28 @@ base_dir = os.path.abspath(os.path.dirname(__file__))
 update_dir = os.path.join(base_dir, UPDATE_FOLDER)
 version_file_path = os.path.join(base_dir, VERSION_FILE)
 
+
+def is_safe_update_filename(filename: str) -> bool:
+    normalized_filename = os.path.normpath(filename)
+    return bool(filename) and normalized_filename not in ("", ".") and not os.path.isabs(filename) and os.path.basename(normalized_filename) == normalized_filename
+
+
+def resolve_update_file(filename: str) -> str | None:
+    if not is_safe_update_filename(filename):
+        return None
+
+    normalized_filename = os.path.normpath(filename)
+
+    try:
+        for entry in os.scandir(update_dir):
+            if entry.is_file() and entry.name == normalized_filename:
+                return entry.path
+    except OSError as e:
+        logging.error(f"Could not enumerate update files: {e}")
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not read update directory.")
+
+    return None
+
 if not os.path.isdir(update_dir):
     logging.warning(f"Update directory '{update_dir}' not found. Creating it.")
     try:
@@ -56,19 +78,20 @@ async def get_version():
 async def download_file(filename: str):
     logging.info(f"Request received for /download/{filename}")
 
-    if ".." in filename or filename.startswith("/"):
+    normalized_filename = os.path.basename(os.path.normpath(filename))
+    if not is_safe_update_filename(filename):
         logging.warning(f"Attempted path traversal: {filename}")
         raise HTTPException(status_code=HTTP_400_BAD_REQUEST, detail="Invalid filename.")
 
-    file_path = os.path.join(update_dir, filename)
+    file_path = resolve_update_file(filename)
+    if file_path is None:
+        logging.error(f"File not found in update directory: {normalized_filename}")
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"File '{normalized_filename}' not found.")
+
     logging.info(f"Attempting to send file from path: {file_path}")
 
-    if not os.path.isfile(file_path):
-        logging.error(f"File not found: {file_path}")
-        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail=f"File '{filename}' not found.")
-
     try:
-        return FileResponse(path=file_path, filename=filename, media_type='application/octet-stream')
+        return FileResponse(path=file_path, filename=normalized_filename, media_type='application/octet-stream')
     except Exception as e:
         logging.error(f"Error serving file {filename}: {e}")
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail="Error serving file.")
