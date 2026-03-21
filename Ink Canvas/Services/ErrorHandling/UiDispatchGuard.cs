@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -13,6 +14,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             this.errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
         }
 
+        [SuppressMessage("Reliability", "cs/catch-of-all-exceptions", Justification = "CodeQL-AUDITED-ERROR-BOUNDARY: dispatcher invocation must report UI-boundary failures without crashing the caller flow.")]
         public bool TryInvoke(Action action, AppErrorContext context)
         {
             ArgumentNullException.ThrowIfNull(action);
@@ -52,6 +54,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             }
         }
 
+        [SuppressMessage("Reliability", "cs/catch-of-all-exceptions", Justification = "CodeQL-AUDITED-ERROR-BOUNDARY: dispatcher invocation must report UI-boundary failures without crashing the caller flow.")]
         public T Invoke<T>(Func<T> action, T fallback, AppErrorContext context)
         {
             ArgumentNullException.ThrowIfNull(action);

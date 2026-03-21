@@ -3,12 +3,14 @@ using Ink_Canvas.Helpers;
 using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required Win32/COM boundary; no managed alternative; owned by RotPresentationDiscovery.")]
     internal sealed partial class RotPresentationDiscovery
     {
         private const string PowerPointApplicationMoniker = "!{91493441-5A91-11CF-8700-00AA0060263B}";

@@ -39,7 +39,7 @@ namespace Ink_Canvas {
 
         public int TotalCount = 1;
         public int PeopleCount = 60;
-        public List<string> Names = new List<string>();
+        public List<string> Names = [];
 
         private void BorderBtnAdd_MouseUp(object sender, MouseButtonEventArgs e) {
             if (TotalCount >= PeopleCount) return;
@@ -163,27 +163,21 @@ namespace Ink_Canvas {
         private void ApplyThemeFromMainWindow()
         {
             Application application = Application.Current;
-            MainWindow mainWindow = application?.MainWindow as MainWindow;
-            if (mainWindow == null || application == null)
+            if (application?.MainWindow is not MainWindow mainWindow)
             {
                 return;
             }
 
-            string resourcePath;
-            if (mainWindow.GetMainWindowTheme() == "Light")
-            {
-                ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                resourcePath = "Resources/Styles/Window/Light-PopupWindow.xaml";
-            }
-            else
-            {
-                ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                resourcePath = "Resources/Styles/Window/Dark-PopupWindow.xaml";
-            }
+            bool isLightTheme = mainWindow.GetMainWindowTheme() == "Light";
+            ThemeManager.SetRequestedTheme(this, isLightTheme ? ElementTheme.Light : ElementTheme.Dark);
 
             ResourceDictionary resourceDictionary = new ResourceDictionary
             {
-                Source = new Uri(resourcePath, UriKind.Relative)
+                Source = new Uri(
+                    isLightTheme
+                        ? "Resources/Styles/Window/Light-PopupWindow.xaml"
+                        : "Resources/Styles/Window/Dark-PopupWindow.xaml",
+                    UriKind.Relative)
             };
             application.Resources.MergedDictionaries.Add(resourceDictionary);
         }

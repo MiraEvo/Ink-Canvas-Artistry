@@ -17,7 +17,8 @@ namespace Ink_Canvas.Services.System.Integration
     ///     ICC官網：<see href="https://icc.bliemhax.com"/>
     /// </para>
     /// </summary>
-    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "受限 Win32/COM 边界，无托管替代，调用已集中封装并受保护。")]
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required Win32/COM boundary; no managed alternative; owned by EdgeGestureUtil.")]
+    [SuppressMessage("Reliability", "cs/unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required Win32/COM boundary; no managed alternative; owned by EdgeGestureUtil.")]
     public static class EdgeGestureUtil
     {
         private static readonly Guid DISABLE_TOUCH_SCREEN = new("32CE38B2-2C9A-41B1-9BC5-B3784394AA44");

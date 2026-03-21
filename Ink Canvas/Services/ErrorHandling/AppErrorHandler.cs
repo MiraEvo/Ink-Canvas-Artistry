@@ -1,6 +1,7 @@
 ﻿using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
@@ -38,6 +39,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             notificationSink = sink ?? throw new ArgumentNullException(nameof(sink));
         }
 
+        [SuppressMessage("Reliability", "cs/catch-of-all-exceptions", Justification = "CodeQL-AUDITED-ERROR-BOUNDARY: notification delivery must not break downstream error reporting.")]
         public void NotifyUser(string message)
         {
             if (string.IsNullOrWhiteSpace(message))
@@ -94,6 +96,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             });
         }
 
+        [SuppressMessage("Reliability", "cs/catch-of-all-exceptions", Justification = "CodeQL-AUDITED-ERROR-BOUNDARY: fatal-error presentation must not prevent final shutdown handling.")]
         private void HandleFatal(Exception exception, AppErrorContext context)
         {
             LogException(exception, context, force: true);

@@ -19,22 +19,7 @@ namespace Ink_Canvas
         {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            Application? application = Application.Current;
-            if (application?.MainWindow is MainWindow mainWindow)
-            {
-                if (mainWindow.GetMainWindowTheme() == "Light")
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                    ResourceDictionary rd = new() { Source = new Uri("Resources/Styles/Window/Light-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-                else
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                    ResourceDictionary rd = new() { Source = new Uri("Resources/Styles/Window/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-            }
+            ApplyThemeFromMainWindow();
 
             timer.Elapsed += Timer_Elapsed;
             timer.Interval = 50;
@@ -400,6 +385,28 @@ namespace Ink_Canvas
         {
             if (e.LeftButton == MouseButtonState.Pressed)
                 DragMove();
+        }
+
+        private void ApplyThemeFromMainWindow()
+        {
+            Application? application = Application.Current;
+            if (application?.MainWindow is not MainWindow mainWindow)
+            {
+                return;
+            }
+
+            bool isLightTheme = mainWindow.GetMainWindowTheme() == "Light";
+            ThemeManager.SetRequestedTheme(this, isLightTheme ? ElementTheme.Light : ElementTheme.Dark);
+
+            ResourceDictionary resourceDictionary = new()
+            {
+                Source = new Uri(
+                    isLightTheme
+                        ? "Resources/Styles/Window/Light-PopupWindow.xaml"
+                        : "Resources/Styles/Window/Dark-PopupWindow.xaml",
+                    UriKind.Relative)
+            };
+            application.Resources.MergedDictionaries.Add(resourceDictionary);
         }
     }
 }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Timers;
@@ -334,6 +335,7 @@ namespace Ink_Canvas.Controllers.Automation
             return timer;
         }
 
+        [SuppressMessage("Reliability", "cs/catch-of-all-exceptions", Justification = "CodeQL-AUDITED-ERROR-BOUNDARY: timer callback guard must isolate automation loop failures and forward them into AppErrorHandler.")]
         private void RunGuarded(ref int guardFlag, Action action, string operation, bool allowRateLimit)
         {
             if (Interlocked.Exchange(ref guardFlag, 1) == 1)

@@ -3,12 +3,14 @@ using Microsoft.Office.Interop.PowerPoint;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using Ink_Canvas.Helpers;
 
 namespace Ink_Canvas.Controllers.Presentation
 {
+    [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required Win32/COM boundary; no managed alternative; owned by PresentationWindowLocator.")]
     internal static partial class PresentationWindowLocator
     {
         internal static PresentationProvider DetectProvider(string? presentationIdentity, string? applicationName)

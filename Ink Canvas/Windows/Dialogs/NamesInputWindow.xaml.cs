@@ -15,23 +15,7 @@ namespace Ink_Canvas
         {
             InitializeComponent();
             AnimationsHelper.ShowWithSlideFromBottomAndFade(this, 0.25);
-            Application application = Application.Current;
-            MainWindow mainWindow = application?.MainWindow as MainWindow;
-            if (mainWindow != null && application != null)
-            {
-                if (mainWindow.GetMainWindowTheme() == "Light")
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Window/Light-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-                else
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                    ResourceDictionary rd = new ResourceDictionary() { Source = new Uri("Resources/Styles/Window/Dark-PopupWindow.xaml", UriKind.Relative) };
-                    application.Resources.MergedDictionaries.Add(rd);
-                }
-            }
+            ApplyThemeFromMainWindow();
         }
 
         string originText = "";
@@ -60,6 +44,28 @@ namespace Ink_Canvas
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Close();
+        }
+
+        private void ApplyThemeFromMainWindow()
+        {
+            Application application = Application.Current;
+            if (application?.MainWindow is not MainWindow mainWindow)
+            {
+                return;
+            }
+
+            bool isLightTheme = mainWindow.GetMainWindowTheme() == "Light";
+            ThemeManager.SetRequestedTheme(this, isLightTheme ? ElementTheme.Light : ElementTheme.Dark);
+
+            ResourceDictionary resourceDictionary = new()
+            {
+                Source = new Uri(
+                    isLightTheme
+                        ? "Resources/Styles/Window/Light-PopupWindow.xaml"
+                        : "Resources/Styles/Window/Dark-PopupWindow.xaml",
+                    UriKind.Relative)
+            };
+            application.Resources.MergedDictionaries.Add(resourceDictionary);
         }
     }
 }

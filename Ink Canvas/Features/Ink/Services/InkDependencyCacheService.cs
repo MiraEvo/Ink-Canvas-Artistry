@@ -400,7 +400,7 @@ namespace Ink_Canvas.Features.Ink.Services
         {
             try
             {
-                Process process = Process.GetProcessById(processId);
+                using Process process = Process.GetProcessById(processId);
                 return !process.HasExited;
             }
             catch (ArgumentException)

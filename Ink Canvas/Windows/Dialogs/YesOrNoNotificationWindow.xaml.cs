@@ -15,40 +15,23 @@ namespace Ink_Canvas
             _noAction = noAction;
             InitializeComponent();
             Label.Text = text;
-            MainWindow mainWindow = Application.Current?.MainWindow as MainWindow;
-            if (mainWindow != null)
+            if (Application.Current?.MainWindow is MainWindow mainWindow)
             {
-                if (mainWindow.GetMainWindowTheme() == "Light")
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Light);
-                }
-                else
-                {
-                    ThemeManager.SetRequestedTheme(this, ElementTheme.Dark);
-                }
+                ThemeManager.SetRequestedTheme(
+                    this,
+                    mainWindow.GetMainWindowTheme() == "Light" ? ElementTheme.Light : ElementTheme.Dark);
             }
         }
 
         private void ButtonYes_Click(object sender, RoutedEventArgs e)
         {
-            if (_yesAction == null)
-            {
-                Close();
-                return;
-            }
-            _yesAction.Invoke();
+            _yesAction?.Invoke();
             Close();
-
         }
 
         private void ButtonNo_Click(object sender, RoutedEventArgs e)
         {
-            if (_noAction == null)
-            {
-                Close();
-                return;
-            }
-            _noAction.Invoke();
+            _noAction?.Invoke();
             Close();
         }
 

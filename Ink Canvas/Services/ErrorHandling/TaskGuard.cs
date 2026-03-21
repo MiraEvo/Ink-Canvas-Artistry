@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 
 namespace Ink_Canvas.Services.ErrorHandling
@@ -34,6 +35,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             }
         }
 
+        [SuppressMessage("Reliability", "cs/catch-of-all-exceptions", Justification = "CodeQL-AUDITED-ERROR-BOUNDARY: background task observation must forward task failures into AppErrorHandler.")]
         private async Task ObserveAsync(Task task, AppErrorContext context)
         {
             try
