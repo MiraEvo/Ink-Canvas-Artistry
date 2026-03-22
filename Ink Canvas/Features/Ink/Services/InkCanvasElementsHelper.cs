@@ -41,24 +41,29 @@ namespace Ink_Canvas.Features.Ink.Services
         {
             List<UIElement> clonedElements = new List<UIElement>();
             int key = 0;
-            foreach (UIElement element in inkCanvas.GetSelectedElements())
+            foreach (var cloneCandidate in inkCanvas.GetSelectedElements()
+                         .Cast<UIElement>()
+                         .Select(element => new
+                         {
+                             Element = element,
+                             FrameworkElement = CloneUIElement(element) as FrameworkElement
+                         })
+                         .Where(candidate => candidate.FrameworkElement != null))
             {
-                if (CloneUIElement(element) is FrameworkElement frameworkElement)
+                FrameworkElement frameworkElement = cloneCandidate.FrameworkElement!;
+                string timestamp = $"ele_{DateTime.Now:ddHHmmssfff}{key}";
+                frameworkElement.Name = timestamp;
+                ++key;
+                InkCanvas.SetLeft(frameworkElement, InkCanvas.GetLeft(cloneCandidate.Element));
+                InkCanvas.SetTop(frameworkElement, InkCanvas.GetTop(cloneCandidate.Element));
+                inkCanvas.Children.Add(frameworkElement);
+                clonedElements.Add(frameworkElement);
+                ElementsInitialHistory[frameworkElement.Name] = new ElementData
                 {
-                    string timestamp = $"ele_{DateTime.Now:ddHHmmssfff}{key}";
-                    frameworkElement.Name = timestamp;
-                    ++key;
-                    InkCanvas.SetLeft(frameworkElement, InkCanvas.GetLeft(element));
-                    InkCanvas.SetTop(frameworkElement, InkCanvas.GetTop(element));
-                    inkCanvas.Children.Add(frameworkElement);
-                    clonedElements.Add(frameworkElement);
-                    ElementsInitialHistory[frameworkElement.Name] = new ElementData
-                    {
-                        SetLeftData = InkCanvas.GetLeft(element),
-                        SetTopData = InkCanvas.GetTop(element),
-                        FrameworkElement = frameworkElement
-                    };
-                }
+                    SetLeftData = InkCanvas.GetLeft(cloneCandidate.Element),
+                    SetTopData = InkCanvas.GetTop(cloneCandidate.Element),
+                    FrameworkElement = frameworkElement
+                };
             }
             return clonedElements;
         }
@@ -67,17 +72,22 @@ namespace Ink_Canvas.Features.Ink.Services
         {
             List<UIElement> clonedElements = new List<UIElement>();
             int key = 0;
-            foreach (UIElement element in inkCanvas.GetSelectedElements())
+            foreach (var cloneCandidate in inkCanvas.GetSelectedElements()
+                         .Cast<UIElement>()
+                         .Select(element => new
+                         {
+                             Element = element,
+                             FrameworkElement = CloneUIElement(element) as FrameworkElement
+                         })
+                         .Where(candidate => candidate.FrameworkElement != null))
             {
-                if (CloneUIElement(element) is FrameworkElement frameworkElement)
-                {
-                    string timestamp = $"ele_{DateTime.Now:ddHHmmssfff}{key}";
-                    frameworkElement.Name = timestamp;
-                    ++key;
-                    InkCanvas.SetLeft(frameworkElement, InkCanvas.GetLeft(element));
-                    InkCanvas.SetTop(frameworkElement, InkCanvas.GetTop(element));
-                    clonedElements.Add(frameworkElement);
-                }
+                FrameworkElement frameworkElement = cloneCandidate.FrameworkElement!;
+                string timestamp = $"ele_{DateTime.Now:ddHHmmssfff}{key}";
+                frameworkElement.Name = timestamp;
+                ++key;
+                InkCanvas.SetLeft(frameworkElement, InkCanvas.GetLeft(cloneCandidate.Element));
+                InkCanvas.SetTop(frameworkElement, InkCanvas.GetTop(cloneCandidate.Element));
+                clonedElements.Add(frameworkElement);
             }
             return clonedElements;
         }

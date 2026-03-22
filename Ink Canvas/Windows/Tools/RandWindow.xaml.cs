@@ -122,18 +122,11 @@ namespace Ink_Canvas {
                 }
 
                 //Fix emtpy lines
-                foreach (string str in fileNames) {
-                    string s = str;
-                    //Make replacement
-                    foreach (string replace in replaces) {
-                        int separatorIndex = replace.IndexOf("-->", StringComparison.Ordinal);
-                        if (separatorIndex > 0 && s == replace.Substring(0, separatorIndex)) {
-                            s = replace.Substring(separatorIndex + 3);
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(s)) Names.Add(s);
-                }
+                Names = fileNames
+                    .Select(fileName => ApplyNameReplacements(fileName, replaces))
+                    .Where(static name => !string.IsNullOrEmpty(name))
+                    .Select(static name => name!)
+                    .ToList();
 
                 PeopleCount = Names.Count;
                 TextBlockPeopleCount.Text = PeopleCount.ToString();
@@ -191,6 +184,21 @@ namespace Ink_Canvas {
         private string GetOutputValue(int rand)
         {
             return Names.Count != 0 ? Names[rand - 1] : rand.ToString();
+        }
+
+        private static string ApplyNameReplacements(string originalName, IEnumerable<string> replacements)
+        {
+            string name = originalName;
+            foreach (string replace in replacements)
+            {
+                int separatorIndex = replace.IndexOf("-->", StringComparison.Ordinal);
+                if (separatorIndex > 0 && name == replace.Substring(0, separatorIndex))
+                {
+                    name = replace.Substring(separatorIndex + 3);
+                }
+            }
+
+            return name;
         }
 
         private void RenderOutputs(IReadOnlyList<string> outputs)

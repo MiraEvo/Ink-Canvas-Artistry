@@ -31,13 +31,11 @@ namespace Ink_Canvas.Features.Automation.Services
                     {
                         DateTime creationDate = File.GetCreationTime(filePath);
                         string fileExtension = Path.GetExtension(filePath);
-                        if (creationDate < DateTime.Now.AddDays(-daysThreshold))
+                        if (creationDate < DateTime.Now.AddDays(-daysThreshold)
+                            && (Array.Exists(extensionsToDel, ext => ext.Equals(fileExtension, StringComparison.OrdinalIgnoreCase))
+                                || Path.GetFileName(filePath).Equals("Position", StringComparison.OrdinalIgnoreCase)))
                         {
-                            if (Array.Exists(extensionsToDel, ext => ext.Equals(fileExtension, StringComparison.OrdinalIgnoreCase))
-                                || Path.GetFileName(filePath).Equals("Position", StringComparison.OrdinalIgnoreCase))
-                            {
-                                File.Delete(filePath);
-                            }
+                            File.Delete(filePath);
                         }
                     }
                 }

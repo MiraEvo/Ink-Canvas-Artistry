@@ -81,27 +81,22 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static NormalizedInkTrace? NormalizeInput(StrokeCollection strokes)
         {
-            List<List<Point>> strokePoints = [];
-            Rect? rawBounds = null;
+            List<List<Point>> strokePoints = strokes
+                .Cast<Stroke>()
+                .Select(CollectStrokePoints)
+                .Where(points => points.Count >= 2)
+                .ToList();
 
-            foreach (Stroke stroke in strokes)
-            {
-                List<Point> points = CollectStrokePoints(stroke);
-                if (points.Count < 2)
-                {
-                    continue;
-                }
-
-                strokePoints.Add(points);
-                rawBounds = rawBounds == null ? GetBounds(points) : Rect.Union(rawBounds.Value, GetBounds(points));
-            }
-
-            if (strokePoints.Count == 0 || rawBounds == null)
+            if (strokePoints.Count == 0)
             {
                 return null;
             }
 
-            double diagonal = GetDiagonal(rawBounds.Value);
+            Rect rawBounds = strokePoints
+                .Select(GetBounds)
+                .Aggregate(static (left, right) => Rect.Union(left, right));
+
+            double diagonal = GetDiagonal(rawBounds);
             double spacing = Math.Clamp(diagonal / 40.0, MinimumResampleSpacing, MaximumResampleSpacing);
             List<List<Point>> resampledStrokePoints = strokePoints
                 .Select(points => ResamplePolyline(points, spacing))
@@ -156,13 +151,7 @@ namespace Ink_Canvas.Features.Ink.Services
         private static CornerDetectionResult DetectCorners(NormalizedInkTrace trace)
         {
             List<int> corners = DetectCornersWithStraw(trace.Points);
-            foreach (int boundary in trace.StrokeBoundaries)
-            {
-                if (boundary > 0 && boundary < trace.Points.Count - 1)
-                {
-                    corners.Add(boundary);
-                }
-            }
+            corners.AddRange(trace.StrokeBoundaries.Where(boundary => boundary > 0 && boundary < trace.Points.Count - 1));
 
             corners = corners.Distinct().OrderBy(static index => index).ToList();
             corners = RefineCornerIndices(trace.Points, corners, trace.EndpointSnapRadius);
@@ -836,19 +825,17 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static List<Point> FlattenStrokePoints(IReadOnlyList<List<Point>> strokePointSets)
         {
-            List<Point> points = [];
-            foreach (List<Point> strokePoints in strokePointSets)
-            {
-                foreach (Point point in strokePoints)
+            return strokePointSets
+                .SelectMany(static strokePoints => strokePoints)
+                .Aggregate(new List<Point>(), (points, point) =>
                 {
                     if (points.Count == 0 || GetDistance(points[^1], point) > NearlyEqualDistance)
                     {
                         points.Add(point);
                     }
-                }
-            }
 
-            return points;
+                    return points;
+                });
         }
 
         private static List<int> BuildStrokeBoundaries(IReadOnlyList<List<Point>> strokePointSets)
@@ -1264,8 +1251,9 @@ namespace Ink_Canvas.Features.Ink.Services
             {
                 (majorRadius, minorRadius) = (minorRadius, majorRadius);
                 projections = projections.Select(static projection => (projection.V, projection.U)).ToList();
-                majorAxis = minorAxis;
-                minorAxis = new Vector(-majorAxis.Y, majorAxis.X);
+                Vector swappedMajorAxis = minorAxis;
+                majorAxis = swappedMajorAxis;
+                minorAxis = new Vector(-swappedMajorAxis.Y, swappedMajorAxis.X);
             }
 
             if (majorRadius <= NearlyEqualDistance || minorRadius <= NearlyEqualDistance)
@@ -1647,16 +1635,15 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static List<Point> MergeNearbyVertices(IReadOnlyList<Point> points, double minimumDistance)
         {
-            List<Point> merged = [];
-            foreach (Point point in points)
+            return points.Aggregate(new List<Point>(), (merged, point) =>
             {
                 if (merged.Count == 0 || GetDistance(merged[^1], point) > minimumDistance)
                 {
                     merged.Add(point);
                 }
-            }
 
-            return merged;
+                return merged;
+            });
         }
 
         private static List<Point> RemoveNearlyCollinearVertices(List<Point> points, bool isClosed)

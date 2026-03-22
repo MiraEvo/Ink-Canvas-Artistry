@@ -61,20 +61,17 @@ namespace Ink_Canvas
 
         private void CheckColorTheme(bool changeColorTheme = false)
         {
-            if (changeColorTheme)
+            if (changeColorTheme && ShellViewModel.IsBlackboardMode)
             {
-                if (ShellViewModel.IsBlackboardMode)
+                if (Settings.Canvas.UsingWhiteboard)
                 {
-                    if (Settings.Canvas.UsingWhiteboard)
-                    {
-                        GridBackgroundCover.Background = new SolidColorBrush(StringToColor("#FFF2F2F2"));
-                        isUselightThemeColor = false;
-                    }
-                    else
-                    {
-                        GridBackgroundCover.Background = new SolidColorBrush(StringToColor("#FF1F1F1F"));
-                        isUselightThemeColor = true;
-                    }
+                    GridBackgroundCover.Background = new SolidColorBrush(StringToColor("#FFF2F2F2"));
+                    isUselightThemeColor = false;
+                }
+                else
+                {
+                    GridBackgroundCover.Background = new SolidColorBrush(StringToColor("#FF1F1F1F"));
+                    isUselightThemeColor = true;
                 }
             }
 

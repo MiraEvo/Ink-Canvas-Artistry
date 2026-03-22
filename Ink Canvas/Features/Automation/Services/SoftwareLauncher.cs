@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace Ink_Canvas.Features.Automation.Services
 {
@@ -37,38 +38,38 @@ namespace Ink_Canvas.Features.Automation.Services
                 return null;
             }
 
-            foreach (string subkeyName in key.GetSubKeyNames())
+            foreach (RegistryKey subkey in key.GetSubKeyNames()
+                         .Select(subkeyName => key.OpenSubKey(subkeyName))
+                         .Where(static openedSubKey => openedSubKey != null)
+                         .Select(static openedSubKey => openedSubKey!))
             {
-                using RegistryKey subkey = key.OpenSubKey(subkeyName);
-                if (subkey == null)
+                using (subkey)
                 {
-                    continue;
-                }
+                    string displayName = subkey.GetValue("DisplayName") as string;
+                    string installLocation = subkey.GetValue("InstallLocation") as string;
+                    string uninstallString = subkey.GetValue("UninstallString") as string;
 
-                string displayName = subkey.GetValue("DisplayName") as string;
-                string installLocation = subkey.GetValue("InstallLocation") as string;
-                string uninstallString = subkey.GetValue("UninstallString") as string;
-
-                if (string.IsNullOrEmpty(displayName) || !displayName.Contains(softwareName))
-                {
-                    continue;
-                }
-
-                if (!string.IsNullOrEmpty(installLocation))
-                {
-                    return Path.Join(installLocation, "sweclauncher.exe");
-                }
-
-                if (!string.IsNullOrEmpty(uninstallString))
-                {
-                    string folderPath = TryGetDirectoryFromUninstallString(uninstallString);
-                    if (!string.IsNullOrWhiteSpace(folderPath))
+                    if (string.IsNullOrEmpty(displayName) || !displayName.Contains(softwareName))
                     {
-                        return Path.Join(folderPath, "sweclauncher", "sweclauncher.exe");
+                        continue;
                     }
-                }
 
-                break;
+                    if (!string.IsNullOrEmpty(installLocation))
+                    {
+                        return Path.Join(installLocation, "sweclauncher.exe");
+                    }
+
+                    if (!string.IsNullOrEmpty(uninstallString))
+                    {
+                        string folderPath = TryGetDirectoryFromUninstallString(uninstallString);
+                        if (!string.IsNullOrWhiteSpace(folderPath))
+                        {
+                            return Path.Join(folderPath, "sweclauncher", "sweclauncher.exe");
+                        }
+                    }
+
+                    break;
+                }
             }
 
             return null;

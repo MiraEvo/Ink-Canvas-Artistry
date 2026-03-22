@@ -47,7 +47,7 @@ namespace Ink_Canvas.Services.ErrorHandling
                 errorHandler.Handle(ex, context);
                 return false;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionBoundary.IsCritical(ex))
             {
                 errorHandler.Handle(ex, context);
                 return false;
@@ -84,7 +84,7 @@ namespace Ink_Canvas.Services.ErrorHandling
                 errorHandler.Handle(ex, context);
                 return fallback;
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionBoundary.IsCritical(ex))
             {
                 errorHandler.Handle(ex, context);
                 return fallback;

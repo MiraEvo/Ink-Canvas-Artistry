@@ -347,13 +347,11 @@ namespace Ink_Canvas.Features.Ink.Services
             {
                 case nameof(TransformGroup):
                     TransformGroup transformGroup = new();
-                    foreach (XElement child in transformElement.Elements())
+                    foreach (Transform childTransform in transformElement.Elements()
+                                 .Select(ParseTransform)
+                                 .OfType<Transform>())
                     {
-                        Transform? childTransform = ParseTransform(child);
-                        if (childTransform != null)
-                        {
-                            transformGroup.Children.Add(childTransform);
-                        }
+                        transformGroup.Children.Add(childTransform);
                     }
 
                     return transformGroup;
@@ -414,14 +412,10 @@ namespace Ink_Canvas.Features.Ink.Services
             {
                 case TransformGroup transformGroup:
                     XElement groupElement = new(nameof(TransformGroup));
-                    foreach (Transform child in transformGroup.Children)
-                    {
-                        XElement? childElement = SerializeTransform(child);
-                        if (childElement != null)
-                        {
-                            groupElement.Add(childElement);
-                        }
-                    }
+                    groupElement.Add(transformGroup.Children
+                        .OfType<Transform>()
+                        .Select(SerializeTransform)
+                        .OfType<XElement>());
 
                     return groupElement.HasElements ? groupElement : null;
                 case ScaleTransform scaleTransform:
@@ -574,16 +568,9 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static string? GetAttributeValue(XElement element, params string[] attributeNames)
         {
-            foreach (string attributeName in attributeNames)
-            {
-                string? value = FindAttributeValue(element, attributeName);
-                if (!string.IsNullOrWhiteSpace(value))
-                {
-                    return value;
-                }
-            }
-
-            return null;
+            return attributeNames
+                .Select(attributeName => FindAttributeValue(element, attributeName))
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
         }
 
         private static string? FindAttributeValue(XElement element, string attributeName)

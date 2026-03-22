@@ -1108,14 +1108,11 @@ namespace Ink_Canvas
                 circles.Add(circle);
                 RestoreMultiTouchAfterShapeDrawing();
             }
-            if (drawingShapeMode != 9 && drawingShapeMode != 0 && drawingShapeMode != 24 && drawingShapeMode != 25)
+            if (drawingShapeMode != 9 && drawingShapeMode != 0 && drawingShapeMode != 24 && drawingShapeMode != 25 && !isLongPressSelected)
             {
-                if (!isLongPressSelected)
-                {
-                    BtnPen_Click(null, null); //画完一次还原到笔模式
+                BtnPen_Click(null, null); //画完一次还原到笔模式
 
-                    RestoreMultiTouchAfterShapeDrawing();
-                }
+                RestoreMultiTouchAfterShapeDrawing();
             }
             if (drawingShapeMode == 9)
             {
@@ -1211,11 +1208,7 @@ namespace Ink_Canvas
 
         private bool NeedUpdateIniP()
         {
-            if (drawingShapeMode == 24 || drawingShapeMode == 25)
-            {
-                if (drawMultiStepShapeCurrentStep == 1) return false;
-            }
-            return true;
+            return (drawingShapeMode != 24 && drawingShapeMode != 25) || drawMultiStepShapeCurrentStep != 1;
         }
     }
 }

@@ -51,7 +51,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             {
                 notificationSink?.Invoke(message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionBoundary.IsCritical(ex))
             {
                 logger.Error(ex, "Error Handling | Failed to deliver non-fatal notification");
             }
@@ -129,7 +129,7 @@ namespace Ink_Canvas.Services.ErrorHandling
 
                 MessageBox.Show(fatalMessage, "Ink Canvas Modern", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionBoundary.IsCritical(ex))
             {
                 logger.Error(ex, "Error Handling | Failed while presenting fatal error UI", force: true);
             }

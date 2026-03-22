@@ -20,7 +20,7 @@ namespace Ink_Canvas
             };
             try
             {
-                if (openFileDialog.ShowDialog() != true)
+                if (openFileDialog.ShowDialog() is not true)
                 {
                     return;
                 }
@@ -92,7 +92,7 @@ namespace Ink_Canvas
             };
             try
             {
-                if (openFileDialog.ShowDialog() != true)
+                if (openFileDialog.ShowDialog() is not true)
                 {
                     return;
                 }

@@ -42,7 +42,7 @@ namespace Ink_Canvas.Services.ErrorHandling
             {
                 await task.ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionBoundary.IsCritical(ex))
             {
                 errorHandler.Handle(ex, context);
             }

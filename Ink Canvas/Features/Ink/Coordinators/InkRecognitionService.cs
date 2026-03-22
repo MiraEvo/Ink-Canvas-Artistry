@@ -453,16 +453,12 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
         private void ApplyPressureStyle(IInkCanvasHost inkCanvasHost, ShapeDrawingSessionState shapeDrawingState, InkCanvasStrokeCollectedEventArgs e)
         {
-            foreach (StylusPoint stylusPoint in e.Stroke.StylusPoints)
+            bool hasCustomPressure = e.Stroke.StylusPoints.Any(stylusPoint =>
+                !IsNearlyEqual(stylusPoint.PressureFactor, DefaultPressureFactor)
+                && !IsNearlyZero(stylusPoint.PressureFactor));
+            if (hasCustomPressure || inkCanvasHost.InkColor > 100)
             {
-                bool hasCustomPressure =
-                    !IsNearlyEqual(stylusPoint.PressureFactor, DefaultPressureFactor)
-                    && !IsNearlyZero(stylusPoint.PressureFactor);
-
-                if (hasCustomPressure || inkCanvasHost.InkColor > 100)
-                {
-                    return;
-                }
+                return;
             }
 
             if (e.Stroke.StylusPoints.Count > 3)

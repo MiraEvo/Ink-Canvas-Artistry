@@ -347,7 +347,7 @@ namespace Ink_Canvas.Controllers.Automation
             {
                 action();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!ExceptionBoundary.IsCritical(ex))
             {
                 errorHandler.Handle(ex, new AppErrorContext(nameof(AutomationController), operation)
                 {

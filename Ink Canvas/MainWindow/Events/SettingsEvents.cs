@@ -30,7 +30,7 @@ namespace Ink_Canvas
         {
             await Task.Delay(1000);
             var command = SettingsViewModel.ResetToSpecialVersionRecommendedSettingsCommand;
-            if (command?.CanExecute(null) == true)
+            if (command is not null && command.CanExecute(null))
             {
                 command.Execute(null);
             }

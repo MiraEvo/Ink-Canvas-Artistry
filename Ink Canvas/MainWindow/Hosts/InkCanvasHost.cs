@@ -484,19 +484,12 @@ namespace Ink_Canvas
 
             dec.Remove(e.TouchDevice.Id);
             inkCanvas.Opacity = 1;
-            if (dec.Count == 0)
+            if (dec.Count == 0
+                && lastTouchDownStrokeCollection.Count != inkCanvas.Strokes.Count
+                && !(drawingShapeMode == 9 && !isFirstTouchCuboid))
             {
-                if (lastTouchDownStrokeCollection.Count != inkCanvas.Strokes.Count
-                    && !(drawingShapeMode == 9 && !isFirstTouchCuboid))
-                {
-                    int whiteboardIndex = CurrentWhiteboardIndex;
-                    if (ShellViewModel.IsDesktopAnnotationMode)
-                    {
-                        whiteboardIndex = 0;
-                    }
-
-                    strokeCollections[whiteboardIndex] = lastTouchDownStrokeCollection;
-                }
+                int whiteboardIndex = ShellViewModel.IsDesktopAnnotationMode ? 0 : CurrentWhiteboardIndex;
+                strokeCollections[whiteboardIndex] = lastTouchDownStrokeCollection;
             }
         }
 
@@ -689,7 +682,7 @@ namespace Ink_Canvas
             };
             try
             {
-                return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
+                return openFileDialog.ShowDialog() is true ? openFileDialog.FileName : null;
             }
             finally
             {
@@ -717,14 +710,11 @@ namespace Ink_Canvas
 
         void IInkArchiveHost.EnsureCanvasVisibleAfterArchiveImport()
         {
-            if (inkCanvas.Visibility != Visibility.Visible)
-            {
-            if (toolbarExperienceCoordinator != null)
+            if (inkCanvas.Visibility != Visibility.Visible && toolbarExperienceCoordinator != null)
             {
                 taskGuard.Forget(
                     toolbarExperienceCoordinator.HandleCursorRequestedAsync(),
                     new AppErrorContext(nameof(MainWindow), "RestoreCursorToolAfterArchiveImport"));
-            }
             }
         }
 
@@ -831,7 +821,7 @@ namespace Ink_Canvas
             };
             try
             {
-                if (saveFileDialog.ShowDialog() == true)
+                if (saveFileDialog.ShowDialog() is true)
                 {
                     PngBitmapEncoder encoder = new();
                     encoder.Frames.Add(BitmapFrame.Create(renderTarget));
