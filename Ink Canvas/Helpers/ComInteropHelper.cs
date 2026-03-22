@@ -17,16 +17,16 @@ namespace Ink_Canvas.Helpers
         [LibraryImport("ole32.dll", EntryPoint = "CLSIDFromProgID", StringMarshalling = StringMarshalling.Utf16)]
         private static partial int CLSIDFromProgID(string progId, out Guid clsid);
 
-        [DllImport("ole32.dll", EntryPoint = "GetRunningObjectTable")]
-        private static extern int NativeGetRunningObjectTable(int reserved, out IRunningObjectTable? runningObjectTable);
+        [LibraryImport("ole32.dll", EntryPoint = "GetRunningObjectTable")]
+        private static partial int NativeGetRunningObjectTable(int reserved, out IntPtr runningObjectTable);
 
-        [DllImport("ole32.dll", EntryPoint = "CreateBindCtx")]
-        private static extern int NativeCreateBindCtx(int reserved, out IBindCtx? bindContext);
+        [LibraryImport("ole32.dll", EntryPoint = "CreateBindCtx")]
+        private static partial int NativeCreateBindCtx(int reserved, out IntPtr bindContext);
 
-        // Source-generated COM marshalling does not currently cover this late-bound IUnknown shape well.
-        [DllImport("oleaut32.dll", EntryPoint = "GetActiveObject")]
-        private static extern int NativeGetActiveObject(ref Guid rclsid, IntPtr reserved, [MarshalAs(UnmanagedType.IUnknown)] out object? comObject);
+        [LibraryImport("oleaut32.dll", EntryPoint = "GetActiveObject")]
+        private static partial int NativeGetActiveObject(ref Guid rclsid, IntPtr reserved, out IntPtr comObject);
 
+        [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: COM active-object lookup requires oleaut32/ole32 interop; no managed equivalent.")]
         public static T GetActiveObject<T>(string progId) where T : class
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(progId);
@@ -42,10 +42,16 @@ namespace Ink_Canvas.Helpers
                 Marshal.ThrowExceptionForHR(hResult);
             }
 
-            hResult = NativeGetActiveObject(ref clsid, IntPtr.Zero, out object? comObject);
+            hResult = NativeGetActiveObject(ref clsid, IntPtr.Zero, out IntPtr comObjectPointer);
             if (hResult < 0)
             {
                 Marshal.ThrowExceptionForHR(hResult);
+            }
+
+            object? comObject = comObjectPointer != IntPtr.Zero ? Marshal.GetObjectForIUnknown(comObjectPointer) : null;
+            if (comObjectPointer != IntPtr.Zero)
+            {
+                Marshal.Release(comObjectPointer);
             }
 
             if (comObject is not T typedObject)
@@ -56,16 +62,46 @@ namespace Ink_Canvas.Helpers
             return typedObject;
         }
 
+        [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: ROT access requires COM interop; no managed equivalent.")]
         public static bool TryGetRunningObjectTable(out IRunningObjectTable? runningObjectTable)
         {
-            int result = NativeGetRunningObjectTable(0, out runningObjectTable);
-            return result == 0 && runningObjectTable != null;
+            int result = NativeGetRunningObjectTable(0, out IntPtr runningObjectTablePointer);
+            if (result != 0 || runningObjectTablePointer == IntPtr.Zero)
+            {
+                runningObjectTable = null;
+                return false;
+            }
+
+            try
+            {
+                runningObjectTable = Marshal.GetObjectForIUnknown(runningObjectTablePointer) as IRunningObjectTable;
+                return runningObjectTable != null;
+            }
+            finally
+            {
+                Marshal.Release(runningObjectTablePointer);
+            }
         }
 
+        [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: COM bind-context creation requires ole32 interop; no managed equivalent.")]
         public static bool TryCreateBindContext(out IBindCtx? bindContext)
         {
-            int result = NativeCreateBindCtx(0, out bindContext);
-            return result == 0 && bindContext != null;
+            int result = NativeCreateBindCtx(0, out IntPtr bindContextPointer);
+            if (result != 0 || bindContextPointer == IntPtr.Zero)
+            {
+                bindContext = null;
+                return false;
+            }
+
+            try
+            {
+                bindContext = Marshal.GetObjectForIUnknown(bindContextPointer) as IBindCtx;
+                return bindContext != null;
+            }
+            finally
+            {
+                Marshal.Release(bindContextPointer);
+            }
         }
 
         public static void SafeRelease(object? comObject)

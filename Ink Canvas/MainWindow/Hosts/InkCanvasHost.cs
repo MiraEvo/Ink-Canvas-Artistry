@@ -324,7 +324,7 @@ namespace Ink_Canvas
         void IInkCanvasHost.ResetLongPressPreview(UIElement previewElement) =>
             previewElement.BeginAnimation(OpacityProperty, new DoubleAnimation(1, 1, new Duration(TimeSpan.Zero)));
 
-        void IInkCanvasHost.CollapseShapePanel(bool isLongPressSelected) => CollapseBorderDrawShape(isLongPressSelected);
+        void IInkCanvasHost.CollapseShapePanel(bool longPressSelected) => CollapseBorderDrawShape();
 
         void IInkCanvasHost.DrawShapePromptToPen() => DrawShapePromptToPen();
 
@@ -578,14 +578,7 @@ namespace Ink_Canvas
 
         void IInkPaletteHost.ApplyInkWidthChange(double value, bool fromBoardSlider)
         {
-            if (fromBoardSlider)
-            {
-                InkWidthSlider.Value = value;
-            }
-            else
-            {
-                BoardInkWidthSlider.Value = value;
-            }
+            (fromBoardSlider ? InkWidthSlider : BoardInkWidthSlider).Value = value;
 
             Settings.Canvas.InkWidth = value / 2;
             if (inkColor > 100)
@@ -604,14 +597,7 @@ namespace Ink_Canvas
 
         void IInkPaletteHost.ApplyInkAlphaChange(double value, bool fromBoardSlider)
         {
-            if (fromBoardSlider)
-            {
-                InkAlphaSlider.Value = value;
-            }
-            else
-            {
-                BoardInkAlphaSlider.Value = value;
-            }
+            (fromBoardSlider ? InkAlphaSlider : BoardInkAlphaSlider).Value = value;
 
             drawingAttributes.Height = 20;
             drawingAttributes.Width = 5;

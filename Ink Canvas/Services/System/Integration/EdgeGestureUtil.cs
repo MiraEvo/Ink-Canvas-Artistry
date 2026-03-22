@@ -19,7 +19,7 @@ namespace Ink_Canvas.Services.System.Integration
     /// </summary>
     [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required Win32/COM boundary; no managed alternative; owned by EdgeGestureUtil.")]
     [SuppressMessage("Reliability", "cs/unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required Win32/COM boundary; no managed alternative; owned by EdgeGestureUtil.")]
-    public static class EdgeGestureUtil
+    public static partial class EdgeGestureUtil
     {
         private static readonly Guid DISABLE_TOUCH_SCREEN = new("32CE38B2-2C9A-41B1-9BC5-B3784394AA44");
         private static readonly Guid IID_PROPERTY_STORE = new("886d8eeb-8cf2-4446-8d02-cdba1dbdcf99");
@@ -160,9 +160,10 @@ namespace Ink_Canvas.Services.System.Integration
 
         #region "Methods"
 
-        [DllImport("shell32.dll", SetLastError = true)]
-        private static extern int SHGetPropertyStoreForWindow(IntPtr handle, ref Guid riid, ref IPropertyStore propertyStore);
+        [LibraryImport("shell32.dll", SetLastError = true)]
+        private static partial int SHGetPropertyStoreForWindow(IntPtr handle, ref Guid riid, out IntPtr propertyStore);
 
+        [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: required shell property-store boundary; no managed equivalent for fullscreen edge-gesture control.")]
         public static void DisableEdgeGestures(IntPtr hwnd, bool enable)
         {
             if (hwnd == IntPtr.Zero)
@@ -170,15 +171,21 @@ namespace Ink_Canvas.Services.System.Integration
                 return;
             }
 
-            IPropertyStore pPropStore = null;
+            IPropertyStore? pPropStore = null;
+            IntPtr propertyStorePointer = IntPtr.Zero;
             Guid propertyStoreId = IID_PROPERTY_STORE;
 
             try
             {
-                int hr = SHGetPropertyStoreForWindow(hwnd, ref propertyStoreId, ref pPropStore);
+                int hr = SHGetPropertyStoreForWindow(hwnd, ref propertyStoreId, out propertyStorePointer);
                 if (hr < 0)
                 {
                     Marshal.ThrowExceptionForHR(hr);
+                }
+
+                if (propertyStorePointer != IntPtr.Zero)
+                {
+                    pPropStore = Marshal.GetObjectForIUnknown(propertyStorePointer) as IPropertyStore;
                 }
 
                 if (pPropStore == null)
@@ -200,6 +207,11 @@ namespace Ink_Canvas.Services.System.Integration
             }
             finally
             {
+                if (propertyStorePointer != IntPtr.Zero)
+                {
+                    Marshal.Release(propertyStorePointer);
+                }
+
                 if (pPropStore != null)
                 {
                     ComInteropHelper.SafeFinalRelease(pPropStore);

@@ -54,8 +54,9 @@ namespace Ink_Canvas
         public double GetTouchBoundWidth(TouchEventArgs e)
         {
             var args = e.GetTouchPoint(null).Bounds;
-            if (!Settings.Advanced.IsQuadIR) return args.Width;
-            else return Math.Sqrt(args.Width * args.Height); //四边红外
+            return Settings.Advanced.IsQuadIR
+                ? Math.Sqrt(args.Width * args.Height)
+                : args.Width; //四边红外
         }
 
         private void inkCanvas_PreviewTouchDown(object sender, TouchEventArgs e)

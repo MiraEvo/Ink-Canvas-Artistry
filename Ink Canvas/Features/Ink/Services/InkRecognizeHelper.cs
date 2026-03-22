@@ -1233,6 +1233,7 @@ namespace Ink_Canvas.Features.Ink.Services
             Point center = GetAveragePoint(points);
             ComputeCovariance(points, center, out double xx, out double xy, out double yy);
             GetPrincipalAxis(xx, xy, yy, out Vector majorAxis, out Vector minorAxis);
+            Vector rotationAxis = majorAxis;
 
             List<(double U, double V)> projections = [];
             double majorRadius = 0.0;
@@ -1251,9 +1252,7 @@ namespace Ink_Canvas.Features.Ink.Services
             {
                 (majorRadius, minorRadius) = (minorRadius, majorRadius);
                 projections = projections.Select(static projection => (projection.V, projection.U)).ToList();
-                Vector swappedMajorAxis = minorAxis;
-                majorAxis = swappedMajorAxis;
-                minorAxis = new Vector(-swappedMajorAxis.Y, swappedMajorAxis.X);
+                rotationAxis = minorAxis;
             }
 
             if (majorRadius <= NearlyEqualDistance || minorRadius <= NearlyEqualDistance)
@@ -1268,7 +1267,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 minorRadius,
                 residual,
                 majorRadius / minorRadius,
-                NormalizeDegrees(Math.Atan2(majorAxis.Y, majorAxis.X) * 180.0 / Math.PI),
+                NormalizeDegrees(Math.Atan2(rotationAxis.Y, rotationAxis.X) * 180.0 / Math.PI),
                 GetPathLength(points) / Math.Max(CalculateEllipsePerimeter(majorRadius, minorRadius), NearlyEqualDistance));
             return true;
         }

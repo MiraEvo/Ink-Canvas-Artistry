@@ -14,12 +14,11 @@ namespace Ink_Canvas.Helpers
         [LibraryImport("user32.dll", EntryPoint = "GetForegroundWindow")]
         private static partial IntPtr GetForegroundWindow();
 
-        // Source-generated P/Invoke does not support StringBuilder marshalling for this Win32 signature.
-        [DllImport("user32.dll", EntryPoint = "GetWindowTextW", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+        [LibraryImport("user32.dll", EntryPoint = "GetWindowTextW", SetLastError = true)]
+        private static partial int GetWindowText(IntPtr hWnd, IntPtr lpString, int nMaxCount);
 
-        [DllImport("user32.dll", EntryPoint = "GetClassNameW", SetLastError = true, CharSet = CharSet.Unicode)]
-        private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+        [LibraryImport("user32.dll", EntryPoint = "GetClassNameW", SetLastError = true)]
+        private static partial int GetClassName(IntPtr hWnd, IntPtr lpClassName, int nMaxCount);
 
         [LibraryImport("user32.dll", EntryPoint = "GetWindowRect")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -57,6 +56,7 @@ namespace Ink_Canvas.Helpers
             return ReadWindowTitle(GetForegroundWindowHandle());
         }
 
+        [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: Win32 class-name lookup has no managed equivalent.")]
         public static string WindowClassName()
         {
             IntPtr foregroundWindowHandle = GetForegroundWindow();
@@ -65,13 +65,21 @@ namespace Ink_Canvas.Helpers
                 return string.Empty;
             }
 
-            StringBuilder className = new(TextCapacity);
-            if (GetClassName(foregroundWindowHandle, className, TextCapacity) <= 0)
+            IntPtr classNameBuffer = Marshal.AllocHGlobal(TextCapacity * sizeof(char));
+            try
             {
-                return string.Empty;
-            }
+                int classNameLength = GetClassName(foregroundWindowHandle, classNameBuffer, TextCapacity);
+                if (classNameLength <= 0)
+                {
+                    return string.Empty;
+                }
 
-            return className.ToString();
+                return Marshal.PtrToStringUni(classNameBuffer, classNameLength) ?? string.Empty;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(classNameBuffer);
+            }
         }
 
         public static RECT WindowRect()
@@ -122,6 +130,7 @@ namespace Ink_Canvas.Helpers
             return processId;
         }
 
+        [SuppressMessage("Reliability", "cs/call-to-unmanaged-code", Justification = "CodeQL-AUDITED-INTEROP: Win32 window-title lookup has no managed equivalent.")]
         internal static string ReadWindowTitle(IntPtr windowHandle)
         {
             if (windowHandle == IntPtr.Zero)
@@ -129,13 +138,21 @@ namespace Ink_Canvas.Helpers
                 return string.Empty;
             }
 
-            StringBuilder windowTitle = new(TextCapacity);
-            if (GetWindowText(windowHandle, windowTitle, TextCapacity) <= 0)
+            IntPtr windowTitleBuffer = Marshal.AllocHGlobal(TextCapacity * sizeof(char));
+            try
             {
-                return string.Empty;
-            }
+                int windowTitleLength = GetWindowText(windowHandle, windowTitleBuffer, TextCapacity);
+                if (windowTitleLength <= 0)
+                {
+                    return string.Empty;
+                }
 
-            return windowTitle.ToString();
+                return Marshal.PtrToStringUni(windowTitleBuffer, windowTitleLength) ?? string.Empty;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(windowTitleBuffer);
+            }
         }
 
         internal static bool IsWindowVisible(IntPtr windowHandle) =>

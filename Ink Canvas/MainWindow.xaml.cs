@@ -139,21 +139,8 @@ namespace Ink_Canvas
             var inkCanvas1 = sender as InkCanvas;
             if (inkCanvas1 == null) return;
             SyncInputInteractionMode();
-            if (Settings.Canvas.IsShowCursor)
-            {
-                if (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink || drawingShapeMode != 0)
-                {
-                    inkCanvas1.ForceCursor = true;
-                }
-                else
-                {
-                    inkCanvas1.ForceCursor = false;
-                }
-            }
-            else
-            {
-                inkCanvas1.ForceCursor = false;
-            }
+            inkCanvas1.ForceCursor = Settings.Canvas.IsShowCursor
+                && (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink || drawingShapeMode != 0);
             if (inkCanvas1.EditingMode == InkCanvasEditingMode.Ink) forcePointEraser = !forcePointEraser;
         }
 

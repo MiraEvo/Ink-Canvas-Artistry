@@ -210,39 +210,30 @@ namespace Ink_Canvas.Controllers.Presentation
 
         private void MonitorSession()
         {
-            PresentationBindingCandidate? bestCandidate = null;
-            try
+            using PresentationBindingCandidate? bestCandidate = rotPresentationDiscovery.FindBestCandidate(isWpsSupportEnabled());
+            if (!IsMonitoringEnabled())
             {
-                bestCandidate = rotPresentationDiscovery.FindBestCandidate(isWpsSupportEnabled());
-                if (!IsMonitoringEnabled())
-                {
-                    return;
-                }
+                return;
+            }
 
-                if (bestCandidate == null)
-                {
-                    ClearBinding();
-                    PublishState(PresentationRuntimeState.Disconnected);
-                    return;
-                }
+            if (bestCandidate == null)
+            {
+                ClearBinding();
+                PublishState(PresentationRuntimeState.Disconnected);
+                return;
+            }
 
-                if (ShouldRebind(bestCandidate))
-                {
-                    BindCandidate(bestCandidate);
-                    RefreshStrongInteropState();
-                    PublishState(bestCandidate.State);
-                    bestCandidate = null;
-                    return;
-                }
-
-                boundPresentationIdentity = bestCandidate.State.PresentationIdentity;
+            if (ShouldRebind(bestCandidate))
+            {
+                BindCandidate(bestCandidate);
                 RefreshStrongInteropState();
                 PublishState(bestCandidate.State);
+                return;
             }
-            finally
-            {
-                bestCandidate?.Dispose();
-            }
+
+            boundPresentationIdentity = bestCandidate.State.PresentationIdentity;
+            RefreshStrongInteropState();
+            PublishState(bestCandidate.State);
         }
 
         private bool ShouldRebind(PresentationBindingCandidate candidate)

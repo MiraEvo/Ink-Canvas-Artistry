@@ -367,14 +367,9 @@ namespace Ink_Canvas
             {
                 borderTop = Math.Min(Height - BorderStrokeSelectionControlHeight - 60, borderTop);
             }
-            if (!double.IsNaN(borderLeft) && !double.IsNaN(borderTop))
-            {
-                BorderStrokeSelectionControl.Margin = new Thickness(borderLeft, borderTop, 0, 0);
-            }
-            else
-            {
-                BorderStrokeSelectionControl.Margin = new Thickness(0, 0, 0, 0);
-            }
+            BorderStrokeSelectionControl.Margin = !double.IsNaN(borderLeft) && !double.IsNaN(borderTop)
+                ? new Thickness(borderLeft, borderTop, 0, 0)
+                : new Thickness(0, 0, 0, 0);
         }
 
         private void GridInkCanvasSelectionCover_ManipulationStarting(object sender, ManipulationStartingEventArgs e)

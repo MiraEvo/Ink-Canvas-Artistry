@@ -43,7 +43,7 @@ namespace Ink_Canvas
             //TextBlockSuggestion.Text = "老师讲评试卷可以点击右侧的背景和深色按钮，即可启动黑板功能（同样支持用笔来擦除），\n双指可以缩放和拖动，左边也会有工具栏方便画图形。";
 
             Version version = Assembly.GetExecutingAssembly().GetName().Version;
-            LabelVersion.Content = "Version: " + version.ToString();
+            LabelVersion.Content = "Version: " + version;
         }
 
         private void Window_Closed(object sender, EventArgs e)

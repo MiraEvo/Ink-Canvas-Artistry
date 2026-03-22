@@ -25,14 +25,8 @@ namespace Ink_Canvas.ProcessBars
 
         private void SetRingColor(bool isPaused)
         {
-            if (isPaused)
-            {
-                myCycleProcessBar.Stroke = new SolidColorBrush(StringToColor("#FF1A71C8"));
-            }
-            else
-            {
-                myCycleProcessBar.Stroke = new SolidColorBrush(StringToColor("#FF0067C1"));
-            }
+            myCycleProcessBar.Stroke = new SolidColorBrush(
+                StringToColor(isPaused ? "#FF1A71C8" : "#FF0067C1"));
         }
 
         private Color StringToColor(string colorStr)

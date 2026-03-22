@@ -291,15 +291,15 @@ namespace Ink_Canvas
             }
         }
 
-        private void CheckLastColor(int inkColor)
+        private void CheckLastColor(int colorIndex)
         {
             StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
             if (strokes.Count > 0)
             {
-                Color targetedColor = inkColorLightThemeMapping[inkColor];
+                Color targetedColor = inkColorLightThemeMapping[colorIndex];
                 if (!isUselightThemeColor)
                 {
-                    inkCanvas.DefaultDrawingAttributes.Color = inkColorDarkThemeMapping[inkColor];
+                    inkCanvas.DefaultDrawingAttributes.Color = inkColorDarkThemeMapping[colorIndex];
                 }
                 foreach (Stroke stroke in strokes)
                 {
@@ -310,11 +310,11 @@ namespace Ink_Canvas
             {
                 if (ShellViewModel.IsDesktopAnnotationMode)
                 {
-                    lastDesktopInkColor = inkColor;
+                    lastDesktopInkColor = colorIndex;
                 }
                 else
                 {
-                    lastBoardInkColor = inkColor;
+                    lastBoardInkColor = colorIndex;
                 }
                 ColorSwitchCheck();
             }

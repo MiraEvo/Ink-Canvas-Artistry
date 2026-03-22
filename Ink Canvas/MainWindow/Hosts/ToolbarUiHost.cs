@@ -449,7 +449,7 @@ namespace Ink_Canvas
             });
         }
 
-        private void CollapseBorderDrawShape(bool isLongPressSelected = false)
+        private void CollapseBorderDrawShape()
         {
             if (!isApplyingShellSubPanelState && ShellViewModel.IsShapePanelOpen)
             {
