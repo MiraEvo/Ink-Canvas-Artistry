@@ -687,8 +687,14 @@ namespace Ink_Canvas
                 Title = "打开墨迹文件",
                 Filter = "Ink Canvas Modern Files (*.icart;*.icstk)|*.icart;*.icstk|Ink Canvas Modern Archive Files (*.icart)|*.icart|Ink Canvas Stroke Files (*.icstk)|*.icstk"
             };
-
-            return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
+            try
+            {
+                return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : null;
+            }
+            finally
+            {
+                DisposeDialogIfNeeded(openFileDialog);
+            }
         }
 
         void IInkArchiveHost.ShowArchiveNotification(string message) => ShowNotificationAsync(message);
@@ -823,13 +829,19 @@ namespace Ink_Canvas
                 Title = "Save Selected Ink as PNG",
                 FileName = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss-fff")
             };
-
-            if (saveFileDialog.ShowDialog() == true)
+            try
             {
-                PngBitmapEncoder encoder = new();
-                encoder.Frames.Add(BitmapFrame.Create(renderTarget));
-                using FileStream fileStream = new(saveFileDialog.FileName, FileMode.Create);
-                encoder.Save(fileStream);
+                if (saveFileDialog.ShowDialog() == true)
+                {
+                    PngBitmapEncoder encoder = new();
+                    encoder.Frames.Add(BitmapFrame.Create(renderTarget));
+                    using FileStream fileStream = new(saveFileDialog.FileName, FileMode.Create);
+                    encoder.Save(fileStream);
+                }
+            }
+            finally
+            {
+                DisposeDialogIfNeeded(saveFileDialog);
             }
         }
 

@@ -18,20 +18,27 @@ namespace Ink_Canvas
             {
                 Filter = "Image files (*.jpg; *.jpeg; *.png; *.bmp)|*.jpg;*.jpeg;*.png;*.bmp"
             };
-
-            if (openFileDialog.ShowDialog() != true)
+            try
             {
-                return;
+                if (openFileDialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                string selectedFilePath = openFileDialog.FileName;
+                Image image = await CreateAndCompressImageAsync(selectedFilePath);
+                CenterAndScaleElement(image);
+
+                InkCanvas.SetLeft(image, 0);
+                InkCanvas.SetTop(image, 0);
+                inkCanvas.Children.Add(image);
+
+                inkHistoryCoordinator?.CommitElementInsert(image);
             }
-
-            Image image = await CreateAndCompressImageAsync(openFileDialog.FileName);
-            CenterAndScaleElement(image);
-
-            InkCanvas.SetLeft(image, 0);
-            InkCanvas.SetTop(image, 0);
-            inkCanvas.Children.Add(image);
-
-            inkHistoryCoordinator?.CommitElementInsert(image);
+            finally
+            {
+                DisposeDialogIfNeeded(openFileDialog);
+            }
         }
 
         private async Task<Image> CreateAndCompressImageAsync(string filePath)
@@ -83,27 +90,34 @@ namespace Ink_Canvas
             {
                 Filter = "Media files (*.mp4; *.avi; *.wmv)|*.mp4;*.avi;*.wmv"
             };
-
-            if (openFileDialog.ShowDialog() != true)
+            try
             {
-                return;
+                if (openFileDialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                string selectedFilePath = openFileDialog.FileName;
+                MediaElement mediaElement = await CreateMediaElementAsync(selectedFilePath);
+                CenterAndScaleElement(mediaElement);
+
+                InkCanvas.SetLeft(mediaElement, 0);
+                InkCanvas.SetTop(mediaElement, 0);
+                inkCanvas.Children.Add(mediaElement);
+
+                mediaElement.Loaded += async (_, _) =>
+                {
+                    mediaElement.Play();
+                    await Task.Delay(100);
+                    mediaElement.Pause();
+                };
+
+                inkHistoryCoordinator?.CommitElementInsert(mediaElement);
             }
-
-            MediaElement mediaElement = await CreateMediaElementAsync(openFileDialog.FileName);
-            CenterAndScaleElement(mediaElement);
-
-            InkCanvas.SetLeft(mediaElement, 0);
-            InkCanvas.SetTop(mediaElement, 0);
-            inkCanvas.Children.Add(mediaElement);
-
-            mediaElement.Loaded += async (_, _) =>
+            finally
             {
-                mediaElement.Play();
-                await Task.Delay(100);
-                mediaElement.Pause();
-            };
-
-            inkHistoryCoordinator?.CommitElementInsert(mediaElement);
+                DisposeDialogIfNeeded(openFileDialog);
+            }
         }
 
         private async Task<MediaElement> CreateMediaElementAsync(string filePath)
@@ -134,6 +148,14 @@ namespace Ink_Canvas
                 $"{namePrefix}{Path.GetExtension(sourceFilePath)}");
 
             return (elementName, copiedFilePath);
+        }
+
+        private static void DisposeDialogIfNeeded(object dialog)
+        {
+            if (dialog is IDisposable disposableDialog)
+            {
+                disposableDialog.Dispose();
+            }
         }
 
         private void CenterAndScaleElement(FrameworkElement element)

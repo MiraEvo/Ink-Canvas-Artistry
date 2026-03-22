@@ -48,8 +48,8 @@ namespace Ink_Canvas
 
         private void ApplyThemeFromMainWindow()
         {
-            Application application = Application.Current;
-            if (application?.MainWindow is not MainWindow mainWindow)
+            Application? application = Application.Current;
+            if (application is null || application.MainWindow is not MainWindow mainWindow)
             {
                 return;
             }

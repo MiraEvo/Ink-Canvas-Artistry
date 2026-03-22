@@ -1262,7 +1262,6 @@ namespace Ink_Canvas.Features.Ink.Services
 
             if (majorRadius < minorRadius)
             {
-                Vector originalMajor = majorAxis;
                 (majorRadius, minorRadius) = (minorRadius, majorRadius);
                 projections = projections.Select(static projection => (projection.V, projection.U)).ToList();
                 majorAxis = minorAxis;
@@ -1418,7 +1417,7 @@ namespace Ink_Canvas.Features.Ink.Services
             }
 
             int k = Math.Min(6, trace.Points.Count / 4);
-            return k <= 0 ? 0.0 : Clamp01(trace.TrimmedEndpointPoints / (double)(2 * k));
+            return k <= 0 ? 0.0 : Clamp01((double)trace.TrimmedEndpointPoints / (2.0 * k));
         }
 
         private static double GetGapRatio(NormalizedInkTrace trace)
@@ -1966,12 +1965,12 @@ namespace Ink_Canvas.Features.Ink.Services
 
     internal sealed class PrimitiveCandidate
     {
-        public PrimitiveCandidate(RecognizedShapeKind kind, double confidence, double residual, double sweepAngleDegrees, IReadOnlyList<Point> orderedVertices, Point centroid, double majorRadius, double minorRadius, double rotationDegrees, double coverageRatio, bool isGapHealingCandidate, double startAngleDegrees = 0.0, double explicitSweepAngleDegrees = 0.0)
+        public PrimitiveCandidate(RecognizedShapeKind kind, double confidence, double residual, double sweepAngleDegrees, IReadOnlyList<Point> orderedVertices, Point centroid, double majorRadius, double minorRadius, double rotationDegrees, double coverageRatio, bool isGapHealingCandidate, double startAngleDegrees = 0.0, double? explicitSweepAngleDegrees = null)
         {
             Kind = kind;
             Confidence = confidence;
             Residual = residual;
-            SweepAngleDegrees = explicitSweepAngleDegrees == 0.0 ? sweepAngleDegrees : explicitSweepAngleDegrees;
+            SweepAngleDegrees = explicitSweepAngleDegrees ?? sweepAngleDegrees;
             OrderedVertices = orderedVertices;
             Centroid = centroid;
             MajorRadius = majorRadius;

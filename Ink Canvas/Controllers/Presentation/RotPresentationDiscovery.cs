@@ -87,10 +87,6 @@ namespace Ink_Canvas.Controllers.Presentation
                         }
 
                         applicationObject = GetApplicationObject(runningObject);
-                        if (applicationObject == null)
-                        {
-                            continue;
-                        }
 
                         if (scannedApplications.Exists(scannedApplication =>
                                 ComInteropHelper.AreSameComObjects(scannedApplication, applicationObject)))
@@ -158,7 +154,7 @@ namespace Ink_Canvas.Controllers.Presentation
             return bestCandidate;
         }
 
-        private static object? GetApplicationObject(object runningObject)
+        private static object GetApplicationObject(object runningObject)
         {
             if (DynamicPresentationAccessor.TryGetPropertyObject(runningObject, "Application", out object? applicationObject)
                 && applicationObject != null)

@@ -235,7 +235,7 @@ namespace Ink_Canvas
                 BorderStopTime.Visibility = Visibility.Collapsed;
                 return;
             }
-            else if (isTimerRunning && isPaused)
+            else if (isPaused)
             {
                 TextBlockHour.Text = hour.ToString("00");
                 TextBlockMinute.Text = minute.ToString("00");

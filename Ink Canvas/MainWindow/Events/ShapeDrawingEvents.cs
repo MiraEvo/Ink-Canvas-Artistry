@@ -809,9 +809,6 @@ namespace Ink_Canvas
                     {
                         d = CuboidFrontRectIniP.Y - endP.Y;
                         if (d < 0) d = -d; //就是懒不想做反向的，不要让我去做，想做自己做好之后 Pull Request
-                        a = CuboidFrontRectEndP.X - CuboidFrontRectIniP.X; //正面矩形长
-                        b = CuboidFrontRectEndP.Y - CuboidFrontRectIniP.Y; //正面矩形宽
-
                         //横上
                         Point newLineIniP = new Point(CuboidFrontRectIniP.X + d, CuboidFrontRectIniP.Y - d);
                         Point newLineEndP = new Point(CuboidFrontRectEndP.X + d, CuboidFrontRectIniP.Y - d);
@@ -950,7 +947,7 @@ namespace Ink_Canvas
             double a = 0.5 * (ed.X - st.X);
             double b = 0.5 * (ed.Y - st.Y);
             double step = 0.05;
-            List<System.Windows.Point> pointList = new List<System.Windows.Point>();
+            List<System.Windows.Point> pointList;
             StylusPointCollection point;
             Stroke stroke;
             StrokeCollection strokes = new StrokeCollection();
@@ -993,15 +990,12 @@ namespace Ink_Canvas
 
         private Stroke GenerateLineStroke(System.Windows.Point st, System.Windows.Point ed)
         {
-            List<System.Windows.Point> pointList = new List<System.Windows.Point>();
-            StylusPointCollection point;
-            Stroke stroke;
-            pointList = new List<System.Windows.Point>{
+            List<System.Windows.Point> pointList = new List<System.Windows.Point>{
                 new System.Windows.Point(st.X, st.Y),
                 new System.Windows.Point(ed.X, ed.Y)
             };
-            point = new StylusPointCollection(pointList);
-            stroke = new Stroke(point)
+            StylusPointCollection point = new StylusPointCollection(pointList);
+            Stroke stroke = new Stroke(point)
             {
                 DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
             };
@@ -1010,16 +1004,12 @@ namespace Ink_Canvas
 
         private Stroke GenerateArrowLineStroke(System.Windows.Point st, System.Windows.Point ed)
         {
-            List<System.Windows.Point> pointList = new List<System.Windows.Point>();
-            StylusPointCollection point;
-            Stroke stroke;
-
             double w = 20, h = 7;
             double theta = Math.Atan2(st.Y - ed.Y, st.X - ed.X);
             double sint = Math.Sin(theta);
             double cost = Math.Cos(theta);
 
-            pointList = new List<Point>
+            List<System.Windows.Point> pointList = new List<Point>
             {
                 new Point(st.X, st.Y),
                 new Point(ed.X , ed.Y),
@@ -1027,8 +1017,8 @@ namespace Ink_Canvas
                 new Point(ed.X,ed.Y),
                 new Point(ed.X + (w * cost + h * sint), ed.Y - (h * cost - w * sint))
             };
-            point = new StylusPointCollection(pointList);
-            stroke = new Stroke(point)
+            StylusPointCollection point = new StylusPointCollection(pointList);
+            Stroke stroke = new Stroke(point)
             {
                 DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
             };
@@ -1038,7 +1028,7 @@ namespace Ink_Canvas
         private StrokeCollection GenerateDashedLineStrokeCollection(System.Windows.Point st, System.Windows.Point ed)
         {
             double step = 5;
-            List<System.Windows.Point> pointList = new List<System.Windows.Point>();
+            List<System.Windows.Point> pointList;
             StylusPointCollection point;
             Stroke stroke;
             StrokeCollection strokes = new StrokeCollection();
@@ -1064,19 +1054,17 @@ namespace Ink_Canvas
         private StrokeCollection GenerateDotLineStrokeCollection(System.Windows.Point st, System.Windows.Point ed)
         {
             double step = 3;
-            List<System.Windows.Point> pointList = new List<System.Windows.Point>();
-            StylusPointCollection point;
-            Stroke stroke;
             StrokeCollection strokes = new StrokeCollection();
             double d = GetDistance(st, ed);
             double sinTheta = (ed.Y - st.Y) / d;
             double cosTheta = (ed.X - st.X) / d;
             for (double i = 0.0; i < d; i += step * 2.76)
             {
-                var stylusPoint = new StylusPoint(st.X + i * cosTheta, st.Y + i * sinTheta, ToPressureFactor(0.8));
-                point = new StylusPointCollection();
-                point.Add(stylusPoint);
-                stroke = new Stroke(point)
+                var point = new StylusPointCollection
+                {
+                    new StylusPoint(st.X + i * cosTheta, st.Y + i * sinTheta, ToPressureFactor(0.8))
+                };
+                var stroke = new Stroke(point)
                 {
                     DrawingAttributes = inkCanvas.DefaultDrawingAttributes.Clone()
                 };
@@ -1122,11 +1110,7 @@ namespace Ink_Canvas
             }
             if (drawingShapeMode != 9 && drawingShapeMode != 0 && drawingShapeMode != 24 && drawingShapeMode != 25)
             {
-                if (isLongPressSelected)
-                {
-
-                }
-                else
+                if (!isLongPressSelected)
                 {
                     BtnPen_Click(null, null); //画完一次还原到笔模式
 
