@@ -329,6 +329,9 @@ namespace Ink_Canvas
         [JsonProperty("isInkToShapeEnabled")]
         public bool IsInkToShapeEnabled { get; set; } = true;
 
+        [JsonProperty("isAutoStraightenLineEnabled")]
+        public bool IsAutoStraightenLineEnabled { get; set; } = true;
+
         [JsonProperty("recognizerVersion")]
         public string RecognizerVersion { get; set; } = InkRuntimeDefaults.RecognizerV2;
     }

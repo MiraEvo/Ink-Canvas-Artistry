@@ -3,6 +3,7 @@ using Ink_Canvas.Services.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Ink;
@@ -18,10 +19,12 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         private const double DoubleComparisonTolerance = 0.000001;
         private const float PressureComparisonTolerance = 0.001f;
         private readonly IAppLogger logger;
+        private readonly InkRecognizerKind recognizerKind;
 
-        public InkRecognitionService(IAppLogger logger)
+        public InkRecognitionService(IAppLogger logger, InkRecognizerKind recognizerKind)
         {
             this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkRecognitionService));
+            this.recognizerKind = recognizerKind;
         }
 
         public void HandleStrokeCollected(
@@ -84,7 +87,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                     }
                 }
 
-                RecognizedShapeResult? result = InkRecognizeHelper.RecognizeShape(shapeDrawingState.NewStrokes);
+                RecognizedShapeResult? result = ResolveRecognizedShape(shapeDrawingState.NewStrokes);
 
                 if (result == null)
                 {
@@ -105,6 +108,11 @@ namespace Ink_Canvas.Features.Ink.Coordinators
                 }
                 else if (result.Kind == RecognizedShapeKind.Line)
                 {
+                    if (!inkCanvasHost.Settings.InkToShape.IsAutoStraightenLineEnabled)
+                    {
+                        return;
+                    }
+
                     HandleLineRecognition(inkCanvasHost, inkHistoryHost, shapeDrawingState, result);
                 }
                 else if (result.Kind == RecognizedShapeKind.Polyline)
@@ -131,6 +139,77 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             {
                 logger.Error(ex, "InkToShape | Failed to apply recognized shape");
             }
+        }
+
+        private RecognizedShapeResult? ResolveRecognizedShape(StrokeCollection strokes)
+        {
+            if (strokes == null || strokes.Count == 0)
+            {
+                if (recognizerKind == InkRecognizerKind.V1)
+                {
+                    logger.Trace("InkToShape | V1 recognizer skipped invalid stroke collection.");
+                }
+
+                return null;
+            }
+
+            RecognizedShapeResult? result;
+            try
+            {
+                result = recognizerKind == InkRecognizerKind.V1
+                    ? LegacyInkRecognizeHelper.RecognizeShape(strokes)
+                    : InkRecognizeHelper.RecognizeShape(strokes);
+            }
+            catch (Exception ex) when (!IsCriticalException(ex))
+            {
+                logger.Error(ex, $"InkToShape | {recognizerKind} recognizer failed while analyzing {strokes.Count} stroke(s).");
+                return null;
+            }
+
+            if (recognizerKind != InkRecognizerKind.V1)
+            {
+                return result;
+            }
+
+            if (result == null)
+            {
+                logger.Trace($"InkToShape | V1 recognizer produced no shape for {strokes.Count} stroke(s).");
+                return null;
+            }
+
+            if (IsSupportedRecognizedShape(result.Kind))
+            {
+                return result;
+            }
+
+            logger.Trace($"InkToShape | V1 recognizer returned unsupported shape '{result.Kind}'.");
+            return null;
+        }
+
+        private static bool IsCriticalException(Exception ex)
+        {
+            return ex is OutOfMemoryException
+                or StackOverflowException
+                or AccessViolationException
+                or AppDomainUnloadedException
+                or BadImageFormatException
+                or CannotUnloadAppDomainException
+                or InvalidProgramException
+                or ThreadAbortException;
+        }
+
+        private static bool IsSupportedRecognizedShape(RecognizedShapeKind kind)
+        {
+            return kind is RecognizedShapeKind.Line
+                or RecognizedShapeKind.Polyline
+                or RecognizedShapeKind.Arc
+                or RecognizedShapeKind.Circle
+                or RecognizedShapeKind.Ellipse
+                or RecognizedShapeKind.Triangle
+                or RecognizedShapeKind.Rectangle
+                or RecognizedShapeKind.Square
+                or RecognizedShapeKind.Diamond
+                or RecognizedShapeKind.Parallelogram;
         }
 
         private void HandleCircleRecognition(

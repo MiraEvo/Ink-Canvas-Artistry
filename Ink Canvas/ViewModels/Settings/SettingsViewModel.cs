@@ -324,6 +324,12 @@ namespace Ink_Canvas.ViewModels.Settings
             set => SetSetting(settings.InkToShape.IsInkToShapeEnabled, value, v => settings.InkToShape.IsInkToShapeEnabled = v, nameof(IsEnableInkToShape));
         }
 
+        public bool IsEnableAutoStraightenLine
+        {
+            get => settings.InkToShape.IsAutoStraightenLineEnabled;
+            set => SetSetting(settings.InkToShape.IsAutoStraightenLineEnabled, value, v => settings.InkToShape.IsAutoStraightenLineEnabled = v, nameof(IsEnableAutoStraightenLine));
+        }
+
         public string RecognizerVersion
         {
             get => settings.InkToShape.RecognizerVersion;

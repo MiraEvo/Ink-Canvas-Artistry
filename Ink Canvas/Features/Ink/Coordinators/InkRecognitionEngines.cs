@@ -22,7 +22,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
         public InkRecognitionV2Engine(IAppLogger logger)
         {
-            service = new InkRecognitionService(logger);
+            service = new InkRecognitionService(logger, InkRecognizerKind.V2);
         }
 
         public string VersionId => InkRuntimeDefaults.RecognizerV2;
@@ -46,7 +46,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
         public InkRecognitionV1Engine(IAppLogger logger)
         {
             this.logger = (logger ?? throw new ArgumentNullException(nameof(logger))).ForCategory(nameof(InkRecognitionV1Engine));
-            service = new InkRecognitionService(this.logger);
+            service = new InkRecognitionService(this.logger, InkRecognizerKind.V1);
         }
 
         public string VersionId => InkRuntimeDefaults.RecognizerV1;
@@ -60,7 +60,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             if (!hasLoggedFallback)
             {
                 hasLoggedFallback = true;
-                logger.Event("Ink Recognition | V1 fallback is active.");
+                logger.Event("Ink Recognition | V1 legacy recognizer is active.");
             }
 
             service.HandleStrokeCollected(inkCanvasHost, inkHistoryHost, shapeDrawingState, e);

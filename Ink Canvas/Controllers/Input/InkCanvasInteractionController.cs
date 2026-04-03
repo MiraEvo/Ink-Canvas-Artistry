@@ -190,6 +190,11 @@ namespace Ink_Canvas.Controllers.Input
             }
 
             touchDownPointsList[e.StylusDevice.Id] = InkCanvasEditingMode.None;
+
+            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus)
+            {
+                TryAppendStylusPoints(e, inkCanvas, "stylus down", redrawPreview: true);
+            }
         }
 
         public void HandleStylusMove(StylusEventArgs e, IInputElement relativeTo)
@@ -211,11 +216,7 @@ namespace Ink_Canvas.Controllers.Input
             {
                 StrokeVisual strokeVisual = GetStrokeVisual(e.StylusDevice.Id);
                 StylusPointCollection stylusPointCollection = e.GetStylusPoints(relativeTo);
-                foreach (StylusPoint stylusPoint in stylusPointCollection)
-                {
-                    strokeVisual.Add(new StylusPoint(stylusPoint.X, stylusPoint.Y, stylusPoint.PressureFactor));
-                }
-
+                AppendStylusPoints(strokeVisual, stylusPointCollection);
                 strokeVisual.Redraw();
             }
             catch (ArgumentException ex)
@@ -232,37 +233,46 @@ namespace Ink_Canvas.Controllers.Input
         {
             EmitStylusSample(e, InkInputPhase.End, inkCanvas);
 
-            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus)
+            try
             {
-                try
+                if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus)
                 {
                     StrokeVisual strokeVisual = GetStrokeVisual(e.StylusDevice.Id);
-                    inkCanvas.Strokes.Add(strokeVisual.Stroke);
-                    await Task.Delay(5);
-                    VisualCanvas visualCanvas = GetVisualCanvas(e.StylusDevice.Id);
-                    if (visualCanvas != null)
+                    TryAppendStylusPoints(e, inkCanvas, "stylus up", redrawPreview: false);
+                    if (!strokeVisual.HasValidStroke)
                     {
-                        inkCanvas.Children.Remove(visualCanvas);
+                        logger.Trace("Ink Interaction | Skipped touch stroke commit because no valid stylus points were collected.");
+                        return;
                     }
 
+                    inkCanvas.Strokes.Add(strokeVisual.Stroke);
+                    await Task.Delay(5);
                     onStrokeCollected?.Invoke(strokeVisual.Stroke);
                 }
-                catch (ArgumentException ex)
-                {
-                    logger.Error(ex, "Ink Interaction | Invalid stylus point data during stylus up");
-                }
-                catch (InvalidOperationException ex)
-                {
-                    logger.Error(ex, "Ink Interaction | Failed to finalize stroke preview during stylus up");
-                }
             }
-
-            strokeVisualList.Remove(e.StylusDevice.Id);
-            visualCanvasList.Remove(e.StylusDevice.Id);
-            touchDownPointsList.Remove(e.StylusDevice.Id);
-            if (strokeVisualList.Count == 0 || visualCanvasList.Count == 0 || touchDownPointsList.Count == 0)
+            catch (ArgumentException ex)
             {
-                ResetTransientState();
+                logger.Error(ex, "Ink Interaction | Invalid stylus point data during stylus up");
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.Error(ex, "Ink Interaction | Failed to finalize stroke preview during stylus up");
+            }
+            finally
+            {
+                VisualCanvas visualCanvas = GetVisualCanvas(e.StylusDevice.Id);
+                if (visualCanvas != null)
+                {
+                    inkCanvas.Children.Remove(visualCanvas);
+                }
+
+                strokeVisualList.Remove(e.StylusDevice.Id);
+                visualCanvasList.Remove(e.StylusDevice.Id);
+                touchDownPointsList.Remove(e.StylusDevice.Id);
+                if (strokeVisualList.Count == 0 && visualCanvasList.Count == 0 && touchDownPointsList.Count == 0)
+                {
+                    ResetTransientState();
+                }
             }
         }
 
@@ -278,6 +288,11 @@ namespace Ink_Canvas.Controllers.Input
 
         public void ResetTransientState()
         {
+            foreach (VisualCanvas visualCanvas in visualCanvasList.Values.ToList())
+            {
+                inkCanvas.Children.Remove(visualCanvas);
+            }
+
             touchDownPointsList.Clear();
             strokeVisualList.Clear();
             visualCanvasList.Clear();
@@ -307,6 +322,47 @@ namespace Ink_Canvas.Controllers.Input
             }
 
             return null;
+        }
+
+        private bool TryAppendStylusPoints(StylusEventArgs e, IInputElement relativeTo, string phaseName, bool redrawPreview)
+        {
+            StylusPointCollection stylusPointCollection;
+            try
+            {
+                stylusPointCollection = e.GetStylusPoints(relativeTo);
+            }
+            catch (ArgumentException ex)
+            {
+                logger.Error(ex, $"Ink Interaction | Invalid stylus point data during {phaseName}");
+                return false;
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.Error(ex, $"Ink Interaction | Failed to capture stylus points during {phaseName}");
+                return false;
+            }
+
+            if (stylusPointCollection.Count == 0)
+            {
+                return false;
+            }
+
+            StrokeVisual strokeVisual = GetStrokeVisual(e.StylusDevice.Id);
+            AppendStylusPoints(strokeVisual, stylusPointCollection);
+            if (redrawPreview)
+            {
+                strokeVisual.Redraw();
+            }
+
+            return strokeVisual.HasValidStroke;
+        }
+
+        private static void AppendStylusPoints(StrokeVisual strokeVisual, StylusPointCollection stylusPointCollection)
+        {
+            foreach (StylusPoint stylusPoint in stylusPointCollection)
+            {
+                strokeVisual.Add(new StylusPoint(stylusPoint.X, stylusPoint.Y, stylusPoint.PressureFactor));
+            }
         }
 
         private void EmitStylusSample(StylusEventArgs e, InkInputPhase phase, IInputElement relativeTo)

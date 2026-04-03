@@ -56,6 +56,8 @@ namespace Ink_Canvas.Controllers.Input
         /// </summary>
         public Stroke Stroke { set; get; }
 
+        public bool HasValidStroke => Stroke?.StylusPoints.Count > 0;
+
         /// <summary>
         ///     在笔迹中添加点
         /// </summary>

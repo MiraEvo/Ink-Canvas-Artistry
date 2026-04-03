@@ -3402,6 +3402,44 @@
                                         Foreground="{DynamicResource SettingsPageForeground}"
                                         Text="启用墨迹识别" />
                                 </ikw:SimpleStackPanel>
+                                <ikw:SimpleStackPanel Orientation="Horizontal">
+                                    <ikw:SimpleStackPanel Width="50">
+                                        <ui:ToggleSwitch
+                                            Name="ToggleSwitchEnableAutoStraightenLine"
+                                            IsOn="True"
+                                            OffContent="关"
+                                            OnContent="开" />
+                                    </ikw:SimpleStackPanel>
+                                    <TextBlock
+                                        Margin="0,0,14,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Foreground="{DynamicResource SettingsPageForeground}"
+                                        Text="启用直线自动拉直" />
+                                </ikw:SimpleStackPanel>
+                                <ikw:SimpleStackPanel Orientation="Horizontal">
+                                    <TextBlock
+                                        Margin="0,0,12,0"
+                                        VerticalAlignment="Center"
+                                        FontSize="14"
+                                        Foreground="{DynamicResource SettingsPageForeground}"
+                                        Text="识别引擎：" />
+                                    <ComboBox
+                                        Name="ComboBoxInkRecognizerVersion"
+                                        MinWidth="220"
+                                        SelectedValuePath="Tag">
+                                        <ComboBoxItem
+                                            Tag="V1"
+                                            Content="V1（旧版兼容 / x64移植）" />
+                                        <ComboBoxItem
+                                            Tag="V2"
+                                            Content="V2（当前实现）" />
+                                    </ComboBox>
+                                </ikw:SimpleStackPanel>
+                                <TextBlock
+                                    Foreground="{DynamicResource SettingsPageAnnotationForeground}"
+                                    Text="# V1 使用旧版识别行为的纯托管兼容实现，可在 x64/ARM64 下使用；V2 为当前默认实现。"
+                                    TextWrapping="Wrap" />
                             </ikw:SimpleStackPanel>
                         </GroupBox>
                         <GroupBox Name="GroupBoxAppearanceNewUI">

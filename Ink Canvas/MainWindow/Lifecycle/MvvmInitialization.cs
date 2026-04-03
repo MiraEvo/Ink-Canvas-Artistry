@@ -112,6 +112,8 @@ namespace Ink_Canvas
             BindToggle(ToggleSwitchHideStrokeWhenSelecting, "Settings.HideStrokeWhenSelecting");
             BindComboBoxSelectedIndex(ComboBoxHyperbolaAsymptoteOption, "Settings.HyperbolaAsymptoteOption");
             BindToggle(ToggleSwitchEnableInkToShape, "Settings.IsEnableInkToShape");
+            BindToggle(ToggleSwitchEnableAutoStraightenLine, "Settings.IsEnableAutoStraightenLine");
+            BindComboBoxSelectedValue(ComboBoxInkRecognizerVersion, "Settings.RecognizerVersion");
 
             BindToggle(ToggleSwitchIsSpecialScreen, "Settings.IsSpecialScreen");
             BindSlider(TouchMultiplierSlider, "Settings.TouchMultiplier");
@@ -223,6 +225,11 @@ namespace Ink_Canvas
         private void BindComboBoxSelectedItem(ComboBox comboBox, string path)
         {
             BindingOperations.SetBinding(comboBox, Selector.SelectedItemProperty, CreateTwoWayBinding(path));
+        }
+
+        private void BindComboBoxSelectedValue(ComboBox comboBox, string path)
+        {
+            BindingOperations.SetBinding(comboBox, Selector.SelectedValueProperty, CreateTwoWayBinding(path));
         }
 
         private void BindTextBox(TextBox textBox, string path, TextChangedEventHandler handler)
