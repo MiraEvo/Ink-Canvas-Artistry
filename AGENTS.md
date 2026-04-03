@@ -158,6 +158,21 @@ CI：`.github/workflows/dotnet-desktop.yml`（Any CPU / x64 / ARM64）。
 - 不要把设置改动写成“直接改 Settings + 直接改控件 + 顺手保存”的散点代码。
 - 不要把新业务决策塞回 `MainWindow.xaml.cs`。
 
+## 静态检查与 CodeQL 回归约束
+
+- `Win32/COM` 互操作优先使用 `LibraryImport`，仅当源生成编组确实不支持时才保留 `DllImport`。
+- 必须保留的系统互操作调用，统一放在 `Helpers/` 或 `Services/System/Integration/` 的边界 helper 中；调用方法本身要写清楚 `SuppressMessage` 理由，说明“无托管替代实现”。
+- `catch (Exception)` 不要直接吞；错误边界统一使用“只捕获非致命异常”的过滤写法，critical exception 继续向外抛。
+- 不要用 `0.0` 之类浮点字面量当“未提供参数”的哨兵值；优先用可空类型或显式状态字段。
+- 避免“先初始化、后整体覆盖”的局部变量写法；局部集合、`Stroke`、`StylusPointCollection` 等尽量单次赋值，减少无效赋值告警。
+- 新增局部变量、参数名时不要遮蔽成员字段/属性；如果参数未使用，直接删除，不要保留占位参数。
+- `bool?` 结果判断统一优先写 `is true` / `is not true`，不要写 `== true`、`!= true` 这类冗余表达式。
+- 仅当类型真的实现 `IDisposable` 时才使用 `using`；不要为了消告警强行把非 `IDisposable` 类型包进 `using`。
+- 只做“赋值/返回二选一”的 `if/else` 优先收敛成三元表达式；空分支、恒真/恒假条件、可合并的嵌套 `if` 要直接压平。
+- 简单映射/过滤优先用 `Select` / `Where` / `Any`；但带顺序状态的去重、合并逻辑不要机械套 LINQ，优先用更能表达意图的 `Aggregate` 或小型 helper。
+- 私有字段若只在声明或构造函数中赋值，应优先标记为 `readonly`。
+- 生成代码文件（如 `Settings.Designer.cs`）若为消静态检查而做微调，需意识到“重新生成可能覆盖改动”；若后续生成链可控，应优先把规则固化到模板或生成步骤。
+
 ## 测试与验证要求
 提交前至少执行：
 
