@@ -10,7 +10,7 @@ namespace Ink_Canvas
 {
     public partial class MainWindow : Window
     {
-        private void LoadSettings(bool isStartup = false)
+        private async System.Threading.Tasks.Task LoadSettingsAsync(bool isStartup = false)
         {
             if (isStartup)
             {
@@ -26,7 +26,7 @@ namespace Ink_Canvas
 
             SettingsViewModel.Load(Settings, runAtStartup);
 
-            ApplyStartupSettings(isStartup);
+            await ApplyStartupSettingsAsync(isStartup);
             ApplyLegacyGestureSettings();
             ApplyLegacyCanvasSettings();
             settingsApplicationCoordinator.ApplyAll();
@@ -82,14 +82,14 @@ namespace Ink_Canvas
             return false;
         }
 
-        private void ApplyStartupSettings(bool isStartup)
+        private async System.Threading.Tasks.Task ApplyStartupSettingsAsync(bool isStartup)
         {
             if (Settings.Startup.IsAutoUpdate)
             {
                 AutoUpdate();
             }
 
-            InitializeDependencyCacheSession();
+            await InitializeDependencyCacheSessionAsync();
 
             if (!isStartup)
             {
@@ -109,12 +109,12 @@ namespace Ink_Canvas
             }
         }
 
-        private void InitializeDependencyCacheSession()
+        private async System.Threading.Tasks.Task InitializeDependencyCacheSessionAsync()
         {
             try
             {
                 inkArchiveService.MigrateLegacyArchiveDirectories(Settings.Automation.AutoSavedStrokesLocation);
-                inkDependencyCacheService.InitializeSession(Settings.Automation.AutoSavedStrokesLocation);
+                await inkDependencyCacheService.InitializeSessionAsync(Settings.Automation.AutoSavedStrokesLocation);
             }
             catch (IOException ex)
             {

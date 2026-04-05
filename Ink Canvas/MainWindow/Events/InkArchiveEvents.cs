@@ -23,11 +23,14 @@ namespace Ink_Canvas
             inkArchiveCoordinator?.SaveCurrentCanvas(newNotice, saveByUser);
         }
 
-        private void SymbolIconOpenInkCanvasFile_Click(object sender, RoutedEventArgs e)
+        private async void SymbolIconOpenInkCanvasFile_Click(object sender, RoutedEventArgs e)
         {
             AnimationsHelper.HideWithSlideAndFade(BorderTools);
             AnimationsHelper.HideWithSlideAndFade(BoardBorderTools);
-            inkArchiveCoordinator?.OpenArchiveFromDialog();
+            if (inkArchiveCoordinator != null)
+            {
+                await inkArchiveCoordinator.OpenArchiveFromDialogAsync();
+            }
         }
     }
 }

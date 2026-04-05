@@ -78,7 +78,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
             }
         }
 
-        public void OpenArchiveFromDialog()
+        public async System.Threading.Tasks.Task OpenArchiveFromDialogAsync()
         {
             string? filePath = host.ShowOpenArchiveDialog();
             if (string.IsNullOrWhiteSpace(filePath))
@@ -90,7 +90,7 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
             try
             {
-                InkArchiveLoadResult result = archiveService.LoadArchive(filePath, host.Settings.Automation.AutoSavedStrokesLocation);
+                InkArchiveLoadResult result = await archiveService.LoadArchiveAsync(filePath, host.Settings.Automation.AutoSavedStrokesLocation);
                 host.ClearCanvasForArchiveImport();
                 historyCoordinator.ClearHistory();
                 historyCoordinator.RecordSessionReset("ArchiveLoaded");

@@ -152,10 +152,10 @@ namespace Ink_Canvas
         public static readonly string settingsFileName = "Settings.json";
         bool isLoaded = false;
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             loadPenCanvas();
-            LoadSettings(true);
+            await LoadSettingsAsync(true);
 
             ThemeManager.Current.ApplicationTheme = ApplicationTheme.Light;
             SystemEvents_UserPreferenceChanged(null, null);
