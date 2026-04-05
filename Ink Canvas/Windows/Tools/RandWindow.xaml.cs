@@ -111,20 +111,26 @@ namespace Ink_Canvas {
             }
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e) {
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
             Names = [];
-            if (File.Exists(App.RootPath + "Names.txt")) {
-                string[] fileNames = File.ReadAllLines(App.RootPath + "Names.txt");
-                string[] replaces = new string[0];
+            string namesFilePath = PathSafetyHelper.ResolveRelativePath(App.RootPath, "Names.txt");
+            if (File.Exists(namesFilePath))
+            {
+                string[] fileNames = File.ReadAllLines(namesFilePath);
+                IEnumerable<string> replaces = [];
 
-                if (File.Exists(App.RootPath + "Replace.txt")) {
-                    replaces = File.ReadAllLines(App.RootPath + "Replace.txt");
+                string replaceFilePath = PathSafetyHelper.ResolveRelativePath(App.RootPath, "Replace.txt");
+                if (File.Exists(replaceFilePath))
+                {
+                    replaces = File.ReadAllLines(replaceFilePath).Where(static r => !string.IsNullOrWhiteSpace(r));
                 }
 
-                //Fix emtpy lines
+                //Fix empty lines
                 Names = fileNames
+                    .Select(static fileName => fileName.Trim())
                     .Select(fileName => ApplyNameReplacements(fileName, replaces))
-                    .Where(static name => !string.IsNullOrEmpty(name))
+                    .Where(static name => !string.IsNullOrWhiteSpace(name))
                     .Select(static name => name!)
                     .ToList();
 
