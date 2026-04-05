@@ -46,11 +46,6 @@ namespace Ink_Canvas
             LabelVersion.Content = "Version: " + version;
         }
 
-        private void Window_Closed(object sender, EventArgs e)
-        {
-
-        }
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Close();
