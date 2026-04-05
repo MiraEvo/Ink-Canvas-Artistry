@@ -123,7 +123,7 @@ namespace Ink_Canvas
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (replayStroke != null && InkCanvasForInkReplay.Strokes.Contains(replayStroke))
+                if (replayStroke != null)
                 {
                     InkCanvasForInkReplay.Strokes.Remove(replayStroke);
                 }
