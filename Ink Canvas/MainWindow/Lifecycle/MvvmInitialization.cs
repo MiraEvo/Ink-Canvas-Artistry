@@ -4,6 +4,7 @@ using Ink_Canvas.Features.Ink.Services;
 using Ink_Canvas.Helpers;
 using Ink_Canvas.Services;
 using Ink_Canvas.ViewModels;
+using Ink_Canvas.ViewModels.Main;
 using iNKORE.UI.WPF.Modern.Controls;
 using System;
 using System.ComponentModel;
@@ -43,7 +44,8 @@ namespace Ink_Canvas
                 new InputStateViewModel(),
                 new PresentationSessionViewModel(),
                 new AutomationStateViewModel(),
-                new WorkspaceSessionViewModel());
+                new WorkspaceSessionViewModel(),
+                new PaletteViewModel());
             mainWindowViewModel.Settings.PropertyChanged += SettingsViewModel_PropertyChanged;
             mainWindowViewModel.Settings.ReloadRequested += SettingsViewModel_ReloadRequested;
             mainWindowViewModel.Settings.SettingsSaveFailed += SettingsViewModel_SettingsSaveFailed;

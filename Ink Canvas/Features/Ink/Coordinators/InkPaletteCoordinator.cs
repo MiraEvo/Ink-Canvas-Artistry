@@ -35,7 +35,6 @@ namespace Ink_Canvas.Features.Ink.Coordinators
 
         public void HandleColorSelected(int colorIndex)
         {
-            PaletteState.InkColor = colorIndex;
             host.ApplyPaletteColorSelection(colorIndex);
         }
 

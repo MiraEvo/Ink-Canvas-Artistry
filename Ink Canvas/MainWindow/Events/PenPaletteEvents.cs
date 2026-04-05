@@ -194,105 +194,11 @@ namespace Ink_Canvas
                 }
             }
 
-            // 改变选中提示
-            ViewboxBtnColorBlackContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorBlueContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorGreenContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorRedContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorYellowContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorWhiteContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorPinkContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorTealContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnColorOrangeContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorBlackContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorBlueContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorGreenContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorRedContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorYellowContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorWhiteContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorPinkContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorTealContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnColorOrangeContent.Visibility = Visibility.Collapsed;
-
-            ViewboxBtnHighlighterColorRedContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnHighlighterColorRedContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnHighlighterColorOrangeContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnHighlighterColorOrangeContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnHighlighterColorYellowContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnHighlighterColorYellowContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnHighlighterColorTealContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnHighlighterColorTealContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnHighlighterColorBlueContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnHighlighterColorBlueContent.Visibility = Visibility.Collapsed;
-            ViewboxBtnHighlighterColorPurpleContent.Visibility = Visibility.Collapsed;
-            BoardViewboxBtnHighlighterColorPurpleContent.Visibility = Visibility.Collapsed;
-            switch (inkColor)
-            {
-                case 0:
-                    ViewboxBtnColorBlackContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorBlackContent.Visibility = Visibility.Visible;
-                    break;
-                case 1:
-                    ViewboxBtnColorRedContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorRedContent.Visibility = Visibility.Visible;
-                    break;
-                case 2:
-                    ViewboxBtnColorGreenContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorGreenContent.Visibility = Visibility.Visible;
-                    break;
-                case 3:
-                    ViewboxBtnColorBlueContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorBlueContent.Visibility = Visibility.Visible;
-                    break;
-                case 4:
-                    ViewboxBtnColorYellowContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorYellowContent.Visibility = Visibility.Visible;
-                    break;
-                case 5:
-                    ViewboxBtnColorWhiteContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorWhiteContent.Visibility = Visibility.Visible;
-                    break;
-                case 6:
-                    ViewboxBtnColorPinkContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorPinkContent.Visibility = Visibility.Visible;
-                    break;
-                case 7:
-                    ViewboxBtnColorTealContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorTealContent.Visibility = Visibility.Visible;
-                    break;
-                case 8:
-                    ViewboxBtnColorOrangeContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnColorOrangeContent.Visibility = Visibility.Visible;
-                    break;
-                case 101:
-                    ViewboxBtnHighlighterColorRedContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnHighlighterColorRedContent.Visibility = Visibility.Visible;
-                    break;
-                case 102:
-                    ViewboxBtnHighlighterColorOrangeContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnHighlighterColorOrangeContent.Visibility = Visibility.Visible;
-                    break;
-                case 103:
-                    ViewboxBtnHighlighterColorYellowContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnHighlighterColorYellowContent.Visibility = Visibility.Visible;
-                    break;
-                case 104:
-                    ViewboxBtnHighlighterColorTealContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnHighlighterColorTealContent.Visibility = Visibility.Visible;
-                    break;
-                case 105:
-                    ViewboxBtnHighlighterColorBlueContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnHighlighterColorBlueContent.Visibility = Visibility.Visible;
-                    break;
-                case 106:
-                    ViewboxBtnHighlighterColorPurpleContent.Visibility = Visibility.Visible;
-                    BoardViewboxBtnHighlighterColorPurpleContent.Visibility = Visibility.Visible;
-                    break;
-            }
         }
 
         private void CheckLastColor(int colorIndex)
         {
+            inkColor = colorIndex;
             StrokeCollection strokes = inkCanvas.GetSelectedStrokes();
             if (strokes.Count > 0)
             {

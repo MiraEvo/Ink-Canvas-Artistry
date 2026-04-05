@@ -8,9 +8,12 @@ namespace Ink_Canvas.ViewModels.Main
         InputStateViewModel input,
         PresentationSessionViewModel presentation,
         AutomationStateViewModel automation,
-        WorkspaceSessionViewModel workspaceSession) : ObservableObject
+        WorkspaceSessionViewModel workspaceSession,
+        PaletteViewModel palette) : ObservableObject
     {
         public SettingsViewModel Settings { get; } = settings;
+
+        public PaletteViewModel Palette { get; } = palette;
 
         public ShellViewModel Shell { get; } = shell;
 
