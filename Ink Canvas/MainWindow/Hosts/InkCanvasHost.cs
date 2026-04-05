@@ -199,7 +199,11 @@ namespace Ink_Canvas
         private int inkColor
         {
             get => PaletteState.InkColor;
-            set => PaletteState.InkColor = value;
+            set
+            {
+                PaletteState.InkColor = value;
+                mainWindowViewModel.Palette.InkColor = value;
+            }
         }
 
         private bool isUselightThemeColor

@@ -8,6 +8,7 @@
     xmlns:local="clr-namespace:Ink_Canvas"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
+    xmlns:converters="clr-namespace:Ink_Canvas.Converters"
     Name="window"
     Title="Ink Canvas Modern 画板"
     Width="1440"
@@ -36,6 +37,7 @@
                 <ResourceDictionary Source="/Resources/Dictionaries/Icons/DrawShapeImageDictionary.xaml" />
                 <ResourceDictionary Source="/Resources/Dictionaries/Icons/IconImageDictionary.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <converters:ColorIndexToVisibilityConverter x:Key="ColorIndexToVisibilityConverter" />
             <RoutedUICommand x:Key="HotKey_Command_Undo" Text=" " />
             <RoutedUICommand x:Key="HotKey_Command_Redo" Text=" " />
             <RoutedUICommand x:Key="HotKey_ChangeToSelect" Text=" " />
@@ -1512,7 +1514,7 @@
                                                                             <Viewbox
                                                                                 Name="BoardViewboxBtnColorBlackContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=0}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1532,7 +1534,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorWhiteContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=5}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1552,7 +1554,7 @@
                                                                             <Viewbox
                                                                                 Name="BoardViewboxBtnColorRedContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=1}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1572,7 +1574,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorPinkContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=6}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1599,7 +1601,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorOrangeContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=8}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1619,7 +1621,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorYellowContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=4}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1639,7 +1641,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorGreenContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=2}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1659,7 +1661,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorTealContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=7}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1679,7 +1681,7 @@
                                                                             <Viewbox
                                                                                 x:Name="BoardViewboxBtnColorBlueContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=3}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -1746,7 +1748,7 @@
                                                                         <Viewbox
                                                                             x:Name="BoardViewboxBtnHighlighterColorRedContent"
                                                                             Margin="2"
-                                                                            Visibility="Collapsed">
+                                                                            Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=101}">
                                                                             <Image
                                                                                 Width="28"
                                                                                 Height="28"
@@ -1766,7 +1768,7 @@
                                                                         <Viewbox
                                                                             Name="BoardViewboxBtnHighlighterColorOrangeContent"
                                                                             Margin="2"
-                                                                            Visibility="Collapsed">
+                                                                            Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=102}">
                                                                             <Image
                                                                                 Width="28"
                                                                                 Height="28"
@@ -1786,7 +1788,7 @@
                                                                         <Viewbox
                                                                             x:Name="BoardViewboxBtnHighlighterColorYellowContent"
                                                                             Margin="2"
-                                                                            Visibility="Collapsed">
+                                                                            Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=103}">
                                                                             <Image
                                                                                 Width="28"
                                                                                 Height="28"
@@ -1813,7 +1815,7 @@
                                                                         <Viewbox
                                                                             x:Name="BoardViewboxBtnHighlighterColorTealContent"
                                                                             Margin="2"
-                                                                            Visibility="Collapsed">
+                                                                            Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=104}">
                                                                             <Image
                                                                                 Width="28"
                                                                                 Height="28"
@@ -1833,7 +1835,7 @@
                                                                         <Viewbox
                                                                             x:Name="BoardViewboxBtnHighlighterColorBlueContent"
                                                                             Margin="2"
-                                                                            Visibility="Collapsed">
+                                                                            Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=105}">
                                                                             <Image
                                                                                 Width="28"
                                                                                 Height="28"
@@ -1853,7 +1855,7 @@
                                                                         <Viewbox
                                                                             x:Name="BoardViewboxBtnHighlighterColorPurpleContent"
                                                                             Margin="2"
-                                                                            Visibility="Collapsed">
+                                                                            Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=106}">
                                                                             <Image
                                                                                 Width="28"
                                                                                 Height="28"
@@ -5713,7 +5715,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorBlackContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=0}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5733,7 +5735,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorWhiteContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=5}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5753,7 +5755,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorRedContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=1}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5773,7 +5775,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorPinkContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=6}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5800,7 +5802,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorOrangeContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=8}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5820,7 +5822,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorYellowContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=4}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5840,7 +5842,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorGreenContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=2}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5860,7 +5862,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorTealContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=7}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5880,7 +5882,7 @@
                                                                             <Viewbox
                                                                                 x:Name="ViewboxBtnColorBlueContent"
                                                                                 Margin="8"
-                                                                                Visibility="Collapsed">
+                                                                                Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=3}">
                                                                                 <Image
                                                                                     Width="24"
                                                                                     Height="24"
@@ -5945,7 +5947,7 @@
                                                                     <Viewbox
                                                                         x:Name="ViewboxBtnHighlighterColorRedContent"
                                                                         Margin="2"
-                                                                        Visibility="Collapsed">
+                                                                        Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=101}">
                                                                         <Image
                                                                             Width="28"
                                                                             Height="28"
@@ -5965,7 +5967,7 @@
                                                                     <Viewbox
                                                                         x:Name="ViewboxBtnHighlighterColorOrangeContent"
                                                                         Margin="2"
-                                                                        Visibility="Collapsed">
+                                                                        Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=102}">
                                                                         <Image
                                                                             Width="28"
                                                                             Height="28"
@@ -5985,7 +5987,7 @@
                                                                     <Viewbox
                                                                         x:Name="ViewboxBtnHighlighterColorYellowContent"
                                                                         Margin="2"
-                                                                        Visibility="Collapsed">
+                                                                        Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=103}">
                                                                         <Image
                                                                             Width="28"
                                                                             Height="28"
@@ -6012,7 +6014,7 @@
                                                                     <Viewbox
                                                                         x:Name="ViewboxBtnHighlighterColorTealContent"
                                                                         Margin="2"
-                                                                        Visibility="Collapsed">
+                                                                        Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=104}">
                                                                         <Image
                                                                             Width="28"
                                                                             Height="28"
@@ -6032,7 +6034,7 @@
                                                                     <Viewbox
                                                                         x:Name="ViewboxBtnHighlighterColorBlueContent"
                                                                         Margin="2"
-                                                                        Visibility="Collapsed">
+                                                                        Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=105}">
                                                                         <Image
                                                                             Width="28"
                                                                             Height="28"
@@ -6052,7 +6054,7 @@
                                                                     <Viewbox
                                                                         x:Name="ViewboxBtnHighlighterColorPurpleContent"
                                                                         Margin="2"
-                                                                        Visibility="Collapsed">
+                                                                        Visibility="{Binding Palette.InkColor, Converter={StaticResource ColorIndexToVisibilityConverter}, ConverterParameter=106}">
                                                                         <Image
                                                                             Width="28"
                                                                             Height="28"
@@ -7229,5 +7231,3 @@
         </Viewbox>
     </Grid>
 </Window>
-
-
