@@ -367,21 +367,11 @@ namespace Ink_Canvas
 
         private Color StringToColor(string colorStr)
         {
-            Byte[] argb = new Byte[4];
-            for (int i = 0; i < 4; i++)
+            if (ColorConverter.ConvertFromString(colorStr) is Color parsedColor)
             {
-                char[] charArray = colorStr.Substring(i * 2 + 1, 2).ToCharArray();
-                Byte b1 = toByte(charArray[0]);
-                Byte b2 = toByte(charArray[1]);
-                argb[i] = (Byte)(b2 | (b1 << 4));
+                return parsedColor;
             }
-            return Color.FromArgb(argb[0], argb[1], argb[2], argb[3]);//#FFFFFFFF
-        }
-
-        private static byte toByte(char c)
-        {
-            byte b = (byte)"0123456789ABCDEF".IndexOf(c);
-            return b;
+            throw new FormatException($"Failed to parse color string: {colorStr}");
         }
     }
 }
