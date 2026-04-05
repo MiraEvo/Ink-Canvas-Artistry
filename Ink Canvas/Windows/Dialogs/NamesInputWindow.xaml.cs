@@ -22,9 +22,10 @@ namespace Ink_Canvas
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            if (File.Exists(App.RootPath + "Names.txt"))
+            string namesFilePath = PathSafetyHelper.ResolveRelativePath(App.RootPath, "Names.txt");
+            if (File.Exists(namesFilePath))
             {
-                TextBoxNames.Text = File.ReadAllText(App.RootPath + "Names.txt");
+                TextBoxNames.Text = File.ReadAllText(namesFilePath);
                 originText = TextBoxNames.Text;
             }
         }
@@ -36,7 +37,8 @@ namespace Ink_Canvas
                 var result = MessageBox.Show("是否保存？", "名单导入", MessageBoxButton.YesNo);
                 if (result == MessageBoxResult.Yes)
                 {
-                    File.WriteAllText(App.RootPath + "Names.txt", TextBoxNames.Text);
+                    string namesFilePath = PathSafetyHelper.ResolveRelativePath(App.RootPath, "Names.txt");
+                    File.WriteAllText(namesFilePath, TextBoxNames.Text);
                 }
             }
         }
