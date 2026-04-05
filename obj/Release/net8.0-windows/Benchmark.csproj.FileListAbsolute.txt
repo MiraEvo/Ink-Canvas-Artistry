@@ -1,0 +1,10 @@
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Dictionaries/Icons/BoardDrawShapeImageDictionary.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Dictionaries/Icons/DrawShapeImageDictionary.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Dictionaries/Icons/IconImageDictionary.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Styles/App/Dark.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Styles/App/Light.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Styles/Window/Dark-PopupWindow.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Resources/Styles/Window/Light-PopupWindow.baml
+/app/obj/Release/net8.0-windows/Ink Canvas/Windows/Tools/CycleProcessBar.g.cs
+/app/obj/Release/net8.0-windows/Benchmark_MarkupCompile.cache
+/app/obj/Release/net8.0-windows/Benchmark_MarkupCompile.lref
