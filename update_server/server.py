@@ -99,4 +99,4 @@ async def download_file(filename: str):
 
 if __name__ == "__main__":
     logging.info("Starting FastAPI server with Uvicorn...")
-    uvicorn.run("server:app", host="0.0.0.0", port=8080, reload=False, log_level="info")
+    uvicorn.run("server:app", host="127.0.0.1", port=8080, reload=False, log_level="info")
