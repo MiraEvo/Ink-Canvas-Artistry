@@ -13,13 +13,15 @@ namespace Ink_Canvas.Helpers
                 throw new ArgumentException("Process target cannot be empty.", nameof(fileName));
             }
 
+            bool hasArguments = !string.IsNullOrWhiteSpace(arguments);
+
             ProcessStartInfo startInfo = new ProcessStartInfo
             {
                 FileName = ResolveShellTarget(fileName),
-                UseShellExecute = true
+                UseShellExecute = !hasArguments
             };
 
-            if (!string.IsNullOrWhiteSpace(arguments))
+            if (hasArguments)
             {
                 startInfo.Arguments = arguments;
             }
