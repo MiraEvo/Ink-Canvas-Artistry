@@ -53,13 +53,19 @@ namespace Ink_Canvas.Features.Ink.Services
 
         private static StrokeCollection CreateSuffixStrokeCollection(StrokeCollection strokes, int startIndex)
         {
-            StrokeCollection collection = [];
-            for (int i = startIndex; i < strokes.Count; i++)
+            if (startIndex < 0 || startIndex >= strokes.Count)
             {
-                collection.Add(strokes[i]);
+                return [];
             }
 
-            return collection;
+            int count = strokes.Count - startIndex;
+            Stroke[] suffixStrokes = new Stroke[count];
+            for (int i = 0; i < count; i++)
+            {
+                suffixStrokes[i] = strokes[startIndex + i];
+            }
+
+            return new StrokeCollection(suffixStrokes);
         }
 
         private static bool IsSupportedKind(RecognizedShapeKind kind)
