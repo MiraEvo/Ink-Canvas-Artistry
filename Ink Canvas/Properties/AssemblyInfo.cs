@@ -19,3 +19,4 @@ using System.Windows;
 [assembly: AssemblyVersion("5.0.1.0")]
 [assembly: AssemblyFileVersion("5.0.1.0")]
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Ink Canvas.Tests")]

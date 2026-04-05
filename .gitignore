@@ -1,3 +1,9 @@
-﻿/Ink Canvas/obj
-/Ink Canvas/bin
-/.vs
+**/bin/
+**/obj/
+bin/
+obj/
+*.user
+*.suo
+.vs/
+Ink Canvas.Tests/bin/
+Ink Canvas.Tests/obj/
