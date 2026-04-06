@@ -134,16 +134,16 @@ namespace Ink_Canvas.Features.Ink.Services
             SaveArchive(outputStream, strokeData, InkArchiveSnapshotMode.StrokesOnly, null, [], InkArchiveWriteFormat.V3Legacy);
         }
 
-        public InkArchiveLoadResult LoadArchive(string filePath, string dependencyRoot)
+        public async Task<InkArchiveLoadResult> LoadArchiveAsync(string filePath, string dependencyRoot)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
             ArgumentException.ThrowIfNullOrWhiteSpace(dependencyRoot);
 
             using FileStream fileStream = new(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            return LoadArchive(fileStream, dependencyRoot, Path.GetFileName(filePath));
+            return await LoadArchiveAsync(fileStream, dependencyRoot, Path.GetFileName(filePath));
         }
 
-        public InkArchiveLoadResult LoadArchive(Stream inputStream, string? dependencyRoot, string? sourceName = null)
+        public async Task<InkArchiveLoadResult> LoadArchiveAsync(Stream inputStream, string? dependencyRoot, string? sourceName = null)
         {
             using MemoryStream bufferedStream = CopyToMemoryStream(inputStream);
             byte[] archiveBytes = bufferedStream.ToArray();
@@ -165,7 +165,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 return new InkArchiveLoadResult(strokes, [], 0, null);
             }
 
-            return LoadElementsFromArchive(archive, manifest, strokes, dependencyRoot, sourceName, archiveHash);
+            return await LoadElementsFromArchiveAsync(archive, manifest, strokes, dependencyRoot, sourceName, archiveHash);
         }
 
         public byte[] LoadStrokeData(string filePath)
@@ -216,7 +216,7 @@ namespace Ink_Canvas.Features.Ink.Services
             }
         }
 
-        private InkArchiveLoadResult LoadElementsFromArchive(
+        private async Task<InkArchiveLoadResult> LoadElementsFromArchiveAsync(
             ZipArchive archive,
             InkArchiveManifest? manifest,
             StrokeCollection strokes,
@@ -236,7 +236,7 @@ namespace Ink_Canvas.Features.Ink.Services
                 return new InkArchiveLoadResult(strokes, [], 0, warningMessage);
             }
 
-            dependencyCacheService.InitializeSession(dependencyRoot);
+            await dependencyCacheService.InitializeSessionAsync(dependencyRoot);
             string extractionRoot = dependencyCacheService.GetImportedArchiveDirectory(sourceName ?? "archive.icart", archiveHash);
             ExtractDependencies(archive, extractionRoot, dependencyFolderName);
             string dependencyDirectory = PathSafetyHelper.ResolveRelativePath(extractionRoot, dependencyFolderName);

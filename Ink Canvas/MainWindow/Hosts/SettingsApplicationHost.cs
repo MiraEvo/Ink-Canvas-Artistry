@@ -57,7 +57,7 @@ namespace Ink_Canvas
         void ISettingsApplicationHost.ApplyAutoSaveStrokesAtClearHeader() => ApplyAutoSaveStrokesAtClearHeader();
 
         void ISettingsApplicationHost.ApplyAutoSavedStrokesLocationChanged(string? previousRoot, string currentRoot) =>
-            ApplyAutoSavedStrokesLocationChanged(previousRoot, currentRoot);
+            ApplyAutoSavedStrokesLocationChangedAsync(previousRoot, currentRoot);
 
         private void ApplyRunAtStartup()
         {
@@ -277,12 +277,12 @@ namespace Ink_Canvas
                 : "清屏时自动截图";
         }
 
-        private void ApplyAutoSavedStrokesLocationChanged(string? previousRoot, string currentRoot)
+        private async void ApplyAutoSavedStrokesLocationChangedAsync(string? previousRoot, string currentRoot)
         {
             try
             {
                 List<UIElement> referencedElements = inkCanvas.Children.Cast<UIElement>().ToList();
-                inkDependencyCacheService.SwitchSessionRoot(previousRoot, currentRoot, referencedElements);
+                await inkDependencyCacheService.SwitchSessionRootAsync(previousRoot, currentRoot, referencedElements);
             }
             catch (IOException ex)
             {

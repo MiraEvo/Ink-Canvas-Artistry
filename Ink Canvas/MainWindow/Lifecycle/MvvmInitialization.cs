@@ -155,14 +155,14 @@ namespace Ink_Canvas
             BindComboBoxSelectedIndex(ComboBoxAutoDelSavedFilesDaysThreshold, "Settings.AutoDelSavedFilesDaysThresholdIndex");
         }
 
-        private void SettingsViewModel_ReloadRequested(string? notificationMessage)
+        private async void SettingsViewModel_ReloadRequested(string? notificationMessage)
         {
             bool previousIsLoaded = isLoaded;
 
             try
             {
                 isLoaded = false;
-                LoadSettings();
+                await LoadSettingsAsync();
             }
             finally
             {

@@ -42,7 +42,7 @@ namespace Ink_Canvas.Features.Ink.Services
 
         public string AppSessionId => appSessionId;
 
-        public void InitializeSession(string rootDirectory)
+        public async Task InitializeSessionAsync(string rootDirectory)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
 
@@ -53,7 +53,7 @@ namespace Ink_Canvas.Features.Ink.Services
             Directory.CreateDirectory(sessionRoot);
             if (ShouldCleanupRoot(normalizedRoot))
             {
-                CleanupStaleSessions(sessionRoot);
+                await CleanupStaleSessionsAsync(sessionRoot);
             }
 
             Directory.CreateDirectory(sessionDirectory);
@@ -97,12 +97,12 @@ namespace Ink_Canvas.Features.Ink.Services
             return importedDirectory;
         }
 
-        public void SwitchSessionRoot(string? previousRoot, string currentRoot, IReadOnlyList<UIElement> referencedElements)
+        public async Task SwitchSessionRootAsync(string? previousRoot, string currentRoot, IReadOnlyList<UIElement> referencedElements)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(currentRoot);
             ArgumentNullException.ThrowIfNull(referencedElements);
 
-            InitializeSession(currentRoot);
+            await InitializeSessionAsync(currentRoot);
             if (string.IsNullOrWhiteSpace(previousRoot))
             {
                 return;
@@ -325,7 +325,7 @@ namespace Ink_Canvas.Features.Ink.Services
             return cachedFilePath;
         }
 
-        private void CleanupStaleSessions(string sessionRoot)
+        private async Task CleanupStaleSessionsAsync(string sessionRoot)
         {
             foreach (string sessionDirectory in Directory.GetDirectories(sessionRoot))
             {
@@ -344,7 +344,8 @@ namespace Ink_Canvas.Features.Ink.Services
                 SessionMetadata? metadata;
                 try
                 {
-                    metadata = JsonSerializer.Deserialize<SessionMetadata>(File.ReadAllText(sessionMetadataPath));
+                    using FileStream fileStream = new(sessionMetadataPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous);
+                    metadata = await JsonSerializer.DeserializeAsync<SessionMetadata>(fileStream);
                 }
                 catch (IOException ex)
                 {
