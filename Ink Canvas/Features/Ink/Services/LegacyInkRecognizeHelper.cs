@@ -16,24 +16,8 @@ namespace Ink_Canvas.Features.Ink.Services
                 return null;
             }
 
-            int strokeCount = strokes.Count;
-            RecognizedShapeResult?[] memo = new RecognizedShapeResult?[strokeCount];
-            bool[] evaluated = new bool[strokeCount];
-
-            RecognizedShapeResult? EvaluateSuffix(int startIndex)
-            {
-                if (!evaluated[startIndex])
-                {
-                    StrokeCollection candidateStrokes = CreateSuffixStrokeCollection(strokes, startIndex);
-                    memo[startIndex] = InkRecognizeHelper.RecognizeShape(candidateStrokes);
-                    evaluated[startIndex] = true;
-                }
-
-                return memo[startIndex];
-            }
-
-            RecognizedShapeResult? primaryCandidate = RecognizeLatestSupportedSuffix(strokeCount, EvaluateSuffix);
-            RecognizedShapeResult? preferredClosedCandidate = RecognizePreferredRecentClosedShape(strokeCount, EvaluateSuffix);
+            RecognizedShapeResult? primaryCandidate = RecognizeLatestSupportedSuffix(strokes);
+            RecognizedShapeResult? preferredClosedCandidate = RecognizePreferredRecentClosedShape(strokes);
 
             if (preferredClosedCandidate != null)
             {
@@ -47,15 +31,16 @@ namespace Ink_Canvas.Features.Ink.Services
 
             RecognizedShapeResult? bestCandidate = null;
             double bestScore = double.MinValue;
-            for (int startIndex = strokeCount - 1; startIndex >= 0; startIndex--)
+            for (int startIndex = strokes.Count - 1; startIndex >= 0; startIndex--)
             {
-                RecognizedShapeResult? candidate = EvaluateSuffix(startIndex);
+                StrokeCollection candidateStrokes = CreateSuffixStrokeCollection(strokes, startIndex);
+                RecognizedShapeResult? candidate = InkRecognizeHelper.RecognizeShape(candidateStrokes);
                 if (candidate == null || !IsSupportedKind(candidate.Kind))
                 {
                     continue;
                 }
 
-                double score = GetLegacyScore(candidate, startIndex, strokeCount);
+                double score = GetLegacyScore(candidate, startIndex, strokes.Count);
                 if (bestCandidate == null || score > bestScore)
                 {
                     bestCandidate = candidate;
@@ -97,11 +82,12 @@ namespace Ink_Canvas.Features.Ink.Services
                 or RecognizedShapeKind.Parallelogram;
         }
 
-        private static RecognizedShapeResult? RecognizeLatestSupportedSuffix(int strokeCount, Func<int, RecognizedShapeResult?> evaluateSuffix)
+        private static RecognizedShapeResult? RecognizeLatestSupportedSuffix(StrokeCollection strokes)
         {
-            for (int startIndex = 0; startIndex < strokeCount; startIndex++)
+            for (int startIndex = 0; startIndex < strokes.Count; startIndex++)
             {
-                RecognizedShapeResult? candidate = evaluateSuffix(startIndex);
+                StrokeCollection candidateStrokes = CreateSuffixStrokeCollection(strokes, startIndex);
+                RecognizedShapeResult? candidate = InkRecognizeHelper.RecognizeShape(candidateStrokes);
                 if (candidate != null && IsSupportedKind(candidate.Kind))
                 {
                     return candidate;
@@ -111,11 +97,12 @@ namespace Ink_Canvas.Features.Ink.Services
             return null;
         }
 
-        private static RecognizedShapeResult? RecognizePreferredRecentClosedShape(int strokeCount, Func<int, RecognizedShapeResult?> evaluateSuffix)
+        private static RecognizedShapeResult? RecognizePreferredRecentClosedShape(StrokeCollection strokes)
         {
-            for (int startIndex = strokeCount - 1; startIndex >= 0; startIndex--)
+            for (int startIndex = strokes.Count - 1; startIndex >= 0; startIndex--)
             {
-                RecognizedShapeResult? candidate = evaluateSuffix(startIndex);
+                StrokeCollection candidateStrokes = CreateSuffixStrokeCollection(strokes, startIndex);
+                RecognizedShapeResult? candidate = InkRecognizeHelper.RecognizeShape(candidateStrokes);
                 if (candidate?.Kind is RecognizedShapeKind.Circle or RecognizedShapeKind.Ellipse)
                 {
                     return candidate;
