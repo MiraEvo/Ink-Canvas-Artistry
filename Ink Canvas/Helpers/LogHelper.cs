@@ -105,7 +105,10 @@ namespace Ink_Canvas.Helpers
             };
         }
 
-        private static void WriteLine(string line)
+        // Internal delegate to allow testing file write exceptions without full file system abstraction
+        internal static Action<string> WriteLineAction = DefaultWriteLine;
+
+        private static void DefaultWriteLine(string line)
         {
             if (!Directory.Exists(App.RootPath))
             {
@@ -115,6 +118,11 @@ namespace Ink_Canvas.Helpers
             string filePath = PathSafetyHelper.ResolveRelativePath(App.RootPath, LogFile);
             using StreamWriter streamWriter = new StreamWriter(filePath, true);
             streamWriter.WriteLine(line);
+        }
+
+        private static void WriteLine(string line)
+        {
+            WriteLineAction?.Invoke(line);
         }
 
         public enum LogType
